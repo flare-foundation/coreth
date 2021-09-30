@@ -33,10 +33,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ava-labs/coreth/core/state"
-	"github.com/ava-labs/coreth/core/vm"
-	"github.com/ava-labs/coreth/params"
 	"github.com/ethereum/go-ethereum/common"
+	"gitlab.com/flarenetwork/coreth/core/state"
+	"gitlab.com/flarenetwork/coreth/core/vm"
+	"gitlab.com/flarenetwork/coreth/params"
 )
 
 type account struct{}

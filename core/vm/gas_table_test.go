@@ -31,11 +31,11 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/ava-labs/coreth/core/rawdb"
-	"github.com/ava-labs/coreth/core/state"
-	"github.com/ava-labs/coreth/params"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"gitlab.com/flarenetwork/coreth/core/rawdb"
+	"gitlab.com/flarenetwork/coreth/core/state"
+	"gitlab.com/flarenetwork/coreth/params"
 )
 
 func TestMemoryGasCost(t *testing.T) {

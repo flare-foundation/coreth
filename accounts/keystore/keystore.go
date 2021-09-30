@@ -42,11 +42,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ava-labs/coreth/accounts"
-	"github.com/ava-labs/coreth/core/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/event"
+	"gitlab.com/flarenetwork/coreth/accounts"
+	"gitlab.com/flarenetwork/coreth/core/types"
 )
 
 var (

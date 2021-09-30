@@ -29,9 +29,9 @@ package vm
 import (
 	"errors"
 
-	"github.com/ava-labs/coreth/params"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/math"
+	"gitlab.com/flarenetwork/coreth/params"
 )
 
 // memoryGasCost calculates the quadratic gas for memory expansion. It does so

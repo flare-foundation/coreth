@@ -34,14 +34,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ava-labs/coreth/core"
-	"github.com/ava-labs/coreth/core/rawdb"
-	"github.com/ava-labs/coreth/core/types"
-	"github.com/ava-labs/coreth/interfaces"
-	"github.com/ava-labs/coreth/rpc"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
+	"gitlab.com/flarenetwork/coreth/core"
+	"gitlab.com/flarenetwork/coreth/core/rawdb"
+	"gitlab.com/flarenetwork/coreth/core/types"
+	"gitlab.com/flarenetwork/coreth/interfaces"
+	"gitlab.com/flarenetwork/coreth/rpc"
 )
 
 // Type determines the kind of filter and is used to put the filter in to

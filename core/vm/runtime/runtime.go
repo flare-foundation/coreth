@@ -31,12 +31,12 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/ava-labs/coreth/core/rawdb"
-	"github.com/ava-labs/coreth/core/state"
-	"github.com/ava-labs/coreth/core/vm"
-	"github.com/ava-labs/coreth/params"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	"gitlab.com/flarenetwork/coreth/core/rawdb"
+	"gitlab.com/flarenetwork/coreth/core/state"
+	"gitlab.com/flarenetwork/coreth/core/vm"
+	"gitlab.com/flarenetwork/coreth/params"
 )
 
 // Config is a basic type specifying certain configuration flags for running

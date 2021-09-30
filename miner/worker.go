@@ -36,16 +36,16 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ava-labs/coreth/consensus"
-	"github.com/ava-labs/coreth/consensus/dummy"
-	"github.com/ava-labs/coreth/consensus/misc"
-	"github.com/ava-labs/coreth/core"
-	"github.com/ava-labs/coreth/core/state"
-	"github.com/ava-labs/coreth/core/types"
-	"github.com/ava-labs/coreth/params"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
+	"gitlab.com/flarenetwork/coreth/consensus"
+	"gitlab.com/flarenetwork/coreth/consensus/dummy"
+	"gitlab.com/flarenetwork/coreth/consensus/misc"
+	"gitlab.com/flarenetwork/coreth/core"
+	"gitlab.com/flarenetwork/coreth/core/state"
+	"gitlab.com/flarenetwork/coreth/core/types"
+	"gitlab.com/flarenetwork/coreth/params"
 )
 
 // environment is the worker's current environment and holds all of the current state information.

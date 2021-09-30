@@ -28,12 +28,12 @@
 package miner
 
 import (
-	"github.com/ava-labs/coreth/consensus"
-	"github.com/ava-labs/coreth/core"
-	"github.com/ava-labs/coreth/core/types"
-	"github.com/ava-labs/coreth/params"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/event"
+	"gitlab.com/flarenetwork/coreth/consensus"
+	"gitlab.com/flarenetwork/coreth/core"
+	"gitlab.com/flarenetwork/coreth/core/types"
+	"gitlab.com/flarenetwork/coreth/params"
 )
 
 // Backend wraps all methods required for mining.

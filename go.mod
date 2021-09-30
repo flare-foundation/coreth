@@ -1,4 +1,4 @@
-module github.com/ava-labs/coreth
+module gitlab.com/flarenetwork/coreth
 
 go 1.15
 

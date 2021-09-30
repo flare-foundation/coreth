@@ -32,8 +32,8 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/ava-labs/coreth/core/types"
 	"github.com/ethereum/go-ethereum/common"
+	"gitlab.com/flarenetwork/coreth/core/types"
 )
 
 // NotFound is returned by API methods if the requested item does not exist.

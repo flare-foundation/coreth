@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ava-labs/coreth/params"
+	"gitlab.com/flarenetwork/coreth/params"
 )
 
 type mockGasPriceSetter struct {

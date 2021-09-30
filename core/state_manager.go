@@ -30,9 +30,9 @@ import (
 	"fmt"
 	"math/rand"
 
-	"github.com/ava-labs/coreth/core/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethdb"
+	"gitlab.com/flarenetwork/coreth/core/types"
 )
 
 const (

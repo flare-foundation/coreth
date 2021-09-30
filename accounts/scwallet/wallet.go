@@ -43,14 +43,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ava-labs/coreth/accounts"
-	"github.com/ava-labs/coreth/core/types"
-	"github.com/ava-labs/coreth/interfaces"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/log"
 	pcsc "github.com/gballet/go-libpcsclite"
 	"github.com/status-im/keycard-go/derivationpath"
+	"gitlab.com/flarenetwork/coreth/accounts"
+	"gitlab.com/flarenetwork/coreth/core/types"
+	"gitlab.com/flarenetwork/coreth/interfaces"
 )
 
 // ErrPairingPasswordNeeded is returned if opening the smart card requires pairing with a pairing

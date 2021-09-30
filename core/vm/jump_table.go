@@ -27,7 +27,7 @@
 package vm
 
 import (
-	"github.com/ava-labs/coreth/params"
+	"gitlab.com/flarenetwork/coreth/params"
 )
 
 type (

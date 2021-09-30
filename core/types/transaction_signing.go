@@ -32,9 +32,9 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ava-labs/coreth/params"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	"gitlab.com/flarenetwork/coreth/params"
 )
 
 var ErrInvalidChainId = errors.New("invalid chain id for signer")

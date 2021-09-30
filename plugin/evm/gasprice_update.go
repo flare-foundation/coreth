@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ava-labs/coreth/params"
+	"gitlab.com/flarenetwork/coreth/params"
 )
 
 type gasPriceUpdater struct {

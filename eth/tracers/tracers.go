@@ -31,7 +31,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/ava-labs/coreth/eth/tracers/internal/tracers"
+	"gitlab.com/flarenetwork/coreth/eth/tracers/internal/tracers"
 )
 
 // all contains all the built in JavaScript tracers by name.

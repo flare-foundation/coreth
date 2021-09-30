@@ -35,9 +35,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ava-labs/coreth/accounts"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/google/uuid"
+	"gitlab.com/flarenetwork/coreth/accounts"
 	"golang.org/x/crypto/pbkdf2"
 )
 

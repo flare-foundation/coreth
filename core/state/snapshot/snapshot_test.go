@@ -32,9 +32,9 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/ava-labs/coreth/core/rawdb"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/rlp"
+	"gitlab.com/flarenetwork/coreth/core/rawdb"
 )
 
 // randomHash generates a random blob of data and returns it as a hash.

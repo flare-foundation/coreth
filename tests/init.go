@@ -31,7 +31,7 @@ import (
 	"math/big"
 	"sort"
 
-	"github.com/ava-labs/coreth/params"
+	"gitlab.com/flarenetwork/coreth/params"
 )
 
 // Forks table defines supported forks and their chain config.

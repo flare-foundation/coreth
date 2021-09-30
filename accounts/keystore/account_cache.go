@@ -37,10 +37,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ava-labs/coreth/accounts"
 	mapset "github.com/deckarep/golang-set"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
+	"gitlab.com/flarenetwork/coreth/accounts"
 )
 
 // Minimum amount of time between cache reloads. This limit applies if the platform does

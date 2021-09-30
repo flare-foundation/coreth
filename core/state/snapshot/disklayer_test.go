@@ -32,12 +32,12 @@ import (
 	"os"
 	"testing"
 
-	"github.com/ava-labs/coreth/core/rawdb"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/ethdb/leveldb"
 	"github.com/ethereum/go-ethereum/ethdb/memorydb"
 	"github.com/ethereum/go-ethereum/rlp"
+	"gitlab.com/flarenetwork/coreth/core/rawdb"
 )
 
 // reverse reverses the contents of a byte slice. It's used to update random accs

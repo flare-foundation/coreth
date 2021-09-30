@@ -16,19 +16,19 @@ import (
 	"time"
 
 	"github.com/ava-labs/avalanchego/database/versiondb"
-	coreth "github.com/ava-labs/coreth/chain"
-	"github.com/ava-labs/coreth/consensus/dummy"
-	"github.com/ava-labs/coreth/core"
-	"github.com/ava-labs/coreth/core/state"
-	"github.com/ava-labs/coreth/core/types"
-	"github.com/ava-labs/coreth/eth/ethconfig"
-	"github.com/ava-labs/coreth/node"
-	"github.com/ava-labs/coreth/params"
+	coreth "gitlab.com/flarenetwork/coreth/chain"
+	"gitlab.com/flarenetwork/coreth/consensus/dummy"
+	"gitlab.com/flarenetwork/coreth/core"
+	"gitlab.com/flarenetwork/coreth/core/state"
+	"gitlab.com/flarenetwork/coreth/core/types"
+	"gitlab.com/flarenetwork/coreth/eth/ethconfig"
+	"gitlab.com/flarenetwork/coreth/node"
+	"gitlab.com/flarenetwork/coreth/params"
 
-	"github.com/ava-labs/coreth/rpc"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
+	"gitlab.com/flarenetwork/coreth/rpc"
 
 	avalancheRPC "github.com/gorilla/rpc/v2"
 

@@ -38,10 +38,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ava-labs/coreth/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/event"
+	"gitlab.com/flarenetwork/coreth/accounts"
 )
 
 var testSigData = make([]byte, 32)

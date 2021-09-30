@@ -7,11 +7,11 @@ import (
 	"fmt"
 	"math/big"
 
-	coreth "github.com/ava-labs/coreth/chain"
-	"github.com/ava-labs/coreth/core/types"
-	"github.com/ava-labs/coreth/params"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/trie"
+	coreth "gitlab.com/flarenetwork/coreth/chain"
+	"gitlab.com/flarenetwork/coreth/core/types"
+	"gitlab.com/flarenetwork/coreth/params"
 )
 
 var (

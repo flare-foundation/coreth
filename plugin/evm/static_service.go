@@ -8,7 +8,7 @@ import (
 	"encoding/json"
 
 	"github.com/ava-labs/avalanchego/utils/formatting"
-	"github.com/ava-labs/coreth/core"
+	"gitlab.com/flarenetwork/coreth/core"
 )
 
 // StaticService defines the static API services exposed by the evm
