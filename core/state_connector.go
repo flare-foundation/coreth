@@ -9,6 +9,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"math"
 	"math/big"
@@ -384,7 +385,7 @@ func GetXRPBlock(ledger uint64, chainURL string) (string, bool) {
 	data := GetXRPBlockRequestPayload{
 		Method: "ledger",
 		Params: []GetXRPBlockRequestParams{
-			GetXRPBlockRequestParams{
+			{
 				LedgerIndex:  ledger,
 				Full:         false,
 				Accounts:     false,
@@ -478,7 +479,7 @@ func GetXRPTx(txHash string, latestAvailableLedger uint64, chainURL string) ([]b
 	data := GetXRPTxRequestPayload{
 		Method: "tx",
 		Params: []GetXRPTxRequestParams{
-			GetXRPTxRequestParams{
+			{
 				Transaction: txHash,
 				Binary:      false,
 			},
@@ -566,7 +567,7 @@ func GetXRPTx(txHash string, latestAvailableLedger uint64, chainURL string) ([]b
 	destinationHash := crypto.Keccak256([]byte(jsonResp["result"].Destination))
 	destinationTagHash := crypto.Keccak256(common.LeftPadBytes(common.FromHex(hexutil.EncodeUint64(uint64(jsonResp["result"].DestinationTag))), 32))
 	destinationHash = crypto.Keccak256(destinationHash, destinationTagHash)
-	amountHash := crypto.Keccak256(common.LeftPadBytes(common.FromHex(hexutil.EncodeUint64(uint64(amount))), 32))
+	amountHash := crypto.Keccak256(common.LeftPadBytes(common.FromHex(hexutil.EncodeUint64(amount)), 32))
 	currencyHash := crypto.Keccak256([]byte(currency))
 	return crypto.Keccak256(txIdHash, destinationHash, amountHash, currencyHash), inLedger, false
 }
@@ -721,8 +722,7 @@ func StateConnectorCall(sender common.Address, blockTime *big.Int, functionSelec
 				errDeleteREJECTED := os.Remove(rejectedPath)
 				if errDeleteACCEPTED != nil && errDeleteREJECTED != nil {
 					// Permissions problem
-					panic(errDeleteACCEPTED)
-					panic(errDeleteREJECTED)
+					panic(fmt.Sprintf("%s\n%s", errDeleteACCEPTED, errDeleteREJECTED))
 				}
 			}
 		}()
