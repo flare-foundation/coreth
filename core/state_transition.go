@@ -1,3 +1,11 @@
+// (c) 2021, Flare Networks Limited. All rights reserved.
+//
+// This file is a derived work, based on the avalanchego library whose original
+// notices appear below. It is distributed under a license compatible with the
+// licensing terms of the original code from which it is derived.
+// Please see the file LICENSE_AVALABS for licensing terms of the original work.
+// Please see the file LICENSE for licensing terms.
+//
 // (c) 2019-2020, Ava Labs, Inc.
 //
 // This file is a derived work, based on the go-ethereum library whose original
@@ -31,10 +39,10 @@ import (
 	"math"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/crypto"
-
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/log"
+
 	"gitlab.com/flarenetwork/coreth/core/types"
 	"gitlab.com/flarenetwork/coreth/core/vm"
 	"gitlab.com/flarenetwork/coreth/params"
