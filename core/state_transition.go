@@ -1,11 +1,3 @@
-// (c) 2021, Flare Networks Limited. All rights reserved.
-//
-// This file is a derived work, based on the avalanchego library whose original
-// notices appear below. It is distributed under a license compatible with the
-// licensing terms of the original code from which it is derived.
-// Please see the file LICENSE_AVALABS for licensing terms of the original work.
-// Please see the file LICENSE for licensing terms.
-//
 // (c) 2019-2020, Ava Labs, Inc.
 //
 // This file is a derived work, based on the go-ethereum library whose original
@@ -35,19 +27,25 @@
 package core
 
 import (
-	"bytes"
-	"encoding/binary"
 	"fmt"
 	"math"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/log"
 
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/log"
 	"gitlab.com/flarenetwork/coreth/core/types"
 	"gitlab.com/flarenetwork/coreth/core/vm"
 	"gitlab.com/flarenetwork/coreth/params"
+
+	"gitlab.com/flarenetwork/coreth/flare"
+
+	// state connectors are added as empty import to enable them
+	_ "gitlab.com/flarenetwork/coreth/flare/connector/bitcoin/register"
+	_ "gitlab.com/flarenetwork/coreth/flare/connector/dogecoin/register"
+	_ "gitlab.com/flarenetwork/coreth/flare/connector/litecoin/register"
+	_ "gitlab.com/flarenetwork/coreth/flare/connector/ripple/register"
 )
 
 var emptyCodeHash = crypto.Keccak256Hash(nil)
@@ -351,60 +349,43 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 	}
 
 	var (
-		ret                                       []byte
-		vmerr                                     error // vm errors do not affect consensus and are therefore not assigned to err
-		selectProveDataAvailabilityPeriodFinality bool
-		selectProvePaymentFinality                bool
-		selectDisprovePaymentFinality             bool
-		prioritisedFTSOContract                   bool
+		ret                     []byte
+		vmerr                   error // vm errors do not affect consensus and are therefore not assigned to err
+		prioritisedFTSOContract bool
 	)
 
 	if st.evm.Context.Coinbase != common.HexToAddress("0x0100000000000000000000000000000000000000") {
 		return nil, fmt.Errorf("Invalid value for block.coinbase")
 	}
 	if st.msg.From() == common.HexToAddress("0x0100000000000000000000000000000000000000") ||
-		st.msg.From() == common.HexToAddress(GetStateConnectorContractAddr(st.evm.Context.Time)) ||
+		st.msg.From() == common.HexToAddress("0x1000000000000000000000000000000000000001") ||
 		st.msg.From() == common.HexToAddress(GetSystemTriggerContractAddr(st.evm.Context.Time)) {
 		return nil, fmt.Errorf("Invalid sender")
 	}
 	burnAddress := st.evm.Context.Coinbase
-	if !contractCreation {
-		if *msg.To() == common.HexToAddress(GetStateConnectorContractAddr(st.evm.Context.Time)) && len(st.data) >= 4 {
-			selectProveDataAvailabilityPeriodFinality = bytes.Equal(st.data[0:4], GetProveDataAvailabilityPeriodFinalitySelector(st.evm.Context.Time))
-			selectProvePaymentFinality = bytes.Equal(st.data[0:4], GetProvePaymentFinalitySelector(st.evm.Context.Time))
-			selectDisprovePaymentFinality = bytes.Equal(st.data[0:4], GetDisprovePaymentFinalitySelector(st.evm.Context.Time))
-		} else {
-			prioritisedFTSOContract = *msg.To() == common.HexToAddress(GetPrioritisedFTSOContract(st.evm.Context.Time))
-		}
-	}
 
-	if selectProveDataAvailabilityPeriodFinality || selectProvePaymentFinality || selectDisprovePaymentFinality {
-		// Increment the nonce for the next transaction
+	prioritisedFTSOContract = *msg.To() == common.HexToAddress(GetPrioritisedFTSOContract(st.evm.Context.Time))
+
+	stateConnectorCall := flare.Validate(st.data)
+	if stateConnectorCall {
+		gas := st.gas / 3
 		st.state.SetNonce(msg.From(), st.state.GetNonce(sender.Address())+1)
-		stateConnectorGas := st.gas / GetStateConnectorGasDivisor(st.evm.Context.Time)
-		checkRet, _, checkVmerr := st.evm.Call(sender, st.to(), st.data, stateConnectorGas, st.value)
-		if checkVmerr == nil {
-			chainConfig := st.evm.ChainConfig()
-			if GetStateConnectorActivated(chainConfig.ChainID, st.evm.Context.Time) && binary.BigEndian.Uint32(checkRet[28:32]) < GetMaxAllowedChains(st.evm.Context.Time) {
-				if StateConnectorCall(msg.From(), st.evm.Context.Time, st.data[0:4], checkRet) {
-					originalCoinbase := st.evm.Context.Coinbase
-					defer func() {
-						st.evm.Context.Coinbase = originalCoinbase
-					}()
-					st.evm.Context.Coinbase = st.msg.From()
-				}
+		ret, st.gas, vmerr = st.evm.Call(sender, st.to(), st.data, gas, st.value)
+		if vmerr != nil {
+			err = flare.Execute(st.data, ret)
+			if err == nil {
+				st.evm.Context.Coinbase = st.msg.From()
+				ret, st.gas, vmerr = st.evm.Call(sender, st.to(), st.data, gas, st.value)
+				st.evm.Context.Coinbase = common.HexToAddress("0x0100000000000000000000000000000000000000")
 			}
 		}
-		ret, st.gas, vmerr = st.evm.Call(sender, st.to(), st.data, stateConnectorGas, st.value)
+	} else if contractCreation {
+		ret, _, st.gas, vmerr = st.evm.Create(sender, st.data, st.gas, st.value)
 	} else {
-		if contractCreation {
-			ret, _, st.gas, vmerr = st.evm.Create(sender, st.data, st.gas, st.value)
-		} else {
-			// Increment the nonce for the next transaction
-			st.state.SetNonce(msg.From(), st.state.GetNonce(sender.Address())+1)
-			ret, st.gas, vmerr = st.evm.Call(sender, st.to(), st.data, st.gas, st.value)
-		}
+		st.state.SetNonce(msg.From(), st.state.GetNonce(sender.Address())+1)
+		ret, st.gas, vmerr = st.evm.Call(sender, st.to(), st.data, st.gas, st.value)
 	}
+
 	st.refundGas(apricotPhase1)
 	if vmerr == nil && prioritisedFTSOContract {
 		nominalGasUsed := uint64(21000)

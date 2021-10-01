@@ -30,7 +30,7 @@ func TestCounter(t *testing.T) {
 
 	// NOTE: use precompiled `counter.sol` for portability, do not remove the
 	// following code (for debug purpose)
-	//counterSrc, err := filepath.Abs(gopath + "/src/github.com/ava-labs/coreth/examples/counter/counter.sol")
+	//counterSrc, err := filepath.Abs(gopath + "/src/gitlab.com/flarenetwork/coreth/examples/counter/counter.sol")
 	// if err != nil {
 	// 	t.Fatal(err)
 	// }

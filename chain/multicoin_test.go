@@ -72,7 +72,7 @@ func TestMulticoin(t *testing.T) {
 	//if gopath == "" {
 	//	gopath = build.Default.GOPATH
 	//}
-	//counterSrc, err := filepath.Abs(gopath + "/src/github.com/ava-labs/coreth/examples/multicoin/mc_test.sol")
+	//counterSrc, err := filepath.Abs(gopath + "/src/gitlab.com/flarenetwork/coreth/examples/multicoin/mc_test.sol")
 	//if err != nil {
 	// 	t.Fatal(err)
 	// }
