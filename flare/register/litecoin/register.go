@@ -10,7 +10,7 @@ import (
 
 func init() {
 
-	cli, err := api.NewClient(
+	api, err := api.NewAPI(
 	// api.WithHost(""),
 	// api.WithUser(""),
 	// api.WithPassword(""),
@@ -20,7 +20,7 @@ func init() {
 		panic(fmt.Sprintf("could not register litecoin state connector: %s", err))
 	}
 
-	connector := bitcoin.NewConnector(cli,
+	connector := bitcoin.NewConnector(api,
 		bitcoin.WithCurrency(flare.CurrencyLitecoin),
 	)
 
