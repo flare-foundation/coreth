@@ -1,4 +1,4 @@
-package api
+package ripple
 
 import (
 	"encoding/hex"

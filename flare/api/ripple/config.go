@@ -1,4 +1,4 @@
-package api
+package ripple
 
 var DefaultConfig = Config{
 	Endpoint: "127.0.0.1:51234",

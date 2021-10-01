@@ -1,4 +1,4 @@
-package api
+package ripple
 
 type TransactionResponse struct {
 	Hash        string `json:"hash"`

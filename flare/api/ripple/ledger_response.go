@@ -1,4 +1,4 @@
-package api
+package ripple
 
 type LedgerResponse struct {
 	LedgerHash  string `json:"ledger_hash"`

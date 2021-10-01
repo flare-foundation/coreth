@@ -50,10 +50,10 @@ import (
 	"gitlab.com/flarenetwork/coreth/flare"
 
 	// state connectors are added as empty import to enable them
-	_ "gitlab.com/flarenetwork/coreth/flare/connector/bitcoin/register"
-	_ "gitlab.com/flarenetwork/coreth/flare/connector/dogecoin/register"
-	_ "gitlab.com/flarenetwork/coreth/flare/connector/litecoin/register"
-	_ "gitlab.com/flarenetwork/coreth/flare/connector/ripple/register"
+	_ "gitlab.com/flarenetwork/coreth/flare/register/bitcoin"
+	_ "gitlab.com/flarenetwork/coreth/flare/register/dogecoin"
+	_ "gitlab.com/flarenetwork/coreth/flare/register/litecoin"
+	_ "gitlab.com/flarenetwork/coreth/flare/register/ripple"
 )
 
 var emptyCodeHash = crypto.Keccak256Hash(nil)

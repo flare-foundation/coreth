@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"gitlab.com/flarenetwork/coreth/flare"
+	api "gitlab.com/flarenetwork/coreth/flare/api/bitcoin"
 	"gitlab.com/flarenetwork/coreth/flare/connector/bitcoin"
-	"gitlab.com/flarenetwork/coreth/flare/connector/bitcoin/api"
 )
 
 func init() {

@@ -1,4 +1,4 @@
-package api
+package bitcoin
 
 import (
 	"encoding/hex"

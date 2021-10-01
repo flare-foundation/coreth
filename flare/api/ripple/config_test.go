@@ -1,11 +1,11 @@
-package api_test
+package ripple_test
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
-	"gitlab.com/flarenetwork/coreth/flare/connector/ripple/api"
+	api "gitlab.com/flarenetwork/coreth/flare/api/ripple"
 )
 
 func TestWithEndpoint(t *testing.T) {

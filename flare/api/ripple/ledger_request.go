@@ -1,4 +1,4 @@
-package api
+package ripple
 
 type LedgerRequest struct {
 	LedgerIndex  uint32 `json:"ledger_index"`
