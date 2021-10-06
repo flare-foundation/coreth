@@ -29,7 +29,7 @@ func NewConnector(api API, options ...Option) *Connector {
 	return &c
 }
 
-func (c *Connector) ProveDataAvailabilityPeriodFinality(ret []byte) (bool, error) {
+func (c *Connector) ProveAvailability(ret []byte) (bool, error) {
 
 	if len(ret) < 128 {
 		return false, fmt.Errorf("insufficient return data (%d < %d)", len(ret), 128)
@@ -55,7 +55,7 @@ func (c *Connector) ProveDataAvailabilityPeriodFinality(ret []byte) (bool, error
 	return true, nil
 }
 
-func (c *Connector) ProvePaymentFinality(ret []byte) (bool, error) {
+func (c *Connector) ProvePayment(ret []byte) (bool, error) {
 
 	if len(ret) < 257 {
 		return false, fmt.Errorf("insufficient return data (%d < %d)", len(ret), 257)
@@ -97,7 +97,7 @@ func (c *Connector) ProvePaymentFinality(ret []byte) (bool, error) {
 	return true, nil
 }
 
-func (c *Connector) DisprovePaymentFinality(ret []byte) (bool, error) {
+func (c *Connector) DisprovePayment(ret []byte) (bool, error) {
 
 	if len(ret) < 257 {
 		return false, fmt.Errorf("insufficient return false, data (%d < %d)", len(ret), 257)

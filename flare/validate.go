@@ -21,7 +21,7 @@ func Validate(data []byte) bool {
 	// connector call. Any other transaction can be disregarded.
 	selector := data[0:4]
 	switch {
-	case bytes.Equal(selector, SelectorDataAvailability[:]):
+	case bytes.Equal(selector, SelectorProveAvailability[:]):
 		return true
 	case bytes.Equal(selector, SelectorProvePayment[:]):
 		return true

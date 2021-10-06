@@ -9,11 +9,16 @@ import (
 	"gitlab.com/flarenetwork/coreth/flare/connector/bitcoin"
 )
 
+// RetryClient is a wrapper around any Bitcoin RPC API client which adds retry
+// functionality to its requests.
 type RetryClient struct {
 	client bitcoin.API
 	cfg    backoff.ExponentialBackOff
 }
 
+// NewRetryClient wraps an existing new Bitcoin API client and applies the
+// retry logic configured by the given options to its block and transaction
+// requests.
 func NewRetryClient(client bitcoin.API, options ...RetryOption) *RetryClient {
 
 	cfg := DefaultRetryConfig
@@ -29,8 +34,9 @@ func NewRetryClient(client bitcoin.API, options ...RetryOption) *RetryClient {
 	return &r
 }
 
+// Block retrieves the block with the given hash using the underlying Bitcoin
+// API client. It keeps retrying until the configured timeout has been reached.
 func (r *RetryClient) Block(hash [32]byte) (*bitcoin.Block, error) {
-
 	for {
 		block, err := r.client.Block(hash)
 		if err == nil {
@@ -44,8 +50,10 @@ func (r *RetryClient) Block(hash [32]byte) (*bitcoin.Block, error) {
 	}
 }
 
+// Transaction retrieves the transaction with the given hash and output index
+// using the underlying Bitcoin API client. It keeps retrying until the
+// configured timeout has been reached.
 func (r *RetryClient) Transaction(hash [32]byte, index uint8) (*bitcoin.Transaction, error) {
-
 	for {
 		transaction, err := r.client.Transaction(hash, index)
 		if err == nil {

@@ -62,12 +62,12 @@ func Execute(data []byte, ret []byte) error {
 	var valid bool
 	selector := data[0:4]
 	switch {
-	case bytes.Equal(selector, SelectorDataAvailability[:]):
-		valid, err = connector.ProveDataAvailabilityPeriodFinality(ret)
+	case bytes.Equal(selector, SelectorProveAvailability[:]):
+		valid, err = connector.ProveAvailability(ret)
 	case bytes.Equal(selector, SelectorProvePayment[:]):
-		valid, err = connector.ProvePaymentFinality(ret)
+		valid, err = connector.ProvePayment(ret)
 	case bytes.Equal(selector, SelectorDisprovePayment[:]):
-		valid, err = connector.DisprovePaymentFinality(ret)
+		valid, err = connector.DisprovePayment(ret)
 	default:
 		return fmt.Errorf("invalid function selector (%x)", selector)
 	}

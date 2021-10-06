@@ -24,7 +24,7 @@ func NewConnector(api API, options ...Option) *Connector {
 	return &c
 }
 
-func (c *Connector) ProveDataAvailabilityPeriodFinality(ret []byte) (bool, error) {
+func (c *Connector) ProveAvailability(ret []byte) (bool, error) {
 
 	// TODO
 	var height uint32
@@ -42,7 +42,7 @@ func (c *Connector) ProveDataAvailabilityPeriodFinality(ret []byte) (bool, error
 	return true, nil
 }
 
-func (c *Connector) ProvePaymentFinality(ret []byte) (bool, error) {
+func (c *Connector) ProvePayment(ret []byte) (bool, error) {
 
 	// TODO
 	var hash [32]byte
@@ -60,7 +60,7 @@ func (c *Connector) ProvePaymentFinality(ret []byte) (bool, error) {
 	return true, nil
 }
 
-func (c *Connector) DisprovePaymentFinality(ret []byte) (bool, error) {
+func (c *Connector) DisprovePayment(ret []byte) (bool, error) {
 
 	return true, nil
 }

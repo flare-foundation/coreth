@@ -1,7 +1,7 @@
 package flare
 
 type Connector interface {
-	ProveDataAvailabilityPeriodFinality(ret []byte) (bool, error)
-	ProvePaymentFinality(ret []byte) (bool, error)
-	DisprovePaymentFinality(ret []byte) (bool, error)
+	ProveAvailability(ret []byte) (bool, error)
+	ProvePayment(ret []byte) (bool, error)
+	DisprovePayment(ret []byte) (bool, error)
 }
