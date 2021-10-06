@@ -5,15 +5,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	api "gitlab.com/flarenetwork/coreth/flare/api/ripple"
+	"gitlab.com/flarenetwork/coreth/flare/api/ripple"
 )
 
 func TestWithEndpoint(t *testing.T) {
 	endpoint := "endpoint"
 
-	cfg := api.DefaultConfig
+	cfg := ripple.DefaultConfig
 	cfg.Endpoint = ""
 
-	api.WithEndpoint(endpoint)(&cfg)
+	ripple.WithEndpoint(endpoint)(&cfg)
 	assert.Equal(t, endpoint, cfg.Endpoint)
 }

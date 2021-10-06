@@ -10,17 +10,12 @@ import (
 
 func init() {
 
-	api, err := api.NewAPI(
-	// api.WithHost(""),
-	// api.WithUser(""),
-	// api.WithPassword(""),
-	// api.WithSecure(true),
-	)
+	client, err := api.NewClient()
 	if err != nil {
 		panic(fmt.Sprintf("could not register dogecoin state connector: %s", err))
 	}
 
-	connector := bitcoin.NewConnector(api,
+	connector := bitcoin.NewConnector(client,
 		bitcoin.WithCurrency(flare.CurrencyDogecoin),
 	)
 

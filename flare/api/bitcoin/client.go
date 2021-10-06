@@ -15,11 +15,11 @@ const (
 	requiredNumAddresses = 1
 )
 
-type API struct {
+type Client struct {
 	client *rpcclient.Client
 }
 
-func NewAPI(options ...Option) (*API, error) {
+func NewClient(options ...Option) (*Client, error) {
 
 	cfg := DefaultConfig
 	for _, option := range options {
@@ -36,16 +36,16 @@ func NewAPI(options ...Option) (*API, error) {
 		return nil, fmt.Errorf("could not ping RPC server: %w", err)
 	}
 
-	a := API{
+	c := Client{
 		client: client,
 	}
 
-	return &a, nil
+	return &c, nil
 }
 
-func (a *API) Block(hash [32]byte) (*bitcoin.Block, error) {
+func (c *Client) Block(hash [32]byte) (*bitcoin.Block, error) {
 
-	response, err := a.client.GetBlockHeaderVerbose((*chainhash.Hash)(&hash))
+	response, err := c.client.GetBlockHeaderVerbose((*chainhash.Hash)(&hash))
 	if err != nil {
 		return nil, fmt.Errorf("could not get block: %w", err)
 	}
@@ -59,9 +59,9 @@ func (a *API) Block(hash [32]byte) (*bitcoin.Block, error) {
 	return &block, nil
 }
 
-func (a *API) Transaction(hash [32]byte, index uint8) (*bitcoin.Transaction, error) {
+func (c *Client) Transaction(hash [32]byte, index uint8) (*bitcoin.Transaction, error) {
 
-	response, err := a.client.GetRawTransactionVerbose((*chainhash.Hash)(&hash))
+	response, err := c.client.GetRawTransactionVerbose((*chainhash.Hash)(&hash))
 	if err != nil {
 		return nil, fmt.Errorf("could not get raw transaction: %w", err)
 	}

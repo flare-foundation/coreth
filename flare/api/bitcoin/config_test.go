@@ -4,46 +4,45 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	"gitlab.com/flarenetwork/coreth/flare/connector/bitcoin/api"
+	"gitlab.com/flarenetwork/coreth/flare/api/bitcoin"
 )
 
 func TestWithHost(t *testing.T) {
 	host := "host"
 
-	cfg := api.DefaultConfig
+	cfg := bitcoin.DefaultConfig
 	cfg.Host = ""
 
-	api.WithHost(host)(&cfg)
+	bitcoin.WithHost(host)(&cfg)
 	assert.Equal(t, host, cfg.Host)
 }
 
 func TestWithSecure(t *testing.T) {
 	secure := true
 
-	cfg := api.DefaultConfig
+	cfg := bitcoin.DefaultConfig
 	cfg.DisableTLS = true
 
-	api.WithSecure(secure)(&cfg)
+	bitcoin.WithSecure(secure)(&cfg)
 	assert.Equal(t, !secure, cfg.DisableTLS)
 }
 
 func TestWithUser(t *testing.T) {
 	user := "user"
 
-	cfg := api.DefaultConfig
+	cfg := bitcoin.DefaultConfig
 	cfg.User = ""
 
-	api.WithUser(user)(&cfg)
+	bitcoin.WithUser(user)(&cfg)
 	assert.Equal(t, user, cfg.User)
 }
 
 func TestWithPassword(t *testing.T) {
 	password := "password"
 
-	cfg := api.DefaultConfig
+	cfg := bitcoin.DefaultConfig
 	cfg.Pass = ""
 
-	api.WithPassword(password)(&cfg)
+	bitcoin.WithPassword(password)(&cfg)
 	assert.Equal(t, password, cfg.Pass)
 }
