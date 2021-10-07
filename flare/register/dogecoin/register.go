@@ -1,23 +1,67 @@
-package bitcoin
+package dogecoin
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
+	"os"
+	"strings"
+	"time"
 
+	"github.com/ybbus/jsonrpc/v2"
 	"gitlab.com/flarenetwork/coreth/flare"
-	api "gitlab.com/flarenetwork/coreth/flare/api/bitcoin"
+	api "gitlab.com/flarenetwork/coreth/flare/client/bitcoin"
+	"gitlab.com/flarenetwork/coreth/flare/client/rpc"
 	"gitlab.com/flarenetwork/coreth/flare/connector/bitcoin"
+	"gitlab.com/flarenetwork/coreth/flare/connector/multi"
 )
 
 func init() {
 
-	client, err := api.NewClient()
-	if err != nil {
-		panic(fmt.Sprintf("could not register dogecoin state connector: %s", err))
+	log := flare.Log()
+
+	apis := os.Getenv(flare.EndpointsDogecoin)
+	endpoints := strings.Split(apis, ",")
+	if len(endpoints) == 0 {
+		log.Fatal().Msg("no Dogecoin API endpoints configured")
 	}
 
-	connector := bitcoin.NewConnector(client,
-		bitcoin.WithCurrency(flare.CurrencyDogecoin),
-	)
+	matches := uint(len(endpoints)/2 + 1)
 
-	flare.Register(flare.ChainDogecoin, connector)
+	connectors := make([]flare.Connector, 0, len(endpoints))
+	for _, endpoint := range endpoints {
+
+		hash := sha256.Sum256([]byte(endpoint))
+		checksum := hex.EncodeToString(hash[0:4])
+		username := os.Getenv(flare.PrefixUsernameDogecoin + checksum)
+		password := os.Getenv(flare.PrefixPasswordDogecoin + checksum)
+
+		opts := jsonrpc.RPCClientOpts{
+			CustomHeaders: map[string]string{
+				"Authorization": fmt.Sprintf("Basic %s:%s", username, password),
+			},
+		}
+		rpcClient := jsonrpc.NewClientWithOpts(endpoint, &opts)
+
+		retryClient := rpc.NewRetryClient(rpcClient,
+			rpc.WithMaxElapsed(30*time.Second),
+		)
+
+		apiClient := api.NewAPIClient(retryClient)
+
+		connector := bitcoin.NewConnector(apiClient,
+			bitcoin.WithCurrency(flare.CurrencyDogecoin),
+		)
+
+		connectors = append(connectors, connector)
+	}
+
+	multiConnector, err := multi.NewConnector(log, connectors,
+		multi.WithMatchesRequired(matches),
+	)
+	if err != nil {
+		panic(fmt.Sprintf("could not initialize Dogecoin connectors: %s", err))
+	}
+
+	flare.Register(flare.ChainDogecoin, multiConnector)
 }

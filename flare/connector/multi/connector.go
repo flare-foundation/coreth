@@ -9,20 +9,20 @@ import (
 	"gitlab.com/flarenetwork/coreth/flare"
 )
 
-// Multi is a multi-connector wrapping around a number of other connectors and
+// Connector is a multi-connector wrapping around a number of other connectors and
 // supports verification on n-of-m connectors before returning success on any
 // state connector call.
-type Multi struct {
+type Connector struct {
 	log        zerolog.Logger
 	connectors []flare.Connector
 	cfg        Config
 }
 
-// NewMulti creates a new multi-connector wrapping the given connectors and
+// NewConnector creates a new multi-connector wrapping the given connectors and
 // configured with the given n-of-m options. It uses the injected logger to log
 // errors that happen _after_ successfully completing a call with some calls on
 // underlying connectors still pending.
-func NewMulti(log zerolog.Logger, connectors []flare.Connector, options ...Option) (*Multi, error) {
+func NewConnector(log zerolog.Logger, connectors []flare.Connector, options ...Option) (*Connector, error) {
 
 	cfg := DefaultConfig
 	for _, option := range options {
@@ -33,46 +33,46 @@ func NewMulti(log zerolog.Logger, connectors []flare.Connector, options ...Optio
 		return nil, fmt.Errorf("insufficient number of connectors (required_matches: %d, connectors: %d)", cfg.MatchesRequired, len(connectors))
 	}
 
-	m := Multi{
+	c := Connector{
 		log:        log.With().Str("component", "multi_connector").Logger(),
 		connectors: connectors,
 		cfg:        cfg,
 	}
 
-	return &m, nil
+	return &c, nil
 }
 
 // ProveAvailability will execute availability proof calls on the underlying
 // state connectors and return success if and only if the configured number of
 // connectors return success.
-func (m *Multi) ProveAvailability(ret []byte) (bool, error) {
-	calls := make([]Call, 0, len(m.connectors))
-	for _, connector := range m.connectors {
+func (c *Connector) ProveAvailability(ret []byte) (bool, error) {
+	calls := make([]Call, 0, len(c.connectors))
+	for _, connector := range c.connectors {
 		calls = append(calls, connector.ProveAvailability)
 	}
-	return m.execute(ret, calls)
+	return c.execute(ret, calls)
 }
 
 // ProvePayment will execute payment proof calls on the underlying state
 // connectors and return success if and only if the configured number of
 // connectors return success.
-func (m *Multi) ProvePayment(ret []byte) (bool, error) {
-	calls := make([]Call, 0, len(m.connectors))
-	for _, connector := range m.connectors {
+func (c *Connector) ProvePayment(ret []byte) (bool, error) {
+	calls := make([]Call, 0, len(c.connectors))
+	for _, connector := range c.connectors {
 		calls = append(calls, connector.ProvePayment)
 	}
-	return m.execute(ret, calls)
+	return c.execute(ret, calls)
 }
 
 // DisprovePayment will execute payment disproof calls on the underlying state
 // connectors and return success if and only if the configured number of
 // connectors return success.
-func (m *Multi) DisprovePayment(ret []byte) (bool, error) {
-	calls := make([]Call, 0, len(m.connectors))
-	for _, connector := range m.connectors {
+func (c *Connector) DisprovePayment(ret []byte) (bool, error) {
+	calls := make([]Call, 0, len(c.connectors))
+	for _, connector := range c.connectors {
 		calls = append(calls, connector.DisprovePayment)
 	}
-	return m.execute(ret, calls)
+	return c.execute(ret, calls)
 }
 
 // execute will execute the given state connector calls with the given return
@@ -82,7 +82,7 @@ func (m *Multi) DisprovePayment(ret []byte) (bool, error) {
 // encountered errors are returned. If the call is successful, encountered
 // errors are logged so as to allow detection of faulty connectors while still
 // allowing the multi-connector to return as soon as possible.
-func (m *Multi) execute(ret []byte, calls []Call) (bool, error) {
+func (c *Connector) execute(ret []byte, calls []Call) (bool, error) {
 
 	results := make(chan bool, len(calls))
 	errors := make(chan error, len(calls))
@@ -105,7 +105,7 @@ func (m *Multi) execute(ret []byte, calls []Call) (bool, error) {
 		wg.Wait()
 		close(errors)
 		for err := range errors {
-			m.log.Warn().Err(err).Msg("state connector call failed")
+			c.log.Warn().Err(err).Msg("state connector call failed")
 			messages = append(messages, err.Error())
 		}
 		close(results)
@@ -119,8 +119,11 @@ func (m *Multi) execute(ret []byte, calls []Call) (bool, error) {
 		} else {
 			rejected++
 		}
-		if accepted >= m.cfg.MatchesRequired {
+		if accepted >= c.cfg.MatchesRequired {
 			return true, nil
+		}
+		if rejected >= c.cfg.MatchesRequired {
+			return false, nil
 		}
 	}
 
