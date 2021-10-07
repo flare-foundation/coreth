@@ -54,7 +54,7 @@ func (a *APIClient) Ledger(index uint32) (*ripple.Ledger, error) {
 
 	ledger := ripple.Ledger{
 		Hash:      hash,
-		Index:     result.LedgerIndex,
+		Height:    result.LedgerIndex,
 		Validated: result.Validated,
 	}
 
@@ -84,7 +84,7 @@ func (a *APIClient) Transaction(hash [32]byte) (*ripple.Transaction, error) {
 	}
 
 	transaction := ripple.Transaction{
-		Ledger:      result.LedgerIndex,
+		Height:      result.LedgerIndex,
 		Hash:        hash,
 		Validated:   result.Validated,
 		Amount:      result.Amount,

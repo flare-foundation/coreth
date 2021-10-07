@@ -7,7 +7,7 @@ import (
 )
 
 type Transaction struct {
-	Ledger      uint32
+	Height      uint32
 	Hash        [32]byte
 	Validated   bool
 	Amount      uint64

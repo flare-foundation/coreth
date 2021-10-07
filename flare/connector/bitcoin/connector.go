@@ -32,7 +32,7 @@ func NewConnector(api APIClient, options ...Option) *Connector {
 func (c *Connector) ProveAvailability(ret []byte) (bool, error) {
 
 	if len(ret) < 128 {
-		return false, fmt.Errorf("insufficient return data (%d < %d)", len(ret), 128)
+		return false, nil
 	}
 
 	height := binary.BigEndian.Uint64(ret[56:64])
@@ -44,12 +44,12 @@ func (c *Connector) ProveAvailability(ret []byte) (bool, error) {
 		return false, fmt.Errorf("could not get block: %w", err)
 	}
 
-	if block.Confirmations < confirmations {
-		return false, fmt.Errorf("insufficient block confirmations (%d < %d)", block.Confirmations, confirmations)
+	if block.Height != height {
+		return false, nil
 	}
 
-	if block.Height != height {
-		return false, fmt.Errorf("invalid block height (%d != %d)", block.Height, height)
+	if block.Confirmations < confirmations {
+		return false, fmt.Errorf("insufficient block confirmations (%d < %d)", block.Confirmations, confirmations)
 	}
 
 	return true, nil
@@ -58,7 +58,7 @@ func (c *Connector) ProveAvailability(ret []byte) (bool, error) {
 func (c *Connector) ProvePayment(ret []byte) (bool, error) {
 
 	if len(ret) < 257 {
-		return false, fmt.Errorf("insufficient return data (%d < %d)", len(ret), 257)
+		return false, nil
 	}
 
 	height := binary.BigEndian.Uint64(ret[56:64])
@@ -73,6 +73,9 @@ func (c *Connector) ProvePayment(ret []byte) (bool, error) {
 	}
 
 	transaction, err := c.api.Transaction(hash, uint8(index))
+	if errors.Is(err, ErrOutputNotFound) || errors.Is(err, ErrInvalidKeyType) || errors.Is(err, ErrTooManyRecipients) {
+		return false, nil
+	}
 	if err != nil {
 		return false, fmt.Errorf("could not get transaction: %w", err)
 	}
@@ -87,11 +90,11 @@ func (c *Connector) ProvePayment(ret []byte) (bool, error) {
 	}
 
 	if block.Height != height {
-		return false, fmt.Errorf("invalid block height (%d != %d)", block.Height, height)
+		return false, nil
 	}
 
 	if transaction.Fingerprint(c.cfg.Currency) != fingerprint {
-		return false, fmt.Errorf("invalid transaction fingerprint (%x != %x)", transaction.Fingerprint(c.cfg.Currency), fingerprint)
+		return false, nil
 	}
 
 	return true, nil
@@ -100,7 +103,7 @@ func (c *Connector) ProvePayment(ret []byte) (bool, error) {
 func (c *Connector) DisprovePayment(ret []byte) (bool, error) {
 
 	if len(ret) < 257 {
-		return false, fmt.Errorf("insufficient return false, data (%d < %d)", len(ret), 257)
+		return false, nil
 	}
 
 	height := binary.BigEndian.Uint64(ret[56:64])
@@ -132,11 +135,11 @@ func (c *Connector) DisprovePayment(ret []byte) (bool, error) {
 	}
 
 	if block.Height <= height {
-		return false, fmt.Errorf("valid block height (%d <= %d)", block.Height, height)
+		return false, nil
 	}
 
 	if transaction.Fingerprint(c.cfg.Currency) != fingerprint {
-		return false, fmt.Errorf("invalid transaction fingerprint (%x != %x)", transaction.Fingerprint(c.cfg.Currency), fingerprint)
+		return false, nil
 	}
 
 	return true, nil
