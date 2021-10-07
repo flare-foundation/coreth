@@ -10,11 +10,15 @@ import (
 // the transaction's call data and the return data from its first EVM call
 // execution as inputs.
 func Execute(data []byte, ret []byte) error {
+	return system.execute(data, ret)
+}
+
+func (s *System) execute(data []byte, ret []byte) error {
 
 	// First, we check what currency we have and which state connector should
 	// thus be used.
 	chainID := binary.BigEndian.Uint32(ret[28:32])
-	connector, ok := connectors[chainID]
+	connector, ok := s.connectors[chainID]
 	if !ok {
 		return fmt.Errorf("unknown chain (id: %d)", chainID)
 	}
@@ -27,11 +31,11 @@ func Execute(data []byte, ret []byte) error {
 
 	// If we should do a call, but we already have a result, the operation is
 	// supposed to be a no-op.
-	accepted, err := store.Accepted(data, ret)
+	accepted, err := s.store.Accepted(data, ret)
 	if err != nil {
 		return fmt.Errorf("could not check accepted status: %w", err)
 	}
-	rejected, err := store.Rejected(data, ret)
+	rejected, err := s.store.Rejected(data, ret)
 	if err != nil {
 		return fmt.Errorf("could not check rejected states: %w", err)
 	}
@@ -59,31 +63,36 @@ func Execute(data []byte, ret []byte) error {
 
 	// Lastly, at this point, we should execute the function call to the API and
 	// store the result accordingly.
-	var valid bool
-	selector := data[0:4]
-	switch {
-	case bytes.Equal(selector, SelectorProveAvailability[:]):
-		valid, err = connector.ProveAvailability(ret)
-	case bytes.Equal(selector, SelectorProvePayment[:]):
-		valid, err = connector.ProvePayment(ret)
-	case bytes.Equal(selector, SelectorDisprovePayment[:]):
-		valid, err = connector.DisprovePayment(ret)
-	default:
-		return fmt.Errorf("invalid function selector (%x)", selector)
-	}
-	if err != nil {
-		return fmt.Errorf("could not execute state connector call: %w", err)
-	}
+	go func() {
+		var valid bool
+		selector := data[0:4]
+		switch {
+		case bytes.Equal(selector, SelectorProveAvailability[:]):
+			valid, err = connector.ProveAvailability(ret)
+		case bytes.Equal(selector, SelectorProvePayment[:]):
+			valid, err = connector.ProvePayment(ret)
+		case bytes.Equal(selector, SelectorDisprovePayment[:]):
+			valid, err = connector.DisprovePayment(ret)
+		default:
+			s.log.Error().Hex("selector", selector).Msg("invalid function selector")
+			return
+		}
+		if err != nil {
+			s.log.Fatal().Err(err).Msg("could not execute state connector call")
+			return
+		}
 
-	// Finally, we store the result depending on whether we saw success or not.
-	if valid {
-		err = store.Accept(data, ret)
-	} else {
-		err = store.Reject(data, ret)
-	}
-	if err != nil {
-		return fmt.Errorf("could not store state connector call result: %w", err)
-	}
+		// Finally, we store the result depending on whether we saw success or not.
+		if valid {
+			err = s.store.Accept(data, ret)
+		} else {
+			err = s.store.Reject(data, ret)
+		}
+		if err != nil {
+			s.log.Fatal().Err(err).Msg("could not store state connector call result")
+			return
+		}
+	}()
 
 	return nil
 }
