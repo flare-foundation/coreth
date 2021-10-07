@@ -10,11 +10,11 @@ import (
 )
 
 type Connector struct {
-	api API
+	api APIClient
 	cfg Config
 }
 
-func NewConnector(api API, options ...Option) *Connector {
+func NewConnector(api APIClient, options ...Option) *Connector {
 
 	cfg := DefaultConfig
 	for _, option := range options {

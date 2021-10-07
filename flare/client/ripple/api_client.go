@@ -4,15 +4,14 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"gitlab.com/flarenetwork/coreth/flare/client"
 	"gitlab.com/flarenetwork/coreth/flare/connector/ripple"
 )
 
 type APIClient struct {
-	client client.RPCClient
+	client RPCClient
 }
 
-func NewAPIClient(client client.RPCClient) *APIClient {
+func NewAPIClient(client RPCClient) *APIClient {
 
 	a := APIClient{
 		client: client,

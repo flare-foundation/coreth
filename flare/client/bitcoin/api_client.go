@@ -4,15 +4,14 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"gitlab.com/flarenetwork/coreth/flare/client"
 	"gitlab.com/flarenetwork/coreth/flare/connector/bitcoin"
 )
 
 type APIClient struct {
-	client client.RPCClient
+	client RPCClient
 }
 
-func NewAPIClient(client client.RPCClient) *APIClient {
+func NewAPIClient(client RPCClient) *APIClient {
 
 	a := APIClient{
 		client: client,
@@ -41,8 +40,8 @@ func (a *APIClient) Block(hash [32]byte) (*bitcoin.Block, error) {
 
 	block := bitcoin.Block{
 		Hash:          hash,
-		Height:        uint64(header.Height),
-		Confirmations: uint64(header.Confirmations),
+		Height:        header.Height,
+		Confirmations: header.Confirmations,
 	}
 
 	return &block, nil

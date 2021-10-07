@@ -1,4 +1,4 @@
-package client
+package ripple
 
 import (
 	"github.com/ybbus/jsonrpc/v2"

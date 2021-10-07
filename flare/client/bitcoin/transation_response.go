@@ -14,9 +14,9 @@ type RawTransaction struct {
 }
 
 type Output struct {
-	Value uint64 `json:"value"`
-	Index uint16 `json:"n"`
-	Key   Key    `json:"scriptPubKey"`
+	Value float64 `json:"value"`
+	Index uint16  `json:"n"`
+	Key   Key     `json:"scriptPubKey"`
 }
 
 type Key struct {
