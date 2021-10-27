@@ -25,7 +25,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/rlp"
-	"gitlab.com/flarenetwork/coreth/core/types"
+	"github.com/flare-foundation/coreth/core/types"
 	"golang.org/x/crypto/sha3"
 )
 

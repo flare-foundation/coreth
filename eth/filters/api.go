@@ -39,9 +39,9 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/event"
-	"gitlab.com/flarenetwork/coreth/core/types"
-	"gitlab.com/flarenetwork/coreth/interfaces"
-	"gitlab.com/flarenetwork/coreth/rpc"
+	"github.com/flare-foundation/coreth/core/types"
+	"github.com/flare-foundation/coreth/interfaces"
+	"github.com/flare-foundation/coreth/rpc"
 )
 
 // filter is a helper struct that holds meta information over the filter type

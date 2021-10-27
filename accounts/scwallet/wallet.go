@@ -46,11 +46,11 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/flare-foundation/coreth/accounts"
+	"github.com/flare-foundation/coreth/core/types"
+	"github.com/flare-foundation/coreth/interfaces"
 	pcsc "github.com/gballet/go-libpcsclite"
 	"github.com/status-im/keycard-go/derivationpath"
-	"gitlab.com/flarenetwork/coreth/accounts"
-	"gitlab.com/flarenetwork/coreth/core/types"
-	"gitlab.com/flarenetwork/coreth/interfaces"
 )
 
 // ErrPairingPasswordNeeded is returned if opening the smart card requires pairing with a pairing

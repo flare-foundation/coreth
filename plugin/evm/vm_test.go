@@ -40,13 +40,13 @@ import (
 
 	engCommon "github.com/ava-labs/avalanchego/snow/engine/common"
 
-	"gitlab.com/flarenetwork/coreth/core"
-	"gitlab.com/flarenetwork/coreth/core/types"
-	"gitlab.com/flarenetwork/coreth/eth"
-	"gitlab.com/flarenetwork/coreth/params"
-	"gitlab.com/flarenetwork/coreth/rpc"
+	"github.com/flare-foundation/coreth/core"
+	"github.com/flare-foundation/coreth/core/types"
+	"github.com/flare-foundation/coreth/eth"
+	"github.com/flare-foundation/coreth/params"
+	"github.com/flare-foundation/coreth/rpc"
 
-	accountKeystore "gitlab.com/flarenetwork/coreth/accounts/keystore"
+	accountKeystore "github.com/flare-foundation/coreth/accounts/keystore"
 )
 
 var (

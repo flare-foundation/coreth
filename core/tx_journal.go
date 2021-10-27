@@ -34,7 +34,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
-	"gitlab.com/flarenetwork/coreth/core/types"
+	"github.com/flare-foundation/coreth/core/types"
 )
 
 // errNoActiveJournal is returned if a transaction is attempted to be inserted

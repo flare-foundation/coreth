@@ -32,15 +32,15 @@ import (
 	"fmt"
 	"math/big"
 
-	"gitlab.com/flarenetwork/coreth/core/vm"
+	"github.com/flare-foundation/coreth/core/vm"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/event"
-	"gitlab.com/flarenetwork/coreth/core"
-	"gitlab.com/flarenetwork/coreth/core/bloombits"
-	"gitlab.com/flarenetwork/coreth/core/types"
-	"gitlab.com/flarenetwork/coreth/rpc"
+	"github.com/flare-foundation/coreth/core"
+	"github.com/flare-foundation/coreth/core/bloombits"
+	"github.com/flare-foundation/coreth/core/types"
+	"github.com/flare-foundation/coreth/rpc"
 )
 
 type Backend interface {

@@ -30,9 +30,9 @@ import (
 	"errors"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/flare-foundation/coreth/core/types"
+	"github.com/flare-foundation/coreth/params"
 	"github.com/holiman/uint256"
-	"gitlab.com/flarenetwork/coreth/core/types"
-	"gitlab.com/flarenetwork/coreth/params"
 	"golang.org/x/crypto/sha3"
 )
 

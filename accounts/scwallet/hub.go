@@ -54,8 +54,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/flare-foundation/coreth/accounts"
 	pcsc "github.com/gballet/go-libpcsclite"
-	"gitlab.com/flarenetwork/coreth/accounts"
 )
 
 // Scheme is the URI prefix for smartcard wallets.

@@ -39,13 +39,13 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
-	"gitlab.com/flarenetwork/coreth/consensus"
-	"gitlab.com/flarenetwork/coreth/consensus/dummy"
-	"gitlab.com/flarenetwork/coreth/consensus/misc"
-	"gitlab.com/flarenetwork/coreth/core"
-	"gitlab.com/flarenetwork/coreth/core/state"
-	"gitlab.com/flarenetwork/coreth/core/types"
-	"gitlab.com/flarenetwork/coreth/params"
+	"github.com/flare-foundation/coreth/consensus"
+	"github.com/flare-foundation/coreth/consensus/dummy"
+	"github.com/flare-foundation/coreth/consensus/misc"
+	"github.com/flare-foundation/coreth/core"
+	"github.com/flare-foundation/coreth/core/state"
+	"github.com/flare-foundation/coreth/core/types"
+	"github.com/flare-foundation/coreth/params"
 )
 
 // environment is the worker's current environment and holds all of the current state information.

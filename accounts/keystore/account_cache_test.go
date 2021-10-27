@@ -40,7 +40,7 @@ import (
 	"github.com/cespare/cp"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/ethereum/go-ethereum/common"
-	"gitlab.com/flarenetwork/coreth/accounts"
+	"github.com/flare-foundation/coreth/accounts"
 )
 
 var (

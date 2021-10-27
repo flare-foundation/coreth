@@ -30,8 +30,8 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
-	"gitlab.com/flarenetwork/coreth/core/types"
-	"gitlab.com/flarenetwork/coreth/params"
+	"github.com/flare-foundation/coreth/core/types"
+	"github.com/flare-foundation/coreth/params"
 )
 
 // VerifyForkHashes verifies that blocks conforming to network hard-forks do have

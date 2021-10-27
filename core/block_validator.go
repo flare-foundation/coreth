@@ -30,10 +30,10 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/trie"
-	"gitlab.com/flarenetwork/coreth/consensus"
-	"gitlab.com/flarenetwork/coreth/core/state"
-	"gitlab.com/flarenetwork/coreth/core/types"
-	"gitlab.com/flarenetwork/coreth/params"
+	"github.com/flare-foundation/coreth/consensus"
+	"github.com/flare-foundation/coreth/core/state"
+	"github.com/flare-foundation/coreth/core/types"
+	"github.com/flare-foundation/coreth/params"
 )
 
 // BlockValidator is responsible for validating block headers, uncles and

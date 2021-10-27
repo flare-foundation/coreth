@@ -31,7 +31,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/math"
-	"gitlab.com/flarenetwork/coreth/params"
+	"github.com/flare-foundation/coreth/params"
 )
 
 // memoryGasCost calculates the quadratic gas for memory expansion. It does so

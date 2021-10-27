@@ -30,9 +30,9 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
-	"gitlab.com/flarenetwork/coreth/consensus"
-	"gitlab.com/flarenetwork/coreth/core/types"
-	"gitlab.com/flarenetwork/coreth/core/vm"
+	"github.com/flare-foundation/coreth/consensus"
+	"github.com/flare-foundation/coreth/core/types"
+	"github.com/flare-foundation/coreth/core/vm"
 	//"github.com/ethereum/go-ethereum/log"
 )
 

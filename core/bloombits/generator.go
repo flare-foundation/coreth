@@ -29,7 +29,7 @@ package bloombits
 import (
 	"errors"
 
-	"gitlab.com/flarenetwork/coreth/core/types"
+	"github.com/flare-foundation/coreth/core/types"
 )
 
 var (

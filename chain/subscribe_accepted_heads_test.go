@@ -6,8 +6,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
-	"gitlab.com/flarenetwork/coreth/core"
-	"gitlab.com/flarenetwork/coreth/core/types"
+	"github.com/flare-foundation/coreth/core"
+	"github.com/flare-foundation/coreth/core/types"
 )
 
 func TestAcceptedHeadSubscriptions(t *testing.T) {

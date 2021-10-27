@@ -39,12 +39,12 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
-	"gitlab.com/flarenetwork/coreth/core"
-	"gitlab.com/flarenetwork/coreth/core/rawdb"
-	"gitlab.com/flarenetwork/coreth/core/state"
-	"gitlab.com/flarenetwork/coreth/core/types"
-	"gitlab.com/flarenetwork/coreth/internal/ethapi"
-	"gitlab.com/flarenetwork/coreth/rpc"
+	"github.com/flare-foundation/coreth/core"
+	"github.com/flare-foundation/coreth/core/rawdb"
+	"github.com/flare-foundation/coreth/core/state"
+	"github.com/flare-foundation/coreth/core/types"
+	"github.com/flare-foundation/coreth/internal/ethapi"
+	"github.com/flare-foundation/coreth/rpc"
 )
 
 // PublicEthereumAPI provides an API to access Ethereum full node-related

@@ -35,11 +35,11 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
-	"gitlab.com/flarenetwork/coreth/accounts"
-	"gitlab.com/flarenetwork/coreth/core/types"
-	"gitlab.com/flarenetwork/coreth/interfaces"
-	"gitlab.com/flarenetwork/coreth/rpc"
-	"gitlab.com/flarenetwork/coreth/signer/core/apitypes"
+	"github.com/flare-foundation/coreth/accounts"
+	"github.com/flare-foundation/coreth/core/types"
+	"github.com/flare-foundation/coreth/interfaces"
+	"github.com/flare-foundation/coreth/rpc"
+	"github.com/flare-foundation/coreth/signer/core/apitypes"
 )
 
 type ExternalBackend struct {

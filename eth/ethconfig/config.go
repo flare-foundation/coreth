@@ -30,9 +30,9 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"gitlab.com/flarenetwork/coreth/core"
-	"gitlab.com/flarenetwork/coreth/eth/gasprice"
-	"gitlab.com/flarenetwork/coreth/miner"
+	"github.com/flare-foundation/coreth/core"
+	"github.com/flare-foundation/coreth/eth/gasprice"
+	"github.com/flare-foundation/coreth/miner"
 )
 
 // DefaultFullGPOConfig contains default gasprice oracle settings for full node.

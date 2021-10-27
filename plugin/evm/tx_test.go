@@ -7,7 +7,7 @@ import (
 	"math/big"
 	"testing"
 
-	"gitlab.com/flarenetwork/coreth/params"
+	"github.com/flare-foundation/coreth/params"
 )
 
 func TestCalculateDynamicFee(t *testing.T) {

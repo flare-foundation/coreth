@@ -35,10 +35,10 @@ import (
 	"github.com/ava-labs/avalanchego/utils/timer"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
-	"gitlab.com/flarenetwork/coreth/consensus/dummy"
-	"gitlab.com/flarenetwork/coreth/core/types"
-	"gitlab.com/flarenetwork/coreth/params"
-	"gitlab.com/flarenetwork/coreth/rpc"
+	"github.com/flare-foundation/coreth/consensus/dummy"
+	"github.com/flare-foundation/coreth/core/types"
+	"github.com/flare-foundation/coreth/params"
+	"github.com/flare-foundation/coreth/rpc"
 )
 
 const sampleNumber = 3 // Number of transactions sampled in a block

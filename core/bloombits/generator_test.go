@@ -31,7 +31,7 @@ import (
 	"math/rand"
 	"testing"
 
-	"gitlab.com/flarenetwork/coreth/core/types"
+	"github.com/flare-foundation/coreth/core/types"
 )
 
 // Tests that batched bloom bits are correctly rotated from the input bloom

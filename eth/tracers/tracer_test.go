@@ -34,9 +34,9 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"gitlab.com/flarenetwork/coreth/core/state"
-	"gitlab.com/flarenetwork/coreth/core/vm"
-	"gitlab.com/flarenetwork/coreth/params"
+	"github.com/flare-foundation/coreth/core/state"
+	"github.com/flare-foundation/coreth/core/vm"
+	"github.com/flare-foundation/coreth/params"
 )
 
 type account struct{}

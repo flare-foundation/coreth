@@ -12,7 +12,7 @@ import (
 
 	"github.com/ava-labs/avalanchego/vms/rpcchainvm"
 
-	"gitlab.com/flarenetwork/coreth/plugin/evm"
+	"github.com/flare-foundation/coreth/plugin/evm"
 )
 
 func main() {

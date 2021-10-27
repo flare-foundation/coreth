@@ -27,9 +27,9 @@
 package core
 
 import (
-	"gitlab.com/flarenetwork/coreth/core/state"
-	"gitlab.com/flarenetwork/coreth/core/types"
-	"gitlab.com/flarenetwork/coreth/core/vm"
+	"github.com/flare-foundation/coreth/core/state"
+	"github.com/flare-foundation/coreth/core/types"
+	"github.com/flare-foundation/coreth/core/vm"
 )
 
 // Validator is an interface which defines the standard for block validation. It

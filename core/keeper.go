@@ -10,7 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
 
-	"gitlab.com/flarenetwork/coreth/core/vm"
+	"github.com/flare-foundation/coreth/core/vm"
 )
 
 // Define errors

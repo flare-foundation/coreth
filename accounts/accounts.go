@@ -33,8 +33,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/event"
-	"gitlab.com/flarenetwork/coreth/core/types"
-	"gitlab.com/flarenetwork/coreth/interfaces"
+	"github.com/flare-foundation/coreth/core/types"
+	"github.com/flare-foundation/coreth/interfaces"
 	"golang.org/x/crypto/sha3"
 )
 

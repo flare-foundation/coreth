@@ -7,8 +7,8 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/flare-foundation/coreth/eth"
 	"github.com/spf13/cast"
-	"gitlab.com/flarenetwork/coreth/eth"
 )
 
 const (

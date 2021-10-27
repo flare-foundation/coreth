@@ -10,7 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/math"
-	"gitlab.com/flarenetwork/coreth/params"
+	"github.com/flare-foundation/coreth/params"
 )
 
 var _ = (*genesisSpecMarshaling)(nil)

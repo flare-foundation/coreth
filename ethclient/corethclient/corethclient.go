@@ -35,10 +35,10 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"gitlab.com/flarenetwork/coreth/core/types"
-	"gitlab.com/flarenetwork/coreth/ethclient"
-	"gitlab.com/flarenetwork/coreth/interfaces"
-	"gitlab.com/flarenetwork/coreth/rpc"
+	"github.com/flare-foundation/coreth/core/types"
+	"github.com/flare-foundation/coreth/ethclient"
+	"github.com/flare-foundation/coreth/interfaces"
+	"github.com/flare-foundation/coreth/rpc"
 )
 
 // Client is a wrapper around rpc.Client that implements geth-specific functionality.

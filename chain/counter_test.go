@@ -16,7 +16,7 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
-	"gitlab.com/flarenetwork/coreth/core/types"
+	"github.com/flare-foundation/coreth/core/types"
 
 	"github.com/ethereum/go-ethereum/log"
 )

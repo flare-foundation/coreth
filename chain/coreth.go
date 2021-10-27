@@ -9,13 +9,13 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethdb"
-	"gitlab.com/flarenetwork/coreth/consensus/dummy"
-	"gitlab.com/flarenetwork/coreth/core"
-	"gitlab.com/flarenetwork/coreth/core/state"
-	"gitlab.com/flarenetwork/coreth/core/types"
-	"gitlab.com/flarenetwork/coreth/eth"
-	"gitlab.com/flarenetwork/coreth/node"
-	"gitlab.com/flarenetwork/coreth/rpc"
+	"github.com/flare-foundation/coreth/consensus/dummy"
+	"github.com/flare-foundation/coreth/core"
+	"github.com/flare-foundation/coreth/core/state"
+	"github.com/flare-foundation/coreth/core/types"
+	"github.com/flare-foundation/coreth/eth"
+	"github.com/flare-foundation/coreth/node"
+	"github.com/flare-foundation/coreth/rpc"
 )
 
 var (

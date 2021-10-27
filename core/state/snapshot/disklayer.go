@@ -36,7 +36,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
-	"gitlab.com/flarenetwork/coreth/core/rawdb"
+	"github.com/flare-foundation/coreth/core/rawdb"
 )
 
 // diskLayer is a low level persistent snapshot built on top of a key-value store.

@@ -41,14 +41,14 @@ import (
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
-	"gitlab.com/flarenetwork/coreth/consensus"
-	"gitlab.com/flarenetwork/coreth/core"
-	"gitlab.com/flarenetwork/coreth/core/state"
-	"gitlab.com/flarenetwork/coreth/core/types"
-	"gitlab.com/flarenetwork/coreth/core/vm"
-	"gitlab.com/flarenetwork/coreth/internal/ethapi"
-	"gitlab.com/flarenetwork/coreth/params"
-	"gitlab.com/flarenetwork/coreth/rpc"
+	"github.com/flare-foundation/coreth/consensus"
+	"github.com/flare-foundation/coreth/core"
+	"github.com/flare-foundation/coreth/core/state"
+	"github.com/flare-foundation/coreth/core/types"
+	"github.com/flare-foundation/coreth/core/vm"
+	"github.com/flare-foundation/coreth/internal/ethapi"
+	"github.com/flare-foundation/coreth/params"
+	"github.com/flare-foundation/coreth/rpc"
 )
 
 const (

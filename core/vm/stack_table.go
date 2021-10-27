@@ -27,7 +27,7 @@
 package vm
 
 import (
-	"gitlab.com/flarenetwork/coreth/params"
+	"github.com/flare-foundation/coreth/params"
 )
 
 func minSwapStack(n int) int {

@@ -27,8 +27,8 @@
 package runtime
 
 import (
-	"gitlab.com/flarenetwork/coreth/core"
-	"gitlab.com/flarenetwork/coreth/core/vm"
+	"github.com/flare-foundation/coreth/core"
+	"github.com/flare-foundation/coreth/core/vm"
 )
 
 func NewEnv(cfg *Config) *vm.EVM {

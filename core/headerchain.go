@@ -35,11 +35,11 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/flare-foundation/coreth/consensus"
+	"github.com/flare-foundation/coreth/core/rawdb"
+	"github.com/flare-foundation/coreth/core/types"
+	"github.com/flare-foundation/coreth/params"
 	lru "github.com/hashicorp/golang-lru"
-	"gitlab.com/flarenetwork/coreth/consensus"
-	"gitlab.com/flarenetwork/coreth/core/rawdb"
-	"gitlab.com/flarenetwork/coreth/core/types"
-	"gitlab.com/flarenetwork/coreth/params"
 )
 
 const (

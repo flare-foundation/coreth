@@ -41,7 +41,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
-	"gitlab.com/flarenetwork/coreth/core/rawdb"
+	"github.com/flare-foundation/coreth/core/rawdb"
 )
 
 var (

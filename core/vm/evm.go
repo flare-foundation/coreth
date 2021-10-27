@@ -33,8 +33,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/flare-foundation/coreth/params"
 	"github.com/holiman/uint256"
-	"gitlab.com/flarenetwork/coreth/params"
 )
 
 // emptyCodeHash is used by create to ensure deployment is disallowed to already

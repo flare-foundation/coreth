@@ -40,7 +40,7 @@ import (
 	"strings"
 	"testing"
 
-	"gitlab.com/flarenetwork/coreth/params"
+	"github.com/flare-foundation/coreth/params"
 )
 
 func readJSON(reader io.Reader, value interface{}) error {
