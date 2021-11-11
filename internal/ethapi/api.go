@@ -34,7 +34,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ava-labs/avalanchego/ids"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
@@ -52,6 +51,7 @@ import (
 	"github.com/flare-foundation/coreth/core/vm"
 	"github.com/flare-foundation/coreth/params"
 	"github.com/flare-foundation/coreth/rpc"
+	"github.com/flare-foundation/flare/ids"
 	"github.com/tyler-smith/go-bip39"
 )
 

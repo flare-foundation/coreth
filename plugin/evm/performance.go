@@ -6,8 +6,8 @@ package evm
 import (
 	"context"
 
-	"github.com/ava-labs/avalanchego/utils/profiler"
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/flare-foundation/flare/utils/profiler"
 )
 
 // Performance is the API service for coreth performance

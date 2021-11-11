@@ -17,11 +17,11 @@ import (
 	"github.com/flare-foundation/coreth/core/state"
 	"github.com/flare-foundation/coreth/params"
 
-	"github.com/ava-labs/avalanchego/database"
-	"github.com/ava-labs/avalanchego/ids"
-	"github.com/ava-labs/avalanchego/snow"
-	"github.com/ava-labs/avalanchego/utils/crypto"
-	"github.com/ava-labs/avalanchego/vms/components/avax"
+	"github.com/flare-foundation/flare/database"
+	"github.com/flare-foundation/flare/ids"
+	"github.com/flare-foundation/flare/snow"
+	"github.com/flare-foundation/flare/utils/crypto"
+	"github.com/flare-foundation/flare/vms/components/avax"
 )
 
 // UnsignedExportTx is an unsigned ExportTx

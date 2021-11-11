@@ -4,7 +4,7 @@
 package params
 
 import (
-	"github.com/ava-labs/avalanchego/utils/units"
+	"github.com/flare-foundation/flare/utils/units"
 )
 
 // Minimum Gas Price

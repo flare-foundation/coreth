@@ -8,7 +8,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/ethdb"
 
-	"github.com/ava-labs/avalanchego/database"
+	"github.com/flare-foundation/flare/database"
 )
 
 var (

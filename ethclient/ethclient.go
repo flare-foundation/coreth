@@ -34,12 +34,12 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ava-labs/avalanchego/ids"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/flare-foundation/coreth/core/types"
 	"github.com/flare-foundation/coreth/interfaces"
 	"github.com/flare-foundation/coreth/rpc"
+	"github.com/flare-foundation/flare/ids"
 )
 
 // Client defines typed wrappers for the Ethereum RPC API.

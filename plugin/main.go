@@ -10,7 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/hashicorp/go-plugin"
 
-	"github.com/ava-labs/avalanchego/vms/rpcchainvm"
+	"github.com/flare-foundation/flare/vms/rpcchainvm"
 
 	"github.com/flare-foundation/coreth/plugin/evm"
 )

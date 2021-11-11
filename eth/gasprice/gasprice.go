@@ -32,13 +32,13 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/ava-labs/avalanchego/utils/timer"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/flare-foundation/coreth/consensus/dummy"
 	"github.com/flare-foundation/coreth/core/types"
 	"github.com/flare-foundation/coreth/params"
 	"github.com/flare-foundation/coreth/rpc"
+	"github.com/flare-foundation/flare/utils/timer"
 )
 
 const sampleNumber = 3 // Number of transactions sampled in a block
