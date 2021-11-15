@@ -40,6 +40,7 @@ import (
 	"github.com/flare-foundation/coreth/core/types"
 	"github.com/flare-foundation/coreth/params"
 	"github.com/flare-foundation/coreth/rpc"
+	"github.com/flare-foundation/flare/utils/timer/mockable"
 	lru "github.com/hashicorp/golang-lru"
 )
 
