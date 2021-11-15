@@ -34,10 +34,10 @@ import (
 	"sync/atomic"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/flare-foundation/coreth/consensus"
 	"github.com/flare-foundation/coreth/core/rawdb"
 	"github.com/flare-foundation/coreth/core/types"
+	"github.com/flare-foundation/coreth/ethdb"
 	"github.com/flare-foundation/coreth/params"
 	lru "github.com/hashicorp/golang-lru"
 )
@@ -145,16 +145,6 @@ func (hc *HeaderChain) GetTd(hash common.Hash, number uint64) *big.Int {
 	// Cache the found body for next time and return
 	hc.tdCache.Add(hash, td)
 	return td
-}
-
-// GetTdByHash retrieves a block's total difficulty in the canonical chain from the
-// database by hash, caching it if found.
-func (hc *HeaderChain) GetTdByHash(hash common.Hash) *big.Int {
-	number := hc.GetBlockNumber(hash)
-	if number == nil {
-		return nil
-	}
-	return hc.GetTd(hash, *number)
 }
 
 // GetHeader retrieves a block header from the database by hash and number,

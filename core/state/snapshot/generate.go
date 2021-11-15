@@ -37,11 +37,11 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
-	"github.com/ethereum/go-ethereum/trie"
 	"github.com/flare-foundation/coreth/core/rawdb"
+	"github.com/flare-foundation/coreth/ethdb"
+	"github.com/flare-foundation/coreth/trie"
 )
 
 var (
@@ -184,6 +184,11 @@ func (dl *diskLayer) checkAndFlush(batch ethdb.Batch, stats *generatorStats, cur
 	default:
 	}
 	if batch.ValueSize() > ethdb.IdealBatchSize || abort != nil {
+		if bytes.Compare(currentLocation, dl.genMarker) < 0 {
+			log.Error("Snapshot generator went backwards",
+				"currentLocation", fmt.Sprintf("%x", currentLocation),
+				"genMarker", fmt.Sprintf("%x", dl.genMarker))
+		}
 		// Flush out the batch anyway no matter it's empty or not.
 		// It's possible that all the states are recovered and the
 		// generation indeed makes progress.
@@ -283,7 +288,13 @@ func (dl *diskLayer) generate(stats *generatorStats) {
 			stats.storage += common.StorageSize(1 + common.HashLength + len(data))
 			stats.accounts++
 		}
-		if dl.checkAndFlush(batch, stats, accountHash[:]) {
+		marker := accountHash[:]
+		// If the snap generation goes here after interrupted, genMarker may go backward
+		// when last genMarker is consisted of accountHash and storageHash
+		if accMarker != nil && bytes.Equal(marker, accMarker) && len(dl.genMarker) > common.HashLength {
+			marker = dl.genMarker[:]
+		}
+		if dl.checkAndFlush(batch, stats, marker) {
 			// checkAndFlush handles abort
 			return
 		}

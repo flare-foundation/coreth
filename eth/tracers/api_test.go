@@ -41,7 +41,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/flare-foundation/coreth/consensus"
 	"github.com/flare-foundation/coreth/consensus/dummy"
 	"github.com/flare-foundation/coreth/core"
@@ -49,6 +48,7 @@ import (
 	"github.com/flare-foundation/coreth/core/state"
 	"github.com/flare-foundation/coreth/core/types"
 	"github.com/flare-foundation/coreth/core/vm"
+	"github.com/flare-foundation/coreth/ethdb"
 	"github.com/flare-foundation/coreth/internal/ethapi"
 	"github.com/flare-foundation/coreth/params"
 	"github.com/flare-foundation/coreth/rpc"
@@ -70,7 +70,7 @@ type testBackend struct {
 func newTestBackend(t *testing.T, n int, gspec *core.Genesis, generator func(i int, b *core.BlockGen)) *testBackend {
 	backend := &testBackend{
 		chainConfig: params.TestChainConfig,
-		engine:      dummy.NewFaker(),
+		engine:      dummy.NewETHFaker(),
 		chaindb:     rawdb.NewMemoryDatabase(),
 	}
 	// Generate blocks for testing
@@ -79,7 +79,10 @@ func newTestBackend(t *testing.T, n int, gspec *core.Genesis, generator func(i i
 		gendb   = rawdb.NewMemoryDatabase()
 		genesis = gspec.MustCommit(gendb)
 	)
-	blocks, _ := core.GenerateChain(backend.chainConfig, genesis, backend.engine, gendb, n, generator)
+	blocks, _, err := core.GenerateChain(backend.chainConfig, genesis, backend.engine, gendb, n, 10, generator)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// Import the canonical chain
 	gspec.MustCommit(backend.chaindb)
@@ -127,6 +130,8 @@ func (b *testBackend) BlockByNumber(ctx context.Context, number rpc.BlockNumber)
 	return b.chain.GetBlockByNumber(uint64(number)), nil
 }
 
+func (b *testBackend) BadBlocks() []*types.Block { return nil }
+
 func (b *testBackend) GetTransaction(ctx context.Context, txHash common.Hash) (*types.Transaction, common.Hash, uint64, uint64, error) {
 	tx, hash, blockNumber, index := rawdb.ReadTransaction(b.chaindb, txHash)
 	if tx == nil {
@@ -151,7 +156,7 @@ func (b *testBackend) ChainDb() ethdb.Database {
 	return b.chaindb
 }
 
-func (b *testBackend) StateAtBlock(ctx context.Context, block *types.Block, reexec uint64, base *state.StateDB, checkLive bool) (*state.StateDB, error) {
+func (b *testBackend) StateAtBlock(ctx context.Context, block *types.Block, reexec uint64, base *state.StateDB, checkLive bool, preferDisk bool) (*state.StateDB, error) {
 	statedb, err := b.chain.StateAt(block.Root())
 	if err != nil {
 		return nil, errStateNotFound
@@ -338,7 +343,7 @@ func TestOverriddenTraceCall(t *testing.T) {
 		tx, _ := types.SignTx(types.NewTransaction(uint64(i), accounts[1].addr, big.NewInt(1000), params.TxGas, new(big.Int).Add(b.BaseFee(), big.NewInt(int64(500*params.GWei))), nil), signer, accounts[0].key)
 		b.AddTx(tx)
 	}))
-	randomAccounts, tracer := newAccounts(3), "callTracer"
+	randomAccounts, tracer := newAccounts(3), "callTracerJs"
 
 	var testSuite = []struct {
 		blockNumber rpc.BlockNumber

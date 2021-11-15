@@ -56,6 +56,7 @@ type environment struct {
 	tcount  int            // tx count in cycle
 	gasPool *core.GasPool  // available gas used to pack transactions
 
+	parent   *types.Header
 	header   *types.Header
 	txs      []*types.Transaction
 	receipts []*types.Receipt
@@ -159,10 +160,7 @@ func (w *worker) commitNewWork() (*types.Block, error) {
 	}
 
 	// Fill the block with all available pending transactions.
-	pending, err := w.eth.TxPool().Pending(true)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch pending transactions: %w", err)
-	}
+	pending := w.eth.TxPool().Pending(true)
 
 	// Split the pending transactions into locals and remotes
 	localTxs := make(map[common.Address]types.Transactions)
@@ -193,6 +191,7 @@ func (w *worker) createCurrentEnvironment(parent *types.Block, header *types.Hea
 	return &environment{
 		signer:  types.MakeSigner(w.chainConfig, header.Number, new(big.Int).SetUint64(header.Time)),
 		state:   state,
+		parent:  parent.Header(),
 		header:  header,
 		tcount:  0,
 		gasPool: new(core.GasPool).AddGas(header.GasLimit),
@@ -282,7 +281,7 @@ func (w *worker) commitTransactions(env *environment, txs *types.TransactionsByP
 func (w *worker) commit(env *environment) (*types.Block, error) {
 	// Deep copy receipts here to avoid interaction between different tasks.
 	receipts := copyReceipts(env.receipts)
-	block, err := w.engine.FinalizeAndAssemble(w.chain, env.header, env.state, env.txs, nil, receipts)
+	block, err := w.engine.FinalizeAndAssemble(w.chain, env.header, env.parent, env.state, env.txs, nil, receipts)
 	if err != nil {
 		return nil, err
 	}
@@ -295,25 +294,29 @@ func (w *worker) handleResult(env *environment, block *types.Block, createdAt ti
 	if w.chain.HasBlock(block.Hash(), block.NumberU64()) {
 		return nil, fmt.Errorf("produced duplicate block (Hash: %s, Number %d)", block.Hash(), block.NumberU64())
 	}
-	var (
-		hash = block.Hash()
-	)
 	// Different block could share same sealhash, deep copy here to prevent write-write conflict.
 	var (
+		hash     = block.Hash()
 		receipts = make([]*types.Receipt, len(unfinishedReceipts))
 		logs     []*types.Log
 	)
-	for i, receipt := range unfinishedReceipts {
+	for i, unfinishedReceipt := range unfinishedReceipts {
+		receipt := new(types.Receipt)
+		receipts[i] = receipt
+		*receipt = *unfinishedReceipt
+
 		// add block location fields
 		receipt.BlockHash = hash
 		receipt.BlockNumber = block.Number()
 		receipt.TransactionIndex = uint(i)
 
-		receipts[i] = new(types.Receipt)
-		*receipts[i] = *receipt
 		// Update the block hash in all logs since it is now available and not when the
 		// receipt/log of individual transactions were created.
-		for _, log := range receipt.Logs {
+		receipt.Logs = make([]*types.Log, len(unfinishedReceipt.Logs))
+		for j, unfinishedLog := range unfinishedReceipt.Logs {
+			log := new(types.Log)
+			receipt.Logs[j] = log
+			*log = *unfinishedLog
 			log.BlockHash = hash
 		}
 		logs = append(logs, receipt.Logs...)
