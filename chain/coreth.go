@@ -8,12 +8,12 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/flare-foundation/coreth/consensus/dummy"
 	"github.com/flare-foundation/coreth/core"
 	"github.com/flare-foundation/coreth/core/state"
 	"github.com/flare-foundation/coreth/core/types"
 	"github.com/flare-foundation/coreth/eth"
+	"github.com/flare-foundation/coreth/ethdb"
 	"github.com/flare-foundation/coreth/node"
 	"github.com/flare-foundation/coreth/rpc"
 )
@@ -68,17 +68,21 @@ func (self *ETHChain) APIBackend() *eth.EthAPIBackend {
 	return self.backend.APIBackend
 }
 
-func (self *ETHChain) PendingSize() (int, error) {
-	pending, err := self.backend.TxPool().Pending(true)
+func (self *ETHChain) PendingSize() int {
+	pending := self.backend.TxPool().Pending(true)
 	count := 0
 	for _, txs := range pending {
 		count += len(txs)
 	}
-	return count, err
+	return count
 }
 
 func (self *ETHChain) AddRemoteTxs(txs []*types.Transaction) []error {
 	return self.backend.TxPool().AddRemotes(txs)
+}
+
+func (self *ETHChain) AddRemoteTxsSync(txs []*types.Transaction) []error {
+	return self.backend.TxPool().AddRemotesSync(txs)
 }
 
 func (self *ETHChain) AddLocalTxs(txs []*types.Transaction) []error {

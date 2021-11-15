@@ -38,8 +38,8 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rlp"
-	"github.com/ethereum/go-ethereum/trie"
 	"github.com/flare-foundation/coreth/core/types"
+	"github.com/flare-foundation/coreth/trie"
 )
 
 func TestDeriveSha(t *testing.T) {

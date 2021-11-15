@@ -1,12 +1,5 @@
-// (c) 2021, Flare Networks Limited. All rights reserved.
-//
-// This file is a derived work, based on the avalanchego library whose original
-// notice appears below. It is distributed under a license compatible with the
-// licensing terms of the original code from which it is derived.
-// Please see the file LICENSE_AVALABS for licensing terms of the original work.
-// Please see the file LICENSE for licensing terms.
-//
 // (c) 2019-2020, Ava Labs, Inc. All rights reserved.
+// See the file LICENSE for licensing terms.
 
 package evm
 
@@ -17,11 +10,17 @@ import (
 	"github.com/flare-foundation/coreth/core/state"
 	"github.com/flare-foundation/coreth/params"
 
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/flare-foundation/flare/chains/atomic"
 	"github.com/flare-foundation/flare/database"
 	"github.com/flare-foundation/flare/ids"
 	"github.com/flare-foundation/flare/snow"
 	"github.com/flare-foundation/flare/utils/crypto"
+	"github.com/flare-foundation/flare/utils/math"
+	"github.com/flare-foundation/flare/utils/wrappers"
 	"github.com/flare-foundation/flare/vms/components/avax"
+	"github.com/flare-foundation/flare/vms/secp256k1fx"
 )
 
 // UnsignedExportTx is an unsigned ExportTx
@@ -39,19 +38,21 @@ type UnsignedExportTx struct {
 	ExportedOutputs []*avax.TransferableOutput `serialize:"true" json:"exportedOutputs"`
 }
 
-// InputUTXOs returns an empty set
-func (tx *UnsignedExportTx) InputUTXOs() ids.Set { return ids.Set{} }
+// InputUTXOs returns a set of all the hash(address:nonce) exporting funds.
+func (tx *UnsignedExportTx) InputUTXOs() ids.Set {
+	return ids.Set{}
+}
 
 // Verify this transaction is well-formed
 func (tx *UnsignedExportTx) Verify(
-	avmID ids.ID,
+	xChainID ids.ID,
 	ctx *snow.Context,
 	rules params.Rules,
 ) error {
 	return errWrongChainID
 }
 
-func (tx *UnsignedExportTx) Cost() (uint64, error) {
+func (tx *UnsignedExportTx) GasUsed() (uint64, error) {
 	return 0, fmt.Errorf("exportTx transactions disabled")
 }
 

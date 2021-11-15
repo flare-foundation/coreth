@@ -37,9 +37,9 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/flare-foundation/coreth/core/types"
+	"github.com/flare-foundation/coreth/ethdb"
 	"github.com/flare-foundation/coreth/interfaces"
 	"github.com/flare-foundation/coreth/rpc"
 )

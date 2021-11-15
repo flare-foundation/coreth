@@ -29,11 +29,11 @@ package core
 import (
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/trie"
 	"github.com/flare-foundation/coreth/consensus"
 	"github.com/flare-foundation/coreth/core/state"
 	"github.com/flare-foundation/coreth/core/types"
 	"github.com/flare-foundation/coreth/params"
+	"github.com/flare-foundation/coreth/trie"
 )
 
 // BlockValidator is responsible for validating block headers, uncles and

@@ -35,11 +35,11 @@ import (
 	"github.com/flare-foundation/coreth/core/vm"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/flare-foundation/coreth/core"
 	"github.com/flare-foundation/coreth/core/bloombits"
 	"github.com/flare-foundation/coreth/core/types"
+	"github.com/flare-foundation/coreth/ethdb"
 	"github.com/flare-foundation/coreth/rpc"
 )
 
@@ -122,9 +122,11 @@ func NewRangeFilter(backend Backend, begin, end int64, addresses []common.Addres
 
 	// Create a generic filter and convert it into a range filter
 	filter := newFilter(backend, addresses, topics)
+
 	filter.matcher = bloombits.NewMatcher(size, filters)
 	filter.begin = begin
 	filter.end = end
+
 	return filter, nil
 }
 

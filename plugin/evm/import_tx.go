@@ -1,12 +1,5 @@
-// (c) 2021, Flare Networks Limited. All rights reserved.
-//
-// This file is a derived work, based on the avalanchego library whose original
-// notice appears below. It is distributed under a license compatible with the
-// licensing terms of the original code from which it is derived.
-// Please see the file LICENSE_AVALABS for licensing terms of the original work.
-// Please see the file LICENSE for licensing terms.
-//
 // (c) 2019-2020, Ava Labs, Inc. All rights reserved.
+// See the file LICENSE for licensing terms.
 
 package evm
 
@@ -18,11 +11,15 @@ import (
 	"github.com/flare-foundation/coreth/params"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/flare-foundation/flare/chains/atomic"
 	"github.com/flare-foundation/flare/database"
 	"github.com/flare-foundation/flare/ids"
 	"github.com/flare-foundation/flare/snow"
 	"github.com/flare-foundation/flare/utils/crypto"
+	"github.com/flare-foundation/flare/utils/math"
 	"github.com/flare-foundation/flare/vms/components/avax"
+	"github.com/flare-foundation/flare/vms/secp256k1fx"
 )
 
 // UnsignedImportTx is an unsigned ImportTx
@@ -42,23 +39,19 @@ type UnsignedImportTx struct {
 
 // InputUTXOs returns the UTXOIDs of the imported funds
 func (tx *UnsignedImportTx) InputUTXOs() ids.Set {
-	set := ids.Set{}
-	for _, in := range tx.ImportedInputs {
-		set.Add(in.InputID())
-	}
-	return set
+	return ids.Set{}
 }
 
 // Verify this transaction is well-formed
 func (tx *UnsignedImportTx) Verify(
-	avmID ids.ID,
+	xChainID ids.ID,
 	ctx *snow.Context,
 	rules params.Rules,
 ) error {
 	return errWrongChainID
 }
 
-func (tx *UnsignedImportTx) Cost() (uint64, error) {
+func (tx *UnsignedImportTx) GasUsed() (uint64, error) {
 	return 0, fmt.Errorf("exportTx transactions disabled")
 }
 
