@@ -279,20 +279,20 @@ func (vm *VM) Initialize(
 
 	// Set the chain config for mainnet/fuji chain IDs
 	switch {
-	case g.Config.ChainID.Cmp(params.AvalancheMainnetChainID) == 0:
-		g.Config = params.AvalancheMainnetChainConfig
-		phase0BlockValidator.extDataHashes = mainnetExtDataHashes
-	case g.Config.ChainID.Cmp(params.AvalancheFujiChainID) == 0:
-		g.Config = params.AvalancheFujiChainConfig
-		phase0BlockValidator.extDataHashes = fujiExtDataHashes
-	case g.Config.ChainID.Cmp(params.AvalancheLocalChainID) == 0:
-		g.Config = params.AvalancheLocalChainConfig
+	case g.Config.ChainID.Cmp(params.FlareChainID) == 0:
+		g.Config = params.FlareChainConfig
+		phase0BlockValidator.extDataHashes = flareExtDataHashes
+	case g.Config.ChainID.Cmp(params.SongbirdChainID) == 0:
+		g.Config = params.SongbirdChainConfig
+		phase0BlockValidator.extDataHashes = songbirdExtDataHashes
+	case g.Config.ChainID.Cmp(params.LocalChainID) == 0:
+		g.Config = params.FlareLocalChainConfig
 	}
 
-	// Free the memory of the extDataHash map that is not used (i.e. if mainnet
-	// config, free fuji)
-	fujiExtDataHashes = nil
-	mainnetExtDataHashes = nil
+	// Free the memory of the extDataHash map that is not used (i.e. if flare
+	// config, free songbird)
+	songbirdExtDataHashes = nil
+	flareExtDataHashes = nil
 
 	vm.chainID = g.Config.ChainID
 

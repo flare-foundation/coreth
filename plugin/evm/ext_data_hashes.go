@@ -8,22 +8,22 @@ import (
 )
 
 var (
-	//go:embed fuji_ext_data_hashes.json
-	rawFujiExtDataHashes []byte
-	fujiExtDataHashes    map[common.Hash]common.Hash
+	//go:embed songbird_ext_data_hashes.json
+	rawSongbirdExtDataHashes []byte
+	songbirdExtDataHashes    map[common.Hash]common.Hash
 
-	//go:embed mainnet_ext_data_hashes.json
-	rawMainnetExtDataHashes []byte
-	mainnetExtDataHashes    map[common.Hash]common.Hash
+	//go:embed flare_ext_data_hashes.json
+	rawFlareExtDataHashes []byte
+	flareExtDataHashes    map[common.Hash]common.Hash
 )
 
 func init() {
-	if err := json.Unmarshal(rawFujiExtDataHashes, &fujiExtDataHashes); err != nil {
+	if err := json.Unmarshal(rawSongbirdExtDataHashes, &songbirdExtDataHashes); err != nil {
 		panic(err)
 	}
-	rawFujiExtDataHashes = nil
-	if err := json.Unmarshal(rawMainnetExtDataHashes, &mainnetExtDataHashes); err != nil {
+	rawSongbirdExtDataHashes = nil
+	if err := json.Unmarshal(rawFlareExtDataHashes, &flareExtDataHashes); err != nil {
 		panic(err)
 	}
-	rawMainnetExtDataHashes = nil
+	rawFlareExtDataHashes = nil
 }

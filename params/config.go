@@ -37,20 +37,23 @@ import (
 
 // Avalanche ChainIDs
 var (
-	// AvalancheMainnetChainID ...
-	AvalancheMainnetChainID = big.NewInt(43114)
-	// AvalancheFujiChainID ...
-	AvalancheFujiChainID = big.NewInt(43113)
-	// AvalancheLocalChainID ...
-	AvalancheLocalChainID = big.NewInt(43112)
+	// FlareChainID ...
+	FlareChainID = big.NewInt(14)
+	// SongbirdChainID ...
+	SongbirdChainID = big.NewInt(19)
+	// CostonChainID ...
+	CostonChainID = big.NewInt(16)
+	// LocalChainID ...
+	// Maximum possible chainID, see: https://github.com/ethereum/EIPs/issues/2294
+	LocalChainID = big.NewInt(9_223_372_036_854_775_771)
 
 	errNonGenesisForkByHeight = errors.New("coreth only supports forking by height at the genesis block")
 )
 
 var (
-	// AvalancheMainnetChainConfig is the configuration for Avalanche Main Network
-	AvalancheMainnetChainConfig = &ChainConfig{
-		ChainID:                     AvalancheMainnetChainID,
+	// FlareChainConfig is the configuration for Avalanche Main Network
+	FlareChainConfig = &ChainConfig{
+		ChainID:                     FlareChainID,
 		HomesteadBlock:              big.NewInt(0),
 		DAOForkBlock:                big.NewInt(0),
 		DAOForkSupport:              true,
@@ -63,15 +66,15 @@ var (
 		PetersburgBlock:             big.NewInt(0),
 		IstanbulBlock:               big.NewInt(0),
 		MuirGlacierBlock:            big.NewInt(0),
-		ApricotPhase1BlockTimestamp: big.NewInt(time.Date(2021, time.March, 31, 14, 0, 0, 0, time.UTC).Unix()),
-		ApricotPhase2BlockTimestamp: big.NewInt(time.Date(2021, time.May, 10, 11, 0, 0, 0, time.UTC).Unix()),
-		ApricotPhase3BlockTimestamp: big.NewInt(time.Date(2021, time.August, 24, 14, 0, 0, 0, time.UTC).Unix()),
-		ApricotPhase4BlockTimestamp: big.NewInt(time.Date(2021, time.September, 22, 21, 0, 0, 0, time.UTC).Unix()),
+		ApricotPhase1BlockTimestamp: big.NewInt(time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()),
+		ApricotPhase2BlockTimestamp: big.NewInt(time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()),
+		ApricotPhase3BlockTimestamp: big.NewInt(time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()),
+		ApricotPhase4BlockTimestamp: big.NewInt(time.Date(2100, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()),
 	}
 
-	// AvalancheFujiChainConfig is the configuration for the Fuji Test Network
-	AvalancheFujiChainConfig = &ChainConfig{
-		ChainID:                     AvalancheFujiChainID,
+	// SongbirdChainConfig is the configuration for the Fuji Test Network
+	SongbirdChainConfig = &ChainConfig{
+		ChainID:                     SongbirdChainID,
 		HomesteadBlock:              big.NewInt(0),
 		DAOForkBlock:                big.NewInt(0),
 		DAOForkSupport:              true,
@@ -84,15 +87,36 @@ var (
 		PetersburgBlock:             big.NewInt(0),
 		IstanbulBlock:               big.NewInt(0),
 		MuirGlacierBlock:            big.NewInt(0),
-		ApricotPhase1BlockTimestamp: big.NewInt(time.Date(2021, time.March, 26, 14, 0, 0, 0, time.UTC).Unix()),
-		ApricotPhase2BlockTimestamp: big.NewInt(time.Date(2021, time.May, 5, 14, 0, 0, 0, time.UTC).Unix()),
-		ApricotPhase3BlockTimestamp: big.NewInt(time.Date(2021, time.August, 16, 19, 0, 0, 0, time.UTC).Unix()),
-		ApricotPhase4BlockTimestamp: big.NewInt(time.Date(2021, time.September, 16, 21, 0, 0, 0, time.UTC).Unix()),
+		ApricotPhase1BlockTimestamp: big.NewInt(time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()),
+		ApricotPhase2BlockTimestamp: big.NewInt(time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()),
+		ApricotPhase3BlockTimestamp: big.NewInt(time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()),
+		ApricotPhase4BlockTimestamp: big.NewInt(time.Date(2100, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()),
 	}
 
-	// AvalancheLocalChainConfig is the configuration for the Avalanche Local Network
-	AvalancheLocalChainConfig = &ChainConfig{
-		ChainID:                     AvalancheLocalChainID,
+	// CostonChainConfig is the configuration for the Fuji Test Network
+	CostonChainConfig = &ChainConfig{
+		ChainID:                     CostonChainID,
+		HomesteadBlock:              big.NewInt(0),
+		DAOForkBlock:                big.NewInt(0),
+		DAOForkSupport:              true,
+		EIP150Block:                 big.NewInt(0),
+		EIP150Hash:                  common.HexToHash("0x2086799aeebeae135c246c65021c82b4e15a2c451340993aacfd2751886514f0"),
+		EIP155Block:                 big.NewInt(0),
+		EIP158Block:                 big.NewInt(0),
+		ByzantiumBlock:              big.NewInt(0),
+		ConstantinopleBlock:         big.NewInt(0),
+		PetersburgBlock:             big.NewInt(0),
+		IstanbulBlock:               big.NewInt(0),
+		MuirGlacierBlock:            big.NewInt(0),
+		ApricotPhase1BlockTimestamp: big.NewInt(time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()),
+		ApricotPhase2BlockTimestamp: big.NewInt(time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()),
+		ApricotPhase3BlockTimestamp: big.NewInt(time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()),
+		ApricotPhase4BlockTimestamp: big.NewInt(time.Date(2100, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()),
+	}
+
+	// FlareLocalChainConfig is the configuration for the Avalanche Local Network
+	FlareLocalChainConfig = &ChainConfig{
+		ChainID:                     LocalChainID,
 		HomesteadBlock:              big.NewInt(0),
 		DAOForkBlock:                big.NewInt(0),
 		DAOForkSupport:              true,
