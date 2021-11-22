@@ -4,7 +4,7 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"gitlab.com/flarenetwork/coreth/flare/connector/ripple"
+	"github.com/flare-foundation/coreth/flare/connector/ripple"
 )
 
 type APIClient struct {

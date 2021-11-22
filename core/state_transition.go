@@ -43,17 +43,17 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/log"
 
-	"gitlab.com/flarenetwork/coreth/core/types"
-	"gitlab.com/flarenetwork/coreth/core/vm"
-	"gitlab.com/flarenetwork/coreth/params"
+	"github.com/flare-foundation/coreth/core/types"
+	"github.com/flare-foundation/coreth/core/vm"
+	"github.com/flare-foundation/coreth/params"
 
-	"gitlab.com/flarenetwork/coreth/flare"
+	"github.com/flare-foundation/coreth/flare"
 
 	// state connectors are added as empty import to enable them
-	_ "gitlab.com/flarenetwork/coreth/flare/register/bitcoin"
-	_ "gitlab.com/flarenetwork/coreth/flare/register/dogecoin"
-	_ "gitlab.com/flarenetwork/coreth/flare/register/litecoin"
-	_ "gitlab.com/flarenetwork/coreth/flare/register/ripple"
+	_ "github.com/flare-foundation/coreth/flare/register/bitcoin"
+	_ "github.com/flare-foundation/coreth/flare/register/dogecoin"
+	_ "github.com/flare-foundation/coreth/flare/register/litecoin"
+	_ "github.com/flare-foundation/coreth/flare/register/ripple"
 )
 
 var emptyCodeHash = crypto.Keccak256Hash(nil)

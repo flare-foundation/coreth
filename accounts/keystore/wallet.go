@@ -29,11 +29,11 @@ package keystore
 import (
 	"math/big"
 
-	"gitlab.com/flarenetwork/coreth/interfaces"
+	"github.com/flare-foundation/coreth/interfaces"
 
 	"github.com/ethereum/go-ethereum/crypto"
-	"gitlab.com/flarenetwork/coreth/accounts"
-	"gitlab.com/flarenetwork/coreth/core/types"
+	"github.com/flare-foundation/coreth/accounts"
+	"github.com/flare-foundation/coreth/core/types"
 )
 
 // keystoreWallet implements the accounts.Wallet interface for the original

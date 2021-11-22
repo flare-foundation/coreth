@@ -7,12 +7,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/hashicorp/go-plugin"
-
 	"github.com/ava-labs/avalanchego/vms/rpcchainvm"
+	"github.com/ethereum/go-ethereum/log"
 
-	"gitlab.com/flarenetwork/coreth/plugin/evm"
+	"github.com/flare-foundation/coreth/plugin/evm"
 )
 
 func main() {

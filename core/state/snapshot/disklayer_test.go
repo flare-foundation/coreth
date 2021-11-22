@@ -37,7 +37,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethdb/leveldb"
 	"github.com/ethereum/go-ethereum/ethdb/memorydb"
 	"github.com/ethereum/go-ethereum/rlp"
-	"gitlab.com/flarenetwork/coreth/core/rawdb"
+	"github.com/flare-foundation/coreth/core/rawdb"
 )
 
 // reverse reverses the contents of a byte slice. It's used to update random accs

@@ -23,9 +23,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/bitutil"
 	"github.com/ethereum/go-ethereum/ethdb"
-	"gitlab.com/flarenetwork/coreth/core/bloombits"
-	"gitlab.com/flarenetwork/coreth/core/rawdb"
-	"gitlab.com/flarenetwork/coreth/core/types"
+	"github.com/flare-foundation/coreth/core/bloombits"
+	"github.com/flare-foundation/coreth/core/rawdb"
+	"github.com/flare-foundation/coreth/core/types"
 )
 
 const (

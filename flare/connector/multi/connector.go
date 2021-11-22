@@ -5,8 +5,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/flare-foundation/coreth/flare"
 	"github.com/rs/zerolog"
-	"gitlab.com/flarenetwork/coreth/flare"
 )
 
 // Connector is a multi-connector wrapping around a number of other connectors and

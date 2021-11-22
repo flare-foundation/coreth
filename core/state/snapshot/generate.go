@@ -41,7 +41,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
-	"gitlab.com/flarenetwork/coreth/core/rawdb"
+	"github.com/flare-foundation/coreth/core/rawdb"
 )
 
 var (
@@ -148,7 +148,7 @@ func journalProgress(db ethdb.KeyValueWriter, marker []byte, stats *generatorSta
 		Marker: marker,
 	}
 	if stats != nil {
-		entry.Wiping = (stats.wiping != nil)
+		entry.Wiping = stats.wiping != nil
 		entry.Accounts = stats.accounts
 		entry.Slots = stats.slots
 		entry.Storage = uint64(stats.storage)

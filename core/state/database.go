@@ -34,8 +34,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/trie"
+	"github.com/flare-foundation/coreth/core/rawdb"
 	lru "github.com/hashicorp/golang-lru"
-	"gitlab.com/flarenetwork/coreth/core/rawdb"
 )
 
 const (

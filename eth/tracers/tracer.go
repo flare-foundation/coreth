@@ -39,9 +39,8 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/log"
-	"gitlab.com/flarenetwork/coreth/core"
-	"gitlab.com/flarenetwork/coreth/core/vm"
-	"gopkg.in/olebedev/go-duktape.v3"
+	"github.com/flare-foundation/coreth/core"
+	"github.com/flare-foundation/coreth/core/vm"
 )
 
 // bigIntegerJS is the minified version of https://github.com/peterolson/BigInteger.js.

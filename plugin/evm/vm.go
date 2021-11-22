@@ -17,19 +17,19 @@ import (
 	"time"
 
 	"github.com/ava-labs/avalanchego/database/versiondb"
-	coreth "gitlab.com/flarenetwork/coreth/chain"
-	"gitlab.com/flarenetwork/coreth/consensus/dummy"
-	"gitlab.com/flarenetwork/coreth/core"
-	"gitlab.com/flarenetwork/coreth/core/state"
-	"gitlab.com/flarenetwork/coreth/core/types"
-	"gitlab.com/flarenetwork/coreth/eth/ethconfig"
-	"gitlab.com/flarenetwork/coreth/node"
-	"gitlab.com/flarenetwork/coreth/params"
+	coreth "github.com/flare-foundation/coreth/chain"
+	"github.com/flare-foundation/coreth/consensus/dummy"
+	"github.com/flare-foundation/coreth/core"
+	"github.com/flare-foundation/coreth/core/state"
+	"github.com/flare-foundation/coreth/core/types"
+	"github.com/flare-foundation/coreth/eth/ethconfig"
+	"github.com/flare-foundation/coreth/node"
+	"github.com/flare-foundation/coreth/params"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
-	"gitlab.com/flarenetwork/coreth/rpc"
+	"github.com/flare-foundation/coreth/rpc"
 
 	avalancheRPC "github.com/gorilla/rpc/v2"
 
@@ -62,7 +62,7 @@ import (
 
 const (
 	x2cRateInt64       int64 = 1000000000
-	x2cRateMinus1Int64 int64 = x2cRateInt64 - 1
+	x2cRateMinus1Int64       = x2cRateInt64 - 1
 )
 
 var (
@@ -903,7 +903,7 @@ func (vm *VM) buildBlockTwoStageTimer() (time.Duration, bool) {
 	case conditionalBuild:
 		if !vm.buildEarly() {
 			vm.buildStatus = mayBuild
-			return (maxBlockTime - minBlockTime), true
+			return maxBlockTime - minBlockTime, true
 		}
 	case mayBuild:
 	case building:

@@ -31,7 +31,7 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
-	"gitlab.com/flarenetwork/coreth/core/types"
+	"github.com/flare-foundation/coreth/core/types"
 )
 
 // senderFromServer is a types.Signer that remembers the sender address returned by the RPC

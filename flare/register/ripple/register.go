@@ -6,12 +6,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ybbus/jsonrpc/v2"
-	"gitlab.com/flarenetwork/coreth/flare"
-	api "gitlab.com/flarenetwork/coreth/flare/client/bitcoin"
-	"gitlab.com/flarenetwork/coreth/flare/client/rpc"
-	"gitlab.com/flarenetwork/coreth/flare/connector/bitcoin"
-	"gitlab.com/flarenetwork/coreth/flare/connector/multi"
+	"github.com/flare-foundation/coreth/flare"
+	api "github.com/flare-foundation/coreth/flare/client/bitcoin"
+	"github.com/flare-foundation/coreth/flare/client/rpc"
+	"github.com/flare-foundation/coreth/flare/connector/bitcoin"
+	"github.com/flare-foundation/coreth/flare/connector/multi"
 )
 
 func init() {

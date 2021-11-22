@@ -4,7 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 
-	"gitlab.com/flarenetwork/coreth/flare"
+	"github.com/flare-foundation/coreth/flare"
 )
 
 type Connector struct {

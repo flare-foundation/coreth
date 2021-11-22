@@ -29,7 +29,7 @@ package core
 import (
 	"runtime"
 
-	"gitlab.com/flarenetwork/coreth/core/types"
+	"github.com/flare-foundation/coreth/core/types"
 )
 
 // senderCacher is a concurrent transaction sender recoverer and cacher.

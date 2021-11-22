@@ -7,10 +7,10 @@ import (
 	"math/big"
 	"testing"
 
-	"gitlab.com/flarenetwork/coreth/core/types"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/flare-foundation/coreth/core/types"
 )
 
 type MockTrieDB struct {

@@ -4,7 +4,7 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"gitlab.com/flarenetwork/coreth/flare/connector/bitcoin"
+	"github.com/flare-foundation/coreth/flare/connector/bitcoin"
 )
 
 type APIClient struct {

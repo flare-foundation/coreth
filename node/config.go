@@ -32,12 +32,12 @@ import (
 	"os"
 	"path/filepath"
 
-	"gitlab.com/flarenetwork/coreth/accounts"
-	"gitlab.com/flarenetwork/coreth/accounts/external"
-	"gitlab.com/flarenetwork/coreth/accounts/keystore"
+	"github.com/flare-foundation/coreth/accounts"
+	"github.com/flare-foundation/coreth/accounts/external"
+	"github.com/flare-foundation/coreth/accounts/keystore"
 
 	"github.com/ethereum/go-ethereum/log"
-	"gitlab.com/flarenetwork/coreth/rpc"
+	"github.com/flare-foundation/coreth/rpc"
 )
 
 // Config represents a small collection of configuration values to fine tune the

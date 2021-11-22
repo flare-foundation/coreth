@@ -1,7 +1,7 @@
 package bitcoin
 
 import (
-	"gitlab.com/flarenetwork/coreth/flare"
+	"github.com/flare-foundation/coreth/flare"
 )
 
 var DefaultConfig = Config{

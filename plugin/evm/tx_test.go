@@ -7,7 +7,7 @@ import (
 	"math/big"
 	"testing"
 
-	"gitlab.com/flarenetwork/coreth/params"
+	"github.com/flare-foundation/coreth/params"
 )
 
 func TestCalculateDynamicFee(t *testing.T) {
@@ -17,7 +17,7 @@ func TestCalculateDynamicFee(t *testing.T) {
 		expectedErr   error
 		expectedValue uint64
 	}
-	var tests []test = []test{
+	var tests = []test{
 		{
 			gas:           1,
 			baseFee:       new(big.Int).Set(x2cRate),

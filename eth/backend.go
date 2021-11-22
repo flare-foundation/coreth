@@ -38,23 +38,23 @@ import (
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
-	"gitlab.com/flarenetwork/coreth/accounts"
-	"gitlab.com/flarenetwork/coreth/consensus"
-	"gitlab.com/flarenetwork/coreth/consensus/dummy"
-	"gitlab.com/flarenetwork/coreth/core"
-	"gitlab.com/flarenetwork/coreth/core/bloombits"
-	"gitlab.com/flarenetwork/coreth/core/rawdb"
-	"gitlab.com/flarenetwork/coreth/core/types"
-	"gitlab.com/flarenetwork/coreth/core/vm"
-	"gitlab.com/flarenetwork/coreth/eth/ethconfig"
-	"gitlab.com/flarenetwork/coreth/eth/filters"
-	"gitlab.com/flarenetwork/coreth/eth/gasprice"
-	"gitlab.com/flarenetwork/coreth/eth/tracers"
-	"gitlab.com/flarenetwork/coreth/internal/ethapi"
-	"gitlab.com/flarenetwork/coreth/miner"
-	"gitlab.com/flarenetwork/coreth/node"
-	"gitlab.com/flarenetwork/coreth/params"
-	"gitlab.com/flarenetwork/coreth/rpc"
+	"github.com/flare-foundation/coreth/accounts"
+	"github.com/flare-foundation/coreth/consensus"
+	"github.com/flare-foundation/coreth/consensus/dummy"
+	"github.com/flare-foundation/coreth/core"
+	"github.com/flare-foundation/coreth/core/bloombits"
+	"github.com/flare-foundation/coreth/core/rawdb"
+	"github.com/flare-foundation/coreth/core/types"
+	"github.com/flare-foundation/coreth/core/vm"
+	"github.com/flare-foundation/coreth/eth/ethconfig"
+	"github.com/flare-foundation/coreth/eth/filters"
+	"github.com/flare-foundation/coreth/eth/gasprice"
+	"github.com/flare-foundation/coreth/eth/tracers"
+	"github.com/flare-foundation/coreth/internal/ethapi"
+	"github.com/flare-foundation/coreth/miner"
+	"github.com/flare-foundation/coreth/node"
+	"github.com/flare-foundation/coreth/params"
+	"github.com/flare-foundation/coreth/rpc"
 )
 
 // Config contains the configuration options of the ETH protocol.
@@ -62,7 +62,7 @@ import (
 type Config = ethconfig.Config
 
 var (
-	DefaultSettings Settings = Settings{MaxBlocksPerRequest: 2000}
+	DefaultSettings = Settings{MaxBlocksPerRequest: 2000}
 )
 
 type Settings struct {

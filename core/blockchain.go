@@ -41,14 +41,14 @@ import (
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/trie"
+	"github.com/flare-foundation/coreth/consensus"
+	"github.com/flare-foundation/coreth/core/rawdb"
+	"github.com/flare-foundation/coreth/core/state"
+	"github.com/flare-foundation/coreth/core/state/snapshot"
+	"github.com/flare-foundation/coreth/core/types"
+	"github.com/flare-foundation/coreth/core/vm"
+	"github.com/flare-foundation/coreth/params"
 	lru "github.com/hashicorp/golang-lru"
-	"gitlab.com/flarenetwork/coreth/consensus"
-	"gitlab.com/flarenetwork/coreth/core/rawdb"
-	"gitlab.com/flarenetwork/coreth/core/state"
-	"gitlab.com/flarenetwork/coreth/core/state/snapshot"
-	"gitlab.com/flarenetwork/coreth/core/types"
-	"gitlab.com/flarenetwork/coreth/core/vm"
-	"gitlab.com/flarenetwork/coreth/params"
 )
 
 var (
@@ -1534,7 +1534,7 @@ func (bc *BlockChain) RemoveRejectedBlocks(start, end uint64) error {
 
 	for i := start; i < end; i++ {
 		hashes := rawdb.ReadAllHashes(bc.db, i)
-		canonicalBlock := bc.GetBlockByNumber((i))
+		canonicalBlock := bc.GetBlockByNumber(i)
 		if canonicalBlock == nil {
 			return fmt.Errorf("failed to retrieve block by number at height %d", i)
 		}

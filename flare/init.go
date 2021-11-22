@@ -7,7 +7,7 @@ import (
 	"github.com/dgraph-io/badger/v3"
 	"github.com/rs/zerolog"
 
-	bstore "gitlab.com/flarenetwork/coreth/flare/store/badger"
+	bstore "github.com/flare-foundation/coreth/flare/store/badger"
 )
 
 var system *System

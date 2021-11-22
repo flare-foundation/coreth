@@ -28,7 +28,7 @@ package core
 
 import (
 	"github.com/ethereum/go-ethereum/common"
-	"gitlab.com/flarenetwork/coreth/core/types"
+	"github.com/flare-foundation/coreth/core/types"
 )
 
 // NewTxsEvent is posted when a batch of transactions enter the transaction pool.

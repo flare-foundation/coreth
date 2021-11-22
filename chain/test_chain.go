@@ -10,15 +10,15 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"gitlab.com/flarenetwork/coreth/accounts/keystore"
-	"gitlab.com/flarenetwork/coreth/consensus/dummy"
-	"gitlab.com/flarenetwork/coreth/core"
-	"gitlab.com/flarenetwork/coreth/core/rawdb"
-	"gitlab.com/flarenetwork/coreth/core/types"
-	"gitlab.com/flarenetwork/coreth/eth"
-	"gitlab.com/flarenetwork/coreth/eth/ethconfig"
-	"gitlab.com/flarenetwork/coreth/node"
-	"gitlab.com/flarenetwork/coreth/params"
+	"github.com/flare-foundation/coreth/accounts/keystore"
+	"github.com/flare-foundation/coreth/consensus/dummy"
+	"github.com/flare-foundation/coreth/core"
+	"github.com/flare-foundation/coreth/core/rawdb"
+	"github.com/flare-foundation/coreth/core/types"
+	"github.com/flare-foundation/coreth/eth"
+	"github.com/flare-foundation/coreth/eth/ethconfig"
+	"github.com/flare-foundation/coreth/node"
+	"github.com/flare-foundation/coreth/params"
 )
 
 var (

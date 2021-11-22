@@ -29,8 +29,8 @@ package node
 import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
-	"gitlab.com/flarenetwork/coreth/internal/debug"
-	"gitlab.com/flarenetwork/coreth/rpc"
+	"github.com/flare-foundation/coreth/internal/debug"
+	"github.com/flare-foundation/coreth/rpc"
 )
 
 // apis returns the collection of built-in RPC APIs.

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"gitlab.com/flarenetwork/coreth/flare"
+	"github.com/flare-foundation/coreth/flare"
 )
 
 type Connector struct {
