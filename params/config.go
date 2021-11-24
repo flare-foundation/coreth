@@ -68,7 +68,7 @@ var (
 		MuirGlacierBlock:            big.NewInt(0),
 		ApricotPhase1BlockTimestamp: big.NewInt(time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()),
 		ApricotPhase2BlockTimestamp: big.NewInt(time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()),
-		ApricotPhase3BlockTimestamp: big.NewInt(time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()),
+		ApricotPhase3BlockTimestamp: big.NewInt(time.Date(2100, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()),
 		ApricotPhase4BlockTimestamp: big.NewInt(time.Date(2100, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()),
 	}
 
@@ -89,7 +89,7 @@ var (
 		MuirGlacierBlock:            big.NewInt(0),
 		ApricotPhase1BlockTimestamp: big.NewInt(time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()),
 		ApricotPhase2BlockTimestamp: big.NewInt(time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()),
-		ApricotPhase3BlockTimestamp: big.NewInt(time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()),
+		ApricotPhase3BlockTimestamp: big.NewInt(time.Date(2100, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()),
 		ApricotPhase4BlockTimestamp: big.NewInt(time.Date(2100, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()),
 	}
 
@@ -110,7 +110,7 @@ var (
 		MuirGlacierBlock:            big.NewInt(0),
 		ApricotPhase1BlockTimestamp: big.NewInt(time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()),
 		ApricotPhase2BlockTimestamp: big.NewInt(time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()),
-		ApricotPhase3BlockTimestamp: big.NewInt(time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()),
+		ApricotPhase3BlockTimestamp: big.NewInt(time.Date(2100, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()),
 		ApricotPhase4BlockTimestamp: big.NewInt(time.Date(2100, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()),
 	}
 
@@ -129,10 +129,10 @@ var (
 		PetersburgBlock:             big.NewInt(0),
 		IstanbulBlock:               big.NewInt(0),
 		MuirGlacierBlock:            big.NewInt(0),
-		ApricotPhase1BlockTimestamp: big.NewInt(0),
-		ApricotPhase2BlockTimestamp: big.NewInt(0),
-		ApricotPhase3BlockTimestamp: big.NewInt(0),
-		ApricotPhase4BlockTimestamp: big.NewInt(0),
+		ApricotPhase1BlockTimestamp: big.NewInt(time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()),
+		ApricotPhase2BlockTimestamp: big.NewInt(time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()),
+		ApricotPhase3BlockTimestamp: big.NewInt(time.Date(2100, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()),
+		ApricotPhase4BlockTimestamp: big.NewInt(time.Date(2100, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()),
 	}
 
 	TestChainConfig         = &ChainConfig{big.NewInt(1), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0)}

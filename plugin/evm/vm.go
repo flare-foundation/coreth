@@ -273,7 +273,7 @@ func (vm *VM) Initialize(
 		return err
 	}
 
-	// Set the chain config for mainnet/fuji chain IDs
+	// Set the hard-coded chain config for reference network chain IDs
 	switch {
 	case g.Config.ChainID.Cmp(params.FlareChainID) == 0:
 		g.Config = params.FlareChainConfig
