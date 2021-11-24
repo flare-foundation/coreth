@@ -28,18 +28,9 @@ func TestCounter(t *testing.T) {
 	chain.Start()
 	defer chain.Stop()
 
-	// NOTE: use precompiled `counter.sol` for portability, do not remove the
-	// following code (for debug purpose)
-	//counterSrc, err := filepath.Abs(gopath + "/src/github.com/ava-labs/coreth/examples/counter/counter.sol")
-	// if err != nil {
-	// 	t.Fatal(err)
-	// }
-	//contracts, err := compiler.CompileSolidity("", counterSrc)
-	// if err != nil {
-	// 	t.Fatal(err)
-	// }
-	//contract, _ := contracts[fmt.Sprintf("%s:%s", counterSrc, "Counter")]
-	//code := common.Hex2Bytes(contract.Code[2:])
+	// NOTE: use precompiled `counter.sol` for portability.
+
+	// see `counter.sol`
 	contract := "6080604052348015600f57600080fd5b50602a60008190555060b9806100266000396000f3fe6080604052348015600f57600080fd5b506004361060285760003560e01c80631003e2d214602d575b600080fd5b605660048036036020811015604157600080fd5b8101908080359060200190929190505050606c565b6040518082815260200191505060405180910390f35b60008160005401600081905550600054905091905056fea264697066735822122066dad7255aac3ea41858c2a0fe986696876ac85b2bb4e929d2062504c244054964736f6c63430007060033"
 	code := common.Hex2Bytes(contract)
 
