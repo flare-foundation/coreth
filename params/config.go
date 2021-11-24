@@ -114,8 +114,8 @@ var (
 		ApricotPhase4BlockTimestamp: big.NewInt(time.Date(2100, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()),
 	}
 
-	// FlareLocalChainConfig is the configuration for the Avalanche Local Network
-	FlareLocalChainConfig = &ChainConfig{
+	// LocalChainConfig is the configuration for the Avalanche Local Network
+	LocalChainConfig = &ChainConfig{
 		ChainID:                     LocalChainID,
 		HomesteadBlock:              big.NewInt(0),
 		DAOForkBlock:                big.NewInt(0),

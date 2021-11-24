@@ -275,7 +275,3 @@ func calculateDynamicFee(cost uint64, baseFee *big.Int) (uint64, error) {
 	}
 	return feeInNAVAX.Uint64(), nil
 }
-
-func calcBytesCost(len int) uint64 {
-	return uint64(len) * TxBytesGas
-}

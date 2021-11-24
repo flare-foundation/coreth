@@ -117,13 +117,10 @@ var (
 	errAssetIDMismatch                = errors.New("asset IDs in the input don't match the utxo")
 	errNoImportInputs                 = errors.New("tx has no imported inputs")
 	errInputsNotSortedUnique          = errors.New("inputs not sorted and unique")
-	errPublicKeySignatureMismatch     = errors.New("signature doesn't match public key")
 	errWrongChainID                   = errors.New("tx has wrong chain ID")
 	errInsufficientFunds              = errors.New("insufficient funds")
-	errNoExportOutputs                = errors.New("tx has no export outputs")
 	errOutputsNotSorted               = errors.New("tx outputs not sorted")
 	errOutputsNotSortedUnique         = errors.New("outputs not sorted and unique")
-	errOverflowExport                 = errors.New("overflow when computing export amount + txFee")
 	errInvalidNonce                   = errors.New("invalid nonce")
 	errConflictingAtomicInputs        = errors.New("invalid block due to conflicting atomic inputs")
 	errUnclesUnsupported              = errors.New("uncles unsupported")
@@ -135,7 +132,6 @@ var (
 	errInvalidMixDigest               = errors.New("invalid mix digest")
 	errInvalidExtDataHash             = errors.New("invalid extra data hash")
 	errHeaderExtraDataTooBig          = errors.New("header extra data too big")
-	errInsufficientFundsForFee        = errors.New("insufficient AVAX funds to pay transaction fee")
 	errNoEVMOutputs                   = errors.New("tx has no EVM outputs")
 	errNilBaseFeeApricotPhase3        = errors.New("nil base fee is invalid after apricotPhase3")
 	errNilExtDataGasUsedApricotPhase4 = errors.New("nil extDataGasUsed is invalid after apricotPhase4")
@@ -282,11 +278,13 @@ func (vm *VM) Initialize(
 	case g.Config.ChainID.Cmp(params.FlareChainID) == 0:
 		g.Config = params.FlareChainConfig
 		phase0BlockValidator.extDataHashes = flareExtDataHashes
+	case g.Config.ChainID.Cmp(params.CostonChainID) == 0:
+		g.Config = params.CostonChainConfig
 	case g.Config.ChainID.Cmp(params.SongbirdChainID) == 0:
 		g.Config = params.SongbirdChainConfig
 		phase0BlockValidator.extDataHashes = songbirdExtDataHashes
 	case g.Config.ChainID.Cmp(params.LocalChainID) == 0:
-		g.Config = params.FlareLocalChainConfig
+		g.Config = params.LocalChainConfig
 	}
 
 	// Free the memory of the extDataHash map that is not used (i.e. if flare
