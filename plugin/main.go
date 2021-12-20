@@ -9,9 +9,8 @@ import (
 
 	"github.com/hashicorp/go-plugin"
 
-	"github.com/flare-foundation/flare/vms/rpcchainvm"
-
 	"github.com/flare-foundation/coreth/plugin/evm"
+	"github.com/flare-foundation/flare/vms/rpcchainvm"
 )
 
 func main() {

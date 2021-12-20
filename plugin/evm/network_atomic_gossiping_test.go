@@ -8,11 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/flare-foundation/flare/ids"
-
 	"github.com/stretchr/testify/assert"
 
 	"github.com/flare-foundation/coreth/plugin/evm/message"
+	"github.com/flare-foundation/flare/ids"
 )
 
 // locally issued txs should be gossiped
@@ -179,7 +178,7 @@ func TestMempoolAtmTxsAppGossipHandlingDiscardedTx(t *testing.T) {
 
 	mempool.AddTx(tx)
 	mempool.NextTx()
-	mempool.DiscardCurrentTx()
+	mempool.DiscardCurrentTx(txID)
 
 	// Check the mempool does not contain the discarded transaction
 	assert.False(mempool.has(txID))

@@ -13,6 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
+
 	"github.com/flare-foundation/coreth/accounts/keystore"
 	"github.com/flare-foundation/coreth/consensus/dummy"
 	"github.com/flare-foundation/coreth/core"
@@ -23,6 +24,7 @@ import (
 	"github.com/flare-foundation/coreth/eth/ethconfig"
 	"github.com/flare-foundation/coreth/node"
 	"github.com/flare-foundation/coreth/params"
+	"github.com/flare-foundation/flare/utils/timer/mockable"
 )
 
 type testChain struct {
@@ -63,6 +65,7 @@ func newTestChain(name string, config *eth.Config,
 			},
 		},
 		common.Hash{},
+		&mockable.Clock{},
 	)
 	if err != nil {
 		t.Fatal(err)

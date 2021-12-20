@@ -4,13 +4,11 @@
 package evm
 
 import (
-	"fmt"
 	"math/big"
 
 	"github.com/flare-foundation/coreth/core/state"
 	"github.com/flare-foundation/coreth/params"
-
-	"github.com/flare-foundation/flare/database"
+	"github.com/flare-foundation/flare/chains/atomic"
 	"github.com/flare-foundation/flare/ids"
 	"github.com/flare-foundation/flare/snow"
 	"github.com/flare-foundation/flare/utils/crypto"
@@ -39,20 +37,19 @@ func (tx *UnsignedExportTx) InputUTXOs() ids.Set {
 
 // Verify this transaction is well-formed
 func (tx *UnsignedExportTx) Verify(
-	xChainID ids.ID,
 	ctx *snow.Context,
 	rules params.Rules,
 ) error {
-	return errWrongChainID
+	return errExportTxsDisabled
 }
 
-func (tx *UnsignedExportTx) GasUsed() (uint64, error) {
-	return 0, fmt.Errorf("exportTx transactions disabled")
+func (tx *UnsignedExportTx) GasUsed(fixedFee bool) (uint64, error) {
+	return 0, errExportTxsDisabled
 }
 
 // Amount of [assetID] burned by this transaction
 func (tx *UnsignedExportTx) Burned(assetID ids.ID) (uint64, error) {
-	return 0, fmt.Errorf("exportTx transactions disabled")
+	return 0, errExportTxsDisabled
 }
 
 // SemanticVerify this transaction is valid.
@@ -63,12 +60,12 @@ func (tx *UnsignedExportTx) SemanticVerify(
 	baseFee *big.Int,
 	rules params.Rules,
 ) error {
-	return fmt.Errorf("exportTx transactions disabled")
+	return errExportTxsDisabled
 }
 
 // Accept this transaction.
-func (tx *UnsignedExportTx) Accept(ctx *snow.Context, batch database.Batch) error {
-	return fmt.Errorf("exportTx transactions disabled")
+func (tx *UnsignedExportTx) Accept() (ids.ID, *atomic.Requests, error) {
+	return ids.ID{}, nil, errExportTxsDisabled
 }
 
 // newExportTx returns a new ExportTx
@@ -80,10 +77,10 @@ func (vm *VM) newExportTx(
 	baseFee *big.Int, // fee to use post-AP3
 	keys []*crypto.PrivateKeySECP256K1R, // Pay the fee and provide the tokens
 ) (*Tx, error) {
-	return nil, errWrongChainID
+	return nil, errExportTxsDisabled
 }
 
 // EVMStateTransfer executes the state update from the atomic export transaction
 func (tx *UnsignedExportTx) EVMStateTransfer(ctx *snow.Context, state *state.StateDB) error {
-	return errInsufficientFunds
+	return errExportTxsDisabled
 }

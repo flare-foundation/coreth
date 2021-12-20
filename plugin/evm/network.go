@@ -9,23 +9,20 @@ import (
 	"sync"
 	"time"
 
-	"github.com/flare-foundation/flare/cache"
-	"github.com/flare-foundation/flare/ids"
-	"github.com/flare-foundation/flare/snow"
-	"github.com/flare-foundation/flare/utils/wrappers"
-
-	commonEng "github.com/flare-foundation/flare/snow/engine/common"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
 
+	coreth "github.com/flare-foundation/coreth/chain"
 	"github.com/flare-foundation/coreth/core"
 	"github.com/flare-foundation/coreth/core/state"
 	"github.com/flare-foundation/coreth/core/types"
 	"github.com/flare-foundation/coreth/plugin/evm/message"
-
-	coreth "github.com/flare-foundation/coreth/chain"
+	"github.com/flare-foundation/flare/cache"
+	"github.com/flare-foundation/flare/ids"
+	"github.com/flare-foundation/flare/snow"
+	commonEng "github.com/flare-foundation/flare/snow/engine/common"
+	"github.com/flare-foundation/flare/utils/wrappers"
 )
 
 const (

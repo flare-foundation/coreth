@@ -12,18 +12,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/flare-foundation/flare/ids"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rlp"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/flare-foundation/coreth/core"
 	"github.com/flare-foundation/coreth/core/types"
 	"github.com/flare-foundation/coreth/params"
 	"github.com/flare-foundation/coreth/plugin/evm/message"
+	"github.com/flare-foundation/flare/ids"
 )
 
 func fundAddressByGenesis(addrs []common.Address) (string, error) {
@@ -46,6 +45,7 @@ func fundAddressByGenesis(addrs []common.Address) (string, error) {
 		ApricotPhase2BlockTimestamp: big.NewInt(0),
 		ApricotPhase3BlockTimestamp: big.NewInt(0),
 		ApricotPhase4BlockTimestamp: big.NewInt(0),
+		ApricotPhase5BlockTimestamp: big.NewInt(0),
 	}
 
 	bytes, err := json.Marshal(genesis)

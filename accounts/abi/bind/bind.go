@@ -41,6 +41,7 @@ import (
 	"unicode"
 
 	"github.com/ethereum/go-ethereum/log"
+
 	"github.com/flare-foundation/coreth/accounts/abi"
 )
 

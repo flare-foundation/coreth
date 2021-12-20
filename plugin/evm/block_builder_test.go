@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/flare-foundation/coreth/params"
-
 	"github.com/flare-foundation/flare/snow"
 )
 

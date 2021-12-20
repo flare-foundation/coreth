@@ -10,6 +10,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+
 	"github.com/flare-foundation/coreth/accounts/keystore"
 	"github.com/flare-foundation/coreth/consensus/dummy"
 	"github.com/flare-foundation/coreth/core"
@@ -19,6 +20,7 @@ import (
 	"github.com/flare-foundation/coreth/eth/ethconfig"
 	"github.com/flare-foundation/coreth/node"
 	"github.com/flare-foundation/coreth/params"
+	"github.com/flare-foundation/flare/utils/timer/mockable"
 )
 
 var (
@@ -88,6 +90,7 @@ func NewDefaultChain(t *testing.T) (*ETHChain, chan core.NewTxPoolHeadEvent, <-c
 		eth.DefaultSettings,
 		new(dummy.ConsensusCallbacks),
 		common.Hash{},
+		&mockable.Clock{},
 	)
 	if err != nil {
 		t.Fatal(err)
