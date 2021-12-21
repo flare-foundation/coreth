@@ -107,7 +107,7 @@ func testCallTracer(tracerName string, dirPath string, t *testing.T) {
 				context = vm.BlockContext{
 					CanTransfer: core.CanTransfer,
 					Transfer:    core.Transfer,
-					Coinbase:    test.Context.Miner,
+					Coinbase:    common.HexToAddress("0x0100000000000000000000000000000000000000"),
 					BlockNumber: new(big.Int).SetUint64(uint64(test.Context.Number)),
 					Time:        new(big.Int).SetUint64(uint64(test.Context.Time)),
 					Difficulty:  (*big.Int)(test.Context.Difficulty),
@@ -218,7 +218,7 @@ func benchTracer(tracerName string, test *callTracerTest, b *testing.B) {
 	context := vm.BlockContext{
 		CanTransfer: core.CanTransfer,
 		Transfer:    core.Transfer,
-		Coinbase:    test.Context.Miner,
+		Coinbase:    common.HexToAddress("0x0100000000000000000000000000000000000000"),
 		BlockNumber: new(big.Int).SetUint64(uint64(test.Context.Number)),
 		Time:        new(big.Int).SetUint64(uint64(test.Context.Time)),
 		Difficulty:  (*big.Int)(test.Context.Difficulty),
