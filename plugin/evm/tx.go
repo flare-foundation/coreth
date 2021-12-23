@@ -27,16 +27,13 @@ import (
 )
 
 var (
-	errWrongBlockchainID = errors.New("wrong blockchain ID provided")
-	errWrongNetworkID    = errors.New("tx was issued with a different network ID")
-	errNilTx             = errors.New("tx is nil")
-	errNoValueOutput     = errors.New("output has no value")
-	errNoValueInput      = errors.New("input has no value")
-	errNilOutput         = errors.New("nil output")
-	errNilInput          = errors.New("nil input")
-	errEmptyAssetID      = errors.New("empty asset ID is not valid")
-	errNilBaseFee        = errors.New("cannot calculate dynamic fee with nil baseFee")
-	errFeeOverflow       = errors.New("overflow occurred while calculating the fee")
+	errNoValueOutput = errors.New("output has no value")
+	errNoValueInput  = errors.New("input has no value")
+	errNilOutput     = errors.New("nil output")
+	errNilInput      = errors.New("nil input")
+	errEmptyAssetID  = errors.New("empty asset ID is not valid")
+	errNilBaseFee    = errors.New("cannot calculate dynamic fee with nil baseFee")
+	errFeeOverflow   = errors.New("overflow occurred while calculating the fee")
 )
 
 // Constants for calculating the gas consumed by atomic transactions

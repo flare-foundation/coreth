@@ -40,7 +40,7 @@ func fundAddressByGenesis(addrs []common.Address) (string, error) {
 	genesis.Alloc = funds
 
 	genesis.Config = &params.ChainConfig{
-		ChainID:                     params.LocalChainID,
+		ChainID:                     big.NewInt(31337),
 		ApricotPhase1BlockTimestamp: big.NewInt(0),
 		ApricotPhase2BlockTimestamp: big.NewInt(0),
 		ApricotPhase3BlockTimestamp: big.NewInt(0),
