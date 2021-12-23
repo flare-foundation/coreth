@@ -14,9 +14,8 @@ import (
 
 	"github.com/flare-foundation/coreth/core/state"
 	"github.com/flare-foundation/coreth/params"
-
+	"github.com/flare-foundation/flare/chains/atomic"
 	"github.com/flare-foundation/flare/codec"
-	"github.com/flare-foundation/flare/database"
 	"github.com/flare-foundation/flare/ids"
 	"github.com/flare-foundation/flare/snow"
 	"github.com/flare-foundation/flare/utils"
@@ -28,16 +27,13 @@ import (
 )
 
 var (
-	errWrongBlockchainID = errors.New("wrong blockchain ID provided")
-	errWrongNetworkID    = errors.New("tx was issued with a different network ID")
-	errNilTx             = errors.New("tx is nil")
-	errNoValueOutput     = errors.New("output has no value")
-	errNoValueInput      = errors.New("input has no value")
-	errNilOutput         = errors.New("nil output")
-	errNilInput          = errors.New("nil input")
-	errEmptyAssetID      = errors.New("empty asset ID is not valid")
-	errNilBaseFee        = errors.New("cannot calculate dynamic fee with nil baseFee")
-	errFeeOverflow       = errors.New("overflow occurred while calculating the fee")
+	errNoValueOutput = errors.New("output has no value")
+	errNoValueInput  = errors.New("input has no value")
+	errNilOutput     = errors.New("nil output")
+	errNilInput      = errors.New("nil input")
+	errEmptyAssetID  = errors.New("empty asset ID is not valid")
+	errNilBaseFee    = errors.New("cannot calculate dynamic fee with nil baseFee")
+	errFeeOverflow   = errors.New("overflow occurred while calculating the fee")
 )
 
 // Constants for calculating the gas consumed by atomic transactions
@@ -92,7 +88,7 @@ func (in *EVMInput) Verify() error {
 type UnsignedTx interface {
 	Initialize(unsignedBytes, signedBytes []byte)
 	ID() ids.ID
-	GasUsed() (uint64, error)
+	GasUsed(fixedFee bool) (uint64, error)
 	Burned(assetID ids.ID) (uint64, error)
 	UnsignedBytes() []byte
 	Bytes() []byte
@@ -105,13 +101,12 @@ type UnsignedAtomicTx interface {
 	// UTXOs this tx consumes
 	InputUTXOs() ids.Set
 	// Verify attempts to verify that the transaction is well formed
-	// TODO: remove [xChainID] parameter since this is provided on [ctx]
-	Verify(xChainID ids.ID, ctx *snow.Context, rules params.Rules) error
+	Verify(ctx *snow.Context, rules params.Rules) error
 	// Attempts to verify this transaction with the provided state.
 	SemanticVerify(vm *VM, stx *Tx, parent *Block, baseFee *big.Int, rules params.Rules) error
 
 	// Accept this transaction with the additionally provided state transitions.
-	Accept(ctx *snow.Context, batch database.Batch) error
+	Accept() (ids.ID, *atomic.Requests, error)
 
 	EVMStateTransfer(ctx *snow.Context, state *state.StateDB) error
 }
@@ -160,14 +155,14 @@ func (tx *Tx) Sign(c codec.Manager, signers [][]*crypto.PrivateKeySECP256K1R) er
 // for via this transaction denominated in [avaxAssetID] with [baseFee] used to calculate the
 // cost of this transaction. This function also returns the [gasUsed] by the
 // transaction for inclusion in the [baseFee] algorithm.
-func (tx *Tx) BlockFeeContribution(avaxAssetID ids.ID, baseFee *big.Int) (*big.Int, *big.Int, error) {
+func (tx *Tx) BlockFeeContribution(fixedFee bool, avaxAssetID ids.ID, baseFee *big.Int) (*big.Int, *big.Int, error) {
 	if baseFee == nil {
 		return nil, nil, errNilBaseFee
 	}
 	if baseFee.Cmp(common.Big0) <= 0 {
 		return nil, nil, fmt.Errorf("cannot calculate tip with base fee %d <= 0", baseFee)
 	}
-	gasUsed, err := tx.GasUsed()
+	gasUsed, err := tx.GasUsed(fixedFee)
 	if err != nil {
 		return nil, nil, err
 	}

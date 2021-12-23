@@ -35,6 +35,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
+
 	"github.com/flare-foundation/coreth/core/types"
 	"github.com/flare-foundation/coreth/trie"
 )

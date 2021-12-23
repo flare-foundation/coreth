@@ -30,10 +30,12 @@ package miner
 import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/event"
+
 	"github.com/flare-foundation/coreth/consensus"
 	"github.com/flare-foundation/coreth/core"
 	"github.com/flare-foundation/coreth/core/types"
 	"github.com/flare-foundation/coreth/params"
+	"github.com/flare-foundation/flare/utils/timer/mockable"
 )
 
 // Backend wraps all methods required for mining.
@@ -51,9 +53,9 @@ type Miner struct {
 	worker *worker
 }
 
-func New(eth Backend, config *Config, chainConfig *params.ChainConfig, mux *event.TypeMux, engine consensus.Engine) *Miner {
+func New(eth Backend, config *Config, chainConfig *params.ChainConfig, mux *event.TypeMux, engine consensus.Engine, clock *mockable.Clock) *Miner {
 	return &Miner{
-		worker: newWorker(config, chainConfig, engine, eth, mux),
+		worker: newWorker(config, chainConfig, engine, eth, mux, clock),
 	}
 }
 

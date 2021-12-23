@@ -30,6 +30,7 @@ import (
 	"sync"
 
 	"github.com/ethereum/go-ethereum/event"
+
 	"github.com/flare-foundation/coreth/accounts"
 	"github.com/flare-foundation/coreth/rpc"
 )

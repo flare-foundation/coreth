@@ -30,8 +30,9 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/flare-foundation/coreth/params"
 	"github.com/holiman/uint256"
+
+	"github.com/flare-foundation/coreth/params"
 )
 
 var activators = map[int]func(*JumpTable){

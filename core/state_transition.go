@@ -357,6 +357,7 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 	if st.msg.From() == common.HexToAddress("0x0100000000000000000000000000000000000000") ||
 		st.msg.From() == common.HexToAddress(GetStateConnectorContractAddr(st.evm.Context.Time)) ||
 		st.msg.From() == common.HexToAddress(GetSystemTriggerContractAddr(st.evm.Context.Time)) {
+		fmt.Println(st.msg.From())
 		return nil, fmt.Errorf("Invalid sender")
 	}
 	burnAddress := st.evm.Context.Coinbase

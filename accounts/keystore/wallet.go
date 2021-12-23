@@ -30,6 +30,7 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/crypto"
+
 	"github.com/flare-foundation/coreth/accounts"
 	"github.com/flare-foundation/coreth/core/types"
 	"github.com/flare-foundation/coreth/interfaces"

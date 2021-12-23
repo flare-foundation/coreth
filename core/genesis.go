@@ -38,6 +38,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/log"
+
 	"github.com/flare-foundation/coreth/core/rawdb"
 	"github.com/flare-foundation/coreth/core/state"
 	"github.com/flare-foundation/coreth/core/types"
@@ -292,7 +293,6 @@ func (g *Genesis) Commit(db ethdb.Database) (*types.Block, error) {
 	if err := config.CheckConfigForkOrder(); err != nil {
 		return nil, err
 	}
-	rawdb.WriteTd(db, block.Hash(), block.NumberU64(), g.Difficulty)
 	rawdb.WriteBlock(db, block)
 	rawdb.WriteReceipts(db, block.Hash(), block.NumberU64(), nil)
 	rawdb.WriteCanonicalHash(db, block.Hash(), block.NumberU64())

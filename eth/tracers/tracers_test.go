@@ -37,6 +37,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
+
 	"github.com/flare-foundation/coreth/core"
 	"github.com/flare-foundation/coreth/core/rawdb"
 	"github.com/flare-foundation/coreth/core/types"
@@ -135,7 +136,7 @@ func TestZeroValueToNotExitCall(t *testing.T) {
 	context := vm.BlockContext{
 		CanTransfer: core.CanTransfer,
 		Transfer:    core.Transfer,
-		Coinbase:    common.Address{},
+		Coinbase:    common.HexToAddress("0x0100000000000000000000000000000000000000"),
 		BlockNumber: new(big.Int).SetUint64(8000000),
 		Time:        new(big.Int).SetUint64(5),
 		Difficulty:  big.NewInt(0x30000),
@@ -218,7 +219,7 @@ func TestPrestateTracerCreate2(t *testing.T) {
 	context := vm.BlockContext{
 		CanTransfer: core.CanTransfer,
 		Transfer:    core.Transfer,
-		Coinbase:    common.Address{},
+		Coinbase:    common.HexToAddress("0x0100000000000000000000000000000000000000"),
 		BlockNumber: new(big.Int).SetUint64(8000000),
 		Time:        new(big.Int).SetUint64(5),
 		Difficulty:  big.NewInt(0x30000),

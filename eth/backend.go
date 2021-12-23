@@ -36,6 +36,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
+
 	"github.com/flare-foundation/coreth/accounts"
 	"github.com/flare-foundation/coreth/consensus"
 	"github.com/flare-foundation/coreth/consensus/dummy"
@@ -54,6 +55,7 @@ import (
 	"github.com/flare-foundation/coreth/node"
 	"github.com/flare-foundation/coreth/params"
 	"github.com/flare-foundation/coreth/rpc"
+	"github.com/flare-foundation/flare/utils/timer/mockable"
 )
 
 // Config contains the configuration options of the ETH protocol.
@@ -107,6 +109,7 @@ func New(stack *node.Node, config *Config,
 	chainDb ethdb.Database,
 	settings Settings,
 	lastAcceptedHash common.Hash,
+	clock *mockable.Clock,
 ) (*Ethereum, error) {
 	if chainDb == nil {
 		return nil, errors.New("chainDb cannot be nil")
@@ -193,7 +196,7 @@ func New(stack *node.Node, config *Config,
 	config.TxPool.Journal = ""
 	eth.txPool = core.NewTxPool(config.TxPool, chainConfig, eth.blockchain)
 
-	eth.miner = miner.New(eth, &config.Miner, chainConfig, eth.EventMux(), eth.engine)
+	eth.miner = miner.New(eth, &config.Miner, chainConfig, eth.EventMux(), eth.engine, clock)
 
 	eth.APIBackend = &EthAPIBackend{
 		extRPCEnabled:       stack.Config().ExtRPCEnabled(),
@@ -226,9 +229,6 @@ func (s *Ethereum) APIs() []rpc.API {
 
 	// Append tracing APIs
 	apis = append(apis, tracers.APIs(s.APIBackend)...)
-
-	// Append any APIs exposed explicitly by the consensus engine
-	apis = append(apis, s.engine.APIs(s.BlockChain())...)
 
 	// Append all the local APIs and return
 	return append(apis, []rpc.API{

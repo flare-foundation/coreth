@@ -37,9 +37,12 @@ import (
 	"sync/atomic"
 	"time"
 
+	lru "github.com/hashicorp/golang-lru"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
+
 	"github.com/flare-foundation/coreth/consensus"
 	"github.com/flare-foundation/coreth/core/rawdb"
 	"github.com/flare-foundation/coreth/core/state"
@@ -49,7 +52,6 @@ import (
 	"github.com/flare-foundation/coreth/ethdb"
 	"github.com/flare-foundation/coreth/params"
 	"github.com/flare-foundation/coreth/trie"
-	lru "github.com/hashicorp/golang-lru"
 )
 
 var (
@@ -305,11 +307,8 @@ func (bc *BlockChain) loadLastState(lastAcceptedHash common.Hash) error {
 	}
 	bc.hc.SetCurrentHeader(currentHeader)
 
-	headerTd := bc.GetTd(currentHeader.Hash(), currentHeader.Number.Uint64())
-	blockTd := bc.GetTd(currentBlock.Hash(), currentBlock.NumberU64())
-
-	log.Info("Loaded most recent local header", "number", currentHeader.Number, "hash", currentHeader.Hash(), "td", headerTd, "age", common.PrettyAge(time.Unix(int64(currentHeader.Time), 0)))
-	log.Info("Loaded most recent local full block", "number", currentBlock.Number(), "hash", currentBlock.Hash(), "td", blockTd, "age", common.PrettyAge(time.Unix(int64(currentBlock.Time()), 0)))
+	log.Info("Loaded most recent local header", "number", currentHeader.Number, "hash", currentHeader.Hash(), "age", common.PrettyAge(time.Unix(int64(currentHeader.Time), 0)))
+	log.Info("Loaded most recent local full block", "number", currentBlock.Number(), "hash", currentBlock.Hash(), "age", common.PrettyAge(time.Unix(int64(currentBlock.Time()), 0)))
 
 	// Otherwise, set the last accepted block and perform a re-org.
 	bc.lastAccepted = bc.GetBlockByHash(lastAcceptedHash)
@@ -369,7 +368,6 @@ func (bc *BlockChain) removeIndices(from, to uint64) (int, error) {
 func (bc *BlockChain) loadGenesisState() error {
 	// Prepare the genesis block and reinitialise the chain
 	batch := bc.db.NewBatch()
-	rawdb.WriteTd(batch, bc.genesisBlock.Hash(), bc.genesisBlock.NumberU64(), bc.genesisBlock.Difficulty())
 	rawdb.WriteBlock(batch, bc.genesisBlock)
 	if err := batch.Write(); err != nil {
 		log.Crit("Failed to write genesis block", "err", err)
@@ -760,22 +758,11 @@ func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.
 	bc.wg.Add(1)
 	defer bc.wg.Done()
 
-	// Calculate the total difficulty of the block
-	ptd := bc.GetTd(block.ParentHash(), block.NumberU64()-1)
-	if ptd == nil {
-		return NonStatTy, consensus.ErrUnknownAncestor
-	}
-	// Make sure no inconsistent state is leaked during insertion
-	// currentBlock := bc.CurrentBlock()
-	// localTd := bc.GetTd(currentBlock.Hash(), currentBlock.NumberU64())
-	externTd := new(big.Int).Add(block.Difficulty(), ptd)
-
 	// Irrelevant of the canonical status, write the block itself to the database.
 	//
 	// Note all the components of block(td, hash->number map, header, body, receipts)
 	// should be written atomically. BlockBatch is used for containing all components.
 	blockBatch := bc.db.NewBatch()
-	rawdb.WriteTd(blockBatch, block.Hash(), block.NumberU64(), externTd)
 	rawdb.WriteBlock(blockBatch, block)
 	rawdb.WriteReceipts(blockBatch, block.Hash(), block.NumberU64(), receipts)
 	rawdb.WritePreimages(blockBatch, state.Preimages())

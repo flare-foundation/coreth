@@ -35,6 +35,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+
 	"github.com/flare-foundation/coreth/accounts/abi/bind"
 	"github.com/flare-foundation/coreth/accounts/abi/bind/backends"
 	"github.com/flare-foundation/coreth/core"

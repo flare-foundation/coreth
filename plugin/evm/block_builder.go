@@ -8,10 +8,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ethereum/go-ethereum/log"
+
 	coreth "github.com/flare-foundation/coreth/chain"
 	"github.com/flare-foundation/coreth/params"
-
-	"github.com/ethereum/go-ethereum/log"
 	"github.com/flare-foundation/flare/snow"
 	commonEng "github.com/flare-foundation/flare/snow/engine/common"
 	"github.com/flare-foundation/flare/utils/timer"

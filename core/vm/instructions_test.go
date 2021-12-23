@@ -33,10 +33,12 @@ import (
 	"io/ioutil"
 	"testing"
 
+	"github.com/holiman/uint256"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+
 	"github.com/flare-foundation/coreth/params"
-	"github.com/holiman/uint256"
 )
 
 type TwoOperandTestcase struct {

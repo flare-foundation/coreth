@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/log"
+
 	"github.com/flare-foundation/flare/api"
 	"github.com/flare-foundation/flare/ids"
 	"github.com/flare-foundation/flare/utils/formatting"

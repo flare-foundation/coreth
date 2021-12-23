@@ -31,6 +31,7 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/flare-foundation/coreth/consensus"
 	"github.com/flare-foundation/coreth/consensus/dummy"
 	"github.com/flare-foundation/coreth/consensus/misc"
@@ -111,7 +112,7 @@ func (b *BlockGen) AddTx(tx *types.Transaction) {
 // the block in chain will be returned.
 func (b *BlockGen) AddTxWithChain(bc *BlockChain, tx *types.Transaction) {
 	if b.gasPool == nil {
-		b.SetCoinbase(common.Address{})
+		b.SetCoinbase(common.HexToAddress("0x0100000000000000000000000000000000000000"))
 	}
 	b.statedb.Prepare(tx.Hash(), len(b.txs))
 	receipt, err := ApplyTransaction(b.config, bc, &b.header.Coinbase, b.gasPool, b.statedb, b.header, tx, &b.header.GasUsed, vm.Config{})

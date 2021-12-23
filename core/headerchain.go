@@ -33,13 +33,15 @@ import (
 	mrand "math/rand"
 	"sync/atomic"
 
+	lru "github.com/hashicorp/golang-lru"
+
 	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/flare-foundation/coreth/consensus"
 	"github.com/flare-foundation/coreth/core/rawdb"
 	"github.com/flare-foundation/coreth/core/types"
 	"github.com/flare-foundation/coreth/ethdb"
 	"github.com/flare-foundation/coreth/params"
-	lru "github.com/hashicorp/golang-lru"
 )
 
 const (
@@ -129,22 +131,6 @@ func (hc *HeaderChain) GetBlockNumber(hash common.Hash) *uint64 {
 		hc.numberCache.Add(hash, *number)
 	}
 	return number
-}
-
-// GetTd retrieves a block's total difficulty in the canonical chain from the
-// database by hash and number, caching it if found.
-func (hc *HeaderChain) GetTd(hash common.Hash, number uint64) *big.Int {
-	// Short circuit if the td's already in the cache, retrieve otherwise
-	if cached, ok := hc.tdCache.Get(hash); ok {
-		return cached.(*big.Int)
-	}
-	td := rawdb.ReadTd(hc.chainDb, hash, number)
-	if td == nil {
-		return nil
-	}
-	// Cache the found body for next time and return
-	hc.tdCache.Add(hash, td)
-	return td
 }
 
 // GetHeader retrieves a block header from the database by hash and number,

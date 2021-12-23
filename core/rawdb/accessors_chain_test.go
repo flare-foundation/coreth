@@ -25,11 +25,13 @@ import (
 	"reflect"
 	"testing"
 
+	"golang.org/x/crypto/sha3"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/rlp"
+
 	"github.com/flare-foundation/coreth/core/types"
 	"github.com/flare-foundation/coreth/params"
-	"golang.org/x/crypto/sha3"
 )
 
 // Tests block header storage and retrieval operations.
@@ -184,29 +186,6 @@ func TestPartialBlockStorage(t *testing.T) {
 		t.Fatalf("Stored block not found")
 	} else if entry.Hash() != block.Hash() {
 		t.Fatalf("Retrieved block mismatch: have %v, want %v", entry, block)
-	}
-}
-
-// Tests block total difficulty storage and retrieval operations.
-func TestTdStorage(t *testing.T) {
-	db := NewMemoryDatabase()
-
-	// Create a test TD to move around the database and make sure it's really new
-	hash, td := common.Hash{}, big.NewInt(314)
-	if entry := ReadTd(db, hash, 0); entry != nil {
-		t.Fatalf("Non existent TD returned: %v", entry)
-	}
-	// Write and verify the TD in the database
-	WriteTd(db, hash, 0, td)
-	if entry := ReadTd(db, hash, 0); entry == nil {
-		t.Fatalf("Stored TD not found")
-	} else if entry.Cmp(td) != 0 {
-		t.Fatalf("Retrieved TD mismatch: have %v, want %v", entry, td)
-	}
-	// Delete the TD and verify the execution
-	DeleteTd(db, hash, 0)
-	if entry := ReadTd(db, hash, 0); entry != nil {
-		t.Fatalf("Deleted TD returned: %v", entry)
 	}
 }
 
@@ -393,7 +372,6 @@ func TestCanonicalHashIteration(t *testing.T) {
 	// Fill database with testing data.
 	for i := uint64(1); i <= 8; i++ {
 		WriteCanonicalHash(db, common.Hash{}, i)
-		WriteTd(db, common.Hash{}, i, big.NewInt(10)) // Write some interferential data
 	}
 	for i, c := range cases {
 		numbers, _ := ReadAllCanonicalHashes(db, c.from, c.to, c.limit)

@@ -34,6 +34,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/event"
+
 	"github.com/flare-foundation/coreth/consensus/dummy"
 	"github.com/flare-foundation/coreth/core"
 	"github.com/flare-foundation/coreth/core/rawdb"
@@ -195,37 +196,6 @@ func applyGasPriceTest(t *testing.T, test suggestTipCapTest) {
 	}
 }
 
-func TestSuggestTipCapNetworkUpgrades(t *testing.T) {
-	tests := map[string]suggestTipCapTest{
-		"launch": {
-			chainConfig: params.TestLaunchConfig,
-			expectedTip: big.NewInt(params.LaunchMinGasPrice),
-		},
-		"apricot phase 1": {
-			chainConfig: params.TestApricotPhase1Config,
-			expectedTip: big.NewInt(params.ApricotPhase1MinGasPrice),
-		},
-		"apricot phase 2": {
-			chainConfig: params.TestApricotPhase2Config,
-			expectedTip: big.NewInt(params.ApricotPhase1MinGasPrice),
-		},
-		"apricot phase 3": {
-			chainConfig: params.TestApricotPhase3Config,
-			expectedTip: big.NewInt(0),
-		},
-		"apricot phase 4": {
-			chainConfig: params.TestApricotPhase4Config,
-			expectedTip: DefaultMinPrice,
-		},
-	}
-
-	for name, test := range tests {
-		t.Run(name, func(t *testing.T) {
-			applyGasPriceTest(t, test)
-		})
-	}
-}
-
 func TestSuggestTipCapEmptyExtDataGasUsage(t *testing.T) {
 	txTip := big.NewInt(55 * params.GWei)
 	applyGasPriceTest(t, suggestTipCapTest{
@@ -255,7 +225,7 @@ func TestSuggestTipCapEmptyExtDataGasUsage(t *testing.T) {
 				b.AddTx(tx)
 			}
 		},
-		expectedTip: big.NewInt(2_844_353_281),
+		expectedTip: big.NewInt(11_427_927_927),
 	})
 }
 
@@ -288,7 +258,7 @@ func TestSuggestTipCapSimple(t *testing.T) {
 				b.AddTx(tx)
 			}
 		},
-		expectedTip: big.NewInt(2_844_353_281),
+		expectedTip: big.NewInt(11_427_927_927),
 	})
 }
 
@@ -369,7 +339,7 @@ func TestSuggestTipCapSmallTips(t *testing.T) {
 			}
 		},
 		// NOTE: small tips do not bias estimate
-		expectedTip: big.NewInt(2_844_353_281),
+		expectedTip: big.NewInt(11_427_927_927),
 	})
 }
 
@@ -402,12 +372,12 @@ func TestSuggestTipCapExtDataUsage(t *testing.T) {
 				b.AddTx(tx)
 			}
 		},
-		expectedTip: big.NewInt(2_840_938_303),
+		expectedTip: big.NewInt(11_413_453_299),
 	})
 }
 
 func TestSuggestTipCapMinGas(t *testing.T) {
-	txTip := big.NewInt(55 * params.GWei)
+	txTip := big.NewInt(500 * params.GWei)
 	applyGasPriceTest(t, suggestTipCapTest{
 		chainConfig:     params.TestChainConfig,
 		numBlocks:       3,

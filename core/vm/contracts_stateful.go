@@ -7,9 +7,11 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/flare-foundation/coreth/params"
 	"github.com/holiman/uint256"
+
+	"github.com/ethereum/go-ethereum/common"
+
+	"github.com/flare-foundation/coreth/params"
 )
 
 // PrecompiledContractsApricot contains the default set of pre-compiled Ethereum

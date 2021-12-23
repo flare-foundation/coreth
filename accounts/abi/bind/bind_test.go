@@ -779,7 +779,7 @@ var bindTests = []struct {
 				t.Errorf("Invalid address returned, want: %x, got: %x", (common.Address{}), res)
 			}
 
-			for _, addr := range []common.Address{common.Address{}, common.Address{1}, common.Address{2}} {
+			for _, addr := range []common.Address{common.Address{}, common.Address{2}, common.Address{4}} {
 				if res, err := callfrom.CallFrom(&bind.CallOpts{From: addr}); err != nil {
 					t.Fatalf("Failed to call constant function: %v", err)
 				} else if res != addr {

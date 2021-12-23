@@ -32,10 +32,10 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/flare-foundation/coreth/core"
 	"github.com/flare-foundation/coreth/core/types"
-
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/flare-foundation/coreth/params"
 	"github.com/flare-foundation/coreth/rpc"
 )
