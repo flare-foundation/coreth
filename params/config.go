@@ -44,8 +44,7 @@ var (
 	// CostonChainID ...
 	CostonChainID = big.NewInt(16)
 	// LocalChainID ...
-	// Maximum possible chainID, see: https://github.com/ethereum/EIPs/issues/2294
-	LocalChainID = big.NewInt(9_223_372_036_854_775_771)
+	LocalChainID = big.NewInt(4294967295)
 
 	errNonGenesisForkByHeight = errors.New("coreth only supports forking by height at the genesis block")
 )
@@ -131,8 +130,8 @@ var (
 		MuirGlacierBlock:            big.NewInt(0),
 		ApricotPhase1BlockTimestamp: big.NewInt(time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()),
 		ApricotPhase2BlockTimestamp: big.NewInt(time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()),
-		ApricotPhase3BlockTimestamp: big.NewInt(time.Date(2100, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()),
-		ApricotPhase4BlockTimestamp: big.NewInt(time.Date(2100, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()),
+		ApricotPhase3BlockTimestamp: big.NewInt(time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()),
+		ApricotPhase4BlockTimestamp: big.NewInt(time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()),
 	}
 
 	TestChainConfig         = &ChainConfig{big.NewInt(1), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0)}
