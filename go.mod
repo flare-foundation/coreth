@@ -10,7 +10,7 @@ require (
 	github.com/deckarep/golang-set v1.7.1
 	github.com/ethereum/go-ethereum v1.10.12
 	github.com/fjl/memsize v0.0.0-20190710130421-bcb5799ab5e5
-	github.com/flare-foundation/flare v0.3.4
+	github.com/flare-foundation/flare v0.4.0
 	github.com/gballet/go-libpcsclite v0.0.0-20191108122812-4678299bea08
 	github.com/google/uuid v1.1.5
 	github.com/gorilla/rpc v1.2.0

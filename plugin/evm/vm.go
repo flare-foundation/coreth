@@ -29,6 +29,7 @@ import (
 	"github.com/flare-foundation/coreth/core/state"
 	"github.com/flare-foundation/coreth/core/types"
 	"github.com/flare-foundation/coreth/eth/ethconfig"
+	"github.com/flare-foundation/coreth/metrics/prometheus"
 	"github.com/flare-foundation/coreth/node"
 	"github.com/flare-foundation/coreth/params"
 	"github.com/flare-foundation/coreth/rpc"
@@ -418,11 +419,10 @@ func (vm *VM) Initialize(
 
 	// Only provide metrics if they are being populated.
 	if metrics.Enabled {
-		// TODO: Enable after updating Avalanche dependency
-		// gatherer := prometheus.Gatherer(metrics.DefaultRegistry)
-		// if err := ctx.Metrics.Register(gatherer); err != nil {
-		// 	return err
-		// }
+		gatherer := prometheus.Gatherer(metrics.DefaultRegistry)
+		if err := ctx.Metrics.Register(gatherer); err != nil {
+			return err
+		}
 	}
 
 	return vm.fx.Initialize(vm)
