@@ -4,6 +4,7 @@
 package evm
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
@@ -58,14 +59,32 @@ func (f *FlareAPI) GetCreators(_ *http.Request, req *GetCreatorsRequest, res *Ge
 
 	tx := core.NewEVMTxContext(msg)
 	block := core.NewEVMBlockContext(block.Header(), f.blockchain, nil)
-	evm := vm.NewEVM(block, tx, state, nil, nil)
+	evm := vm.NewEVM(block, tx, state, nil, vm.Config{})
 
-	creators, err := evm.Call()
+	creatorsByte, _, err := evm.Call(nil, getCreatorsContractAddress(), getCreatorsContractFunction4Bytes(), 0, nil)
+	//caller ContractRef, addr common.Address, input []byte, gas uint64, value *big.Int
 	if err != nil {
 		return fmt.Errorf("could not get block creators from contract: %w", err)
+	}
+
+	creators := make(map[string]uint64)
+	err = json.Unmarshal(creatorsByte, &creators)
+	if err != nil {
+		return fmt.Errorf("unmarshalling error while trying to get block creators from contract: %w", err)
 	}
 
 	res.Creators = creators
 
 	return nil
+}
+
+func getCreatorsContractAddress() common.Address {
+	return common.HexToAddress("0x1000000000000000000000000000000000000004")
+}
+
+func getCreatorsContractFunction4Bytes() []byte {
+	switch {
+	default:
+		return []byte{0xe6, 0xad, 0xc1, 0xee} //getCreators()
+	}
 }
