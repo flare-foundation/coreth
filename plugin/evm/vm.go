@@ -857,6 +857,10 @@ func (vm *VM) CreateHandlers() (map[string]*commonEng.HTTPHandler, error) {
 		return nil, errs.Err
 	}
 
+	blockchain := vm.chain.BlockChain()
+	errs.Add(handler.RegisterName("flare", &FlareAPI{blockchain}))
+	enabledAPIs = append(enabledAPIs, "flare")
+
 	log.Info(fmt.Sprintf("Enabled APIs: %s", strings.Join(enabledAPIs, ", ")))
 	apis[ethRPCEndpoint] = &commonEng.HTTPHandler{
 		LockOptions: commonEng.NoLock,
