@@ -376,7 +376,7 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 	}
 
 	st.refundGas(apricotPhase1)
-	if vmerr == nil && *msg.To() == common.HexToAddress(GetPrioritisedFTSOContract(timestamp)) {
+	if vmerr == nil && msg.To() != nil && *msg.To() == common.HexToAddress(GetPrioritisedFTSOContract(timestamp)) {
 		nominalGasUsed := uint64(21000)
 		nominalGasPrice := uint64(225_000_000_000)
 		nominalFee := new(big.Int).Mul(new(big.Int).SetUint64(nominalGasUsed), new(big.Int).SetUint64(nominalGasPrice))
