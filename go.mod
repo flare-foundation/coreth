@@ -1,6 +1,6 @@
 module github.com/flare-foundation/coreth
 
-replace github.com/flare-foundation/flare => /Users/default/go/src/github.com/flare
+//replace github.com/flare-foundation/flare => /Users/default/go/src/github.com/flare
 
 go 1.16
 
@@ -13,7 +13,7 @@ require (
 	github.com/ethereum/go-ethereum v1.10.12
 	github.com/fjl/memsize v0.0.0-20190710130421-bcb5799ab5e5
 	github.com/flare-foundation/flare v0.0.0-00010101000000-000000000000
-	//github.com/flare-foundation/flare v0.4.0
+	github.com/flare-foundation/flare v0.4.0
 	github.com/gballet/go-libpcsclite v0.0.0-20191108122812-4678299bea08
 	github.com/google/uuid v1.1.5
 	github.com/gorilla/rpc v1.2.0
