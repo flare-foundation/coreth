@@ -191,6 +191,10 @@ type VM struct {
 	bootstrapped bool
 }
 
+func (vm *VM) GetEthChain() *coreth.ETHChain {
+	return vm.chain
+}
+
 func (vm *VM) Connected(nodeID ids.ShortID) error {
 	return nil // noop
 }
