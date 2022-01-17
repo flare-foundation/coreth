@@ -131,6 +131,11 @@ func init() {
 // ActivePrecompiles returns the precompiles enabled with the current configuration.
 func ActivePrecompiles(rules params.Rules) []common.Address {
 	switch {
+	// We roll back to precompiled contracts without the Avalanche native token
+	// contracts with the AP5 hard-fork, so that people can start using the
+	// correct burn address on Songbird after AP5 activation.
+	case rules.IsApricotPhase5:
+		return PrecompiledAddressesIstanbul
 	case rules.IsApricotPhase2:
 		return PrecompiledAddressesApricotPhase2
 	case rules.IsIstanbul:
