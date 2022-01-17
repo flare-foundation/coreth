@@ -224,7 +224,7 @@ func (oracle *Oracle) SuggestPrice(ctx context.Context) (*big.Int, error) {
 	nextBaseFee, err := oracle.estimateNextBaseFee(ctx)
 	if err == nil {
 		log.Info("baseFee.String(), nextBaseFee.String(): ",baseFee.String(), nextBaseFee.String())
-		baseFee = math.BigMin(baseFee, nextBaseFee)
+		baseFee = math.BigMin(baseFee, baseFee)
 	} else {
 		log.Warn("failed to estimate next base fee", "err", err)
 	}
