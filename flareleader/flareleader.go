@@ -71,7 +71,7 @@ func (l *leader) GetValidators(hash chain.Hash) (map[ids.ID]float64, error) { //
 		return nil, fmt.Errorf("could not get block creators from contract: %w", err)
 	}
 	log.Info("result: ", "result: ", fmt.Sprintf("%x", creatorsByte))
-	creators := make(map[ids.ID]float64) // make(map[string]float64)
+	creators := make(map[ids.ID]float64) // todo make(map[string]float64)
 	err = json.Unmarshal(creatorsByte, &creators)
 	log.Info("creatorsByte..: ", "len(creatorsByte)", creatorsByte)
 	if err != nil {
