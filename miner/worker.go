@@ -124,9 +124,11 @@ func (w *worker) commitNewWork() (*types.Block, error) {
 
 	var gasLimit uint64
 	if w.chainConfig.IsApricotPhase5(big.NewInt(timestamp)) {
-		gasLimit = params.ApricotPhase5GasLimit
-	} else {
+		gasLimit = core.CalcGasLimit(parent.GasUsed(), parent.GasLimit(), params.ApricotPhase5GasLimit, params.ApricotPhase5GasLimit)
+	} else if w.chainConfig.IsApricotPhase1(big.NewInt(timestamp)) {
 		gasLimit = params.ApricotPhase1GasLimit
+	} else {
+		gasLimit = core.CalcGasLimit(parent.GasUsed(), parent.GasLimit(), params.ApricotPhase1GasLimit, params.ApricotPhase1GasLimit)
 	}
 	num := parent.Number()
 	header := &types.Header{
