@@ -28,7 +28,6 @@ package gasprice
 
 import (
 	"context"
-	"fmt"
 	"math/big"
 	"sort"
 	"sync"
@@ -164,7 +163,7 @@ func NewOracle(backend OracleBackend, config Config) *Oracle {
 	}
 }
 
-// EstiamteBaseFee returns an estimate of what the base fee will be on a block
+// EstimateBaseFee returns an estimate of what the base fee will be on a block
 // produced at the current time. If ApricotPhase3 has not been activated, it may
 // return a nil value and a nil error.
 func (oracle *Oracle) EstimateBaseFee(ctx context.Context) (*big.Int, error) {
@@ -218,17 +217,11 @@ func (oracle *Oracle) SuggestPrice(ctx context.Context) (*big.Int, error) {
 	if err != nil {
 		return nil, err
 	}
-	if baseFee == nil {
-		fmt.Println("base fee nil")
-	}
 
 	// We calculate the [nextBaseFee] if a block were to be produced immediately.
 	// If [nextBaseFee] is lower than the estimate from sampling, then we return it
 	// to prevent returning an incorrectly high fee when the network is quiescent.
 	nextBaseFee, err := oracle.estimateNextBaseFee(ctx)
-	if nextBaseFee == nil {
-		fmt.Println("next base fee nil")
-	}
 	if err == nil {
 		baseFee = math.BigMin(baseFee, nextBaseFee)
 	} else {
