@@ -773,6 +773,7 @@ func (vm *VM) getBlock(id ids.ID) (snowman.Block, error) {
 
 // SetPreference sets what the current tail of the chain is
 func (vm *VM) SetPreference(blkID ids.ID) error {
+	log.Info("SetPreference in Coreth", "", "")
 	// Since each internal handler used by [vm.State] always returns a block
 	// with non-nil ethBlock value, GetBlockInternal should never return a
 	// (*Block) with a nil ethBlock value.
