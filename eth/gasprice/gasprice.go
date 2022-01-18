@@ -28,6 +28,7 @@ package gasprice
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 	"sort"
 	"sync"
@@ -217,14 +218,17 @@ func (oracle *Oracle) SuggestPrice(ctx context.Context) (*big.Int, error) {
 	if err != nil {
 		return nil, err
 	}
+	if baseFee == nil {
+		fmt.Println("base fee nil")
+	}
 
 	// We calculate the [nextBaseFee] if a block were to be produced immediately.
 	// If [nextBaseFee] is lower than the estimate from sampling, then we return it
 	// to prevent returning an incorrectly high fee when the network is quiescent.
-	if baseFee == nil {
-		baseFee = big.NewInt(0)
-	}
 	nextBaseFee, err := oracle.estimateNextBaseFee(ctx)
+	if nextBaseFee == nil {
+		fmt.Println("next base fee nil")
+	}
 	if err == nil {
 		baseFee = math.BigMin(baseFee, nextBaseFee)
 	} else {
