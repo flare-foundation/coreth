@@ -193,7 +193,7 @@ func (oracle *Oracle) estimateNextBaseFee(ctx context.Context) (*big.Int, error)
 	}
 	// If the fetched block does not have a base fee, return nil as the base fee
 	if block.BaseFee() == nil {
-		return nil, nil
+		return big.NewInt(0), nil
 	}
 
 	// If the current time is prior to the parent timestamp, then we use the parent
@@ -268,6 +268,7 @@ func (oracle *Oracle) suggestDynamicFees(ctx context.Context) (*big.Int, *big.In
 	if headHash == lastHead {
 		return new(big.Int).Set(lastPrice), new(big.Int).Set(lastBaseFee), nil
 	}
+
 	var (
 		sent, exp      int
 		number         = head.Number.Uint64()
@@ -289,35 +290,28 @@ func (oracle *Oracle) suggestDynamicFees(ctx context.Context) (*big.Int, *big.In
 			return new(big.Int).Set(lastPrice), new(big.Int).Set(lastBaseFee), res.err
 		}
 		exp--
-		if res.tip != nil {
-			tipResults = append(tipResults, res.tip)
-		} else {
-			tipResults = append(tipResults, new(big.Int).Set(common.Big0))
-		}
-
-		if res.baseFee != nil {
-			baseFeeResults = append(baseFeeResults, res.baseFee)
-		} else {
-			baseFeeResults = append(baseFeeResults, new(big.Int).Set(common.Big0))
-		}
+		tipResults = append(tipResults, new(big.Int).Set(common.Big0))
+		baseFeeResults = append(baseFeeResults, new(big.Int).Set(common.Big0))
 	}
+
 	price := lastPrice
 	baseFee := lastBaseFee
 	if len(tipResults) > 0 {
 		sort.Sort(bigIntArray(tipResults))
 		price = tipResults[(len(tipResults)-1)*oracle.percentile/100]
 	}
-
 	if len(baseFeeResults) > 0 {
 		sort.Sort(bigIntArray(baseFeeResults))
 		baseFee = baseFeeResults[(len(baseFeeResults)-1)*oracle.percentile/100]
 	}
+
 	if price.Cmp(oracle.maxPrice) > 0 {
 		price = new(big.Int).Set(oracle.maxPrice)
 	}
 	if price.Cmp(oracle.minPrice) < 0 {
 		price = new(big.Int).Set(oracle.minPrice)
 	}
+
 	oracle.cacheLock.Lock()
 	oracle.lastHead = headHash
 	oracle.lastPrice = price
@@ -345,27 +339,29 @@ func (oracle *Oracle) getBlockTips(ctx context.Context, blockNum uint64, result 
 		return
 	}
 
-	// Don't bias the estimate with blocks containing a limited number of transactions paying to
-	// expedite block production.
-	if header.GasUsed < oracle.minGasUsed.Uint64() {
-		select {
-		case result <- results{nil, header.BaseFee, nil}:
-		case <-quit:
-		}
-		return
+	// Make sure we always have a non-nil base fee.
+	baseFee := big.NewInt(0)
+	if header.BaseFee != nil {
+		baseFee = header.BaseFee
 	}
 
-	// Compute minimum required tip to be included in previous block
-	//
-	// NOTE: Using this approach, we will never recommend that the caller
-	// provides a non-zero tip unless some block is produced faster than the
-	// target rate (which could only occur if some set of callers manually override the
-	// suggested tip). In the future, we may wish to start suggesting a non-zero
-	// tip when most blocks are full otherwise callers may observe an unexpected
-	// delay in transaction inclusion.
-	minTip, err := oracle.backend.MinRequiredTip(ctx, header)
+	tip := big.NewInt(0)
+	// Don't bias the estimate with blocks containing a limited number of transactions paying to
+	// expedite block production.
+	if header.GasUsed >= oracle.minGasUsed.Uint64() {
+		// Compute minimum required tip to be included in previous block
+		//
+		// NOTE: Using this approach, we will never recommend that the caller
+		// provides a non-zero tip unless some block is produced faster than the
+		// target rate (which could only occur if some set of callers manually override the
+		// suggested tip). In the future, we may wish to start suggesting a non-zero
+		// tip when most blocks are full otherwise callers may observe an unexpected
+		// delay in transaction inclusion.
+		tip, err = oracle.backend.MinRequiredTip(ctx, header)
+	}
+
 	select {
-	case result <- results{minTip, header.BaseFee, err}:
+	case result <- results{tip, baseFee, err}:
 	case <-quit:
 	}
 }
