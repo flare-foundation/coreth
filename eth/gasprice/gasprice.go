@@ -290,8 +290,8 @@ func (oracle *Oracle) suggestDynamicFees(ctx context.Context) (*big.Int, *big.In
 			return new(big.Int).Set(lastPrice), new(big.Int).Set(lastBaseFee), res.err
 		}
 		exp--
-		tipResults = append(tipResults, new(big.Int).Set(common.Big0))
-		baseFeeResults = append(baseFeeResults, new(big.Int).Set(common.Big0))
+		tipResults = append(tipResults, res.tip)
+		baseFeeResults = append(baseFeeResults, res.baseFee)
 	}
 
 	price := lastPrice
