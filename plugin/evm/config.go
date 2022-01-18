@@ -18,8 +18,8 @@ const (
 	defaultWeb3ApiEnabled              = true
 	defaultPruningEnabled              = true
 	defaultSnapshotAsync               = true
-	defaultRpcGasCap                   = 50_000_000 // Default to 50M Gas Limit
-	defaultRpcTxFeeCap                 = 100        // 100 AVAX
+	defaultRpcGasCap                   = 120_000_000 // Default to 120M Gas Limit
+	defaultRpcTxFeeCap                 = 100         // 100 AVAX
 	defaultMetricsEnabled              = false
 	defaultMetricsExpensiveEnabled     = false
 	defaultApiMaxDuration              = 0 // Default to no maximum API call duration

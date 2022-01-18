@@ -276,10 +276,6 @@ func makeHeader(chain consensus.ChainReader, config *params.ChainConfig, parent 
 		time = parent.Time() + gap
 	}
 
-	// Avalanche made the gas limit converge to 8M by putting the ceil and floor
-	// for the gas limit to 8M at one point. We don't really need a soft
-	// convergence on it, nothing wrong with just a hard switch. Keeps the code
-	// simpler.
 	timestamp := new(big.Int).SetUint64(time)
 	var gasLimit uint64
 	if config.IsApricotPhase5(timestamp) {
