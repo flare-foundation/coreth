@@ -19,7 +19,7 @@ const (
 	AvalancheAtomicTxFee = units.MilliAvax
 
 	ApricotPhase1GasLimit uint64 = 8_000_000
-	ApricotPhase5GasLimit uint64 = 30_000_000
+	ApricotPhase5GasLimit uint64 = 100_000_000
 
 	ApricotPhase3ExtraDataSize                   = 80
 	ApricotPhase3MinBaseFee               int64  = 75_000_000_000
@@ -29,7 +29,7 @@ const (
 	ApricotPhase4MinBaseFee               int64  = 25_000_000_000
 	ApricotPhase4MaxBaseFee               int64  = 1_000_000_000_000
 	ApricotPhase4BaseFeeChangeDenominator uint64 = 12
-	ApricotPhase5TargetGas                uint64 = 150_000_000
+	ApricotPhase5TargetGas                uint64 = 500_000_000
 	ApricotPhase5BaseFeeChangeDenominator uint64 = 36
 
 	// The base cost to charge per atomic transaction. Added in Apricot Phase 5.
