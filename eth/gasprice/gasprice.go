@@ -51,7 +51,7 @@ var (
 	DefaultMaxPrice   = big.NewInt(150 * params.GWei)
 	DefaultMinPrice   = big.NewInt(0 * params.GWei)
 	DefaultMinBaseFee = big.NewInt(params.ApricotPhase3InitialBaseFee)
-	DefaultMinGasUsed = big.NewInt(40_000_000) // block gas limit is 100,000,000
+	DefaultMinGasUsed = big.NewInt(80_000_000) // block gas limit is 200,000,000
 )
 
 type Config struct {

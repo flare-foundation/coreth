@@ -18,7 +18,7 @@ const (
 	defaultWeb3ApiEnabled              = true
 	defaultPruningEnabled              = true
 	defaultSnapshotAsync               = true
-	defaultRpcGasCap                   = 400_000_000 // Default to 400M Gas Limit which is usually about 4x the maximum gas limit
+	defaultRpcGasCap                   = 800_000_000 // Default to 800M Gas Limit which is usually about 4x the maximum gas limit
 	defaultRpcTxFeeCap                 = 100         // 100 AVAX
 	defaultMetricsEnabled              = false
 	defaultMetricsExpensiveEnabled     = false
