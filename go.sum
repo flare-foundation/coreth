@@ -165,6 +165,8 @@ github.com/flare-foundation/flare v0.3.5-0.20220117220635-c27b6e75b746 h1:LlH0Wo
 github.com/flare-foundation/flare v0.3.5-0.20220117220635-c27b6e75b746/go.mod h1:PUYqQqjHD+2MkGWnsgpixnTq3+ElNbwdXTyAfLVQ7dY=
 github.com/flare-foundation/flare v0.3.5-0.20220117234227-ab99276a9ea8 h1:I8JKeB7FSDqBHB8xUeTcFtrZo0uHlQJgTsJLvCf/lDc=
 github.com/flare-foundation/flare v0.3.5-0.20220117234227-ab99276a9ea8/go.mod h1:PUYqQqjHD+2MkGWnsgpixnTq3+ElNbwdXTyAfLVQ7dY=
+github.com/flare-foundation/flare v0.3.5-0.20220120123657-f19fe94ba4ef h1:khA0vv/SGdeRFbBxdgaryxHwnhwh7uVXFUmaGu1tHhI=
+github.com/flare-foundation/flare v0.3.5-0.20220120123657-f19fe94ba4ef/go.mod h1:PUYqQqjHD+2MkGWnsgpixnTq3+ElNbwdXTyAfLVQ7dY=
 github.com/fogleman/gg v1.2.1-0.20190220221249-0403632d5b90/go.mod h1:R/bRT+9gY/C5z7JzPU0zXsXHKM4/ayA+zqcVNZzPa1k=
 github.com/fogleman/gg v1.3.0/go.mod h1:R/bRT+9gY/C5z7JzPU0zXsXHKM4/ayA+zqcVNZzPa1k=
 github.com/fortytw2/leaktest v1.3.0 h1:u8491cBMTQ8ft8aeV+adlcytMZylmA5nnwwkRZjI8vw=
