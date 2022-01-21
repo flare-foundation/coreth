@@ -363,6 +363,8 @@ func (vm *VM) Initialize(
 		return err
 	}
 	vm.chain = ethChain
+	log.Info("vm.chain assigned in Coreth", "", "")
+	log.Info(fmt.Sprintln(ethChain))
 	lastAccepted := vm.chain.LastAcceptedBlock()
 
 	// start goroutines to update the tx pool gas minimum gas price when upgrades go into effect
