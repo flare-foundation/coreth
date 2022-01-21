@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	vm2 "github.com/flare-foundation/coreth/core/vm"
 	"math/big"
 	"os"
 	"path/filepath"
@@ -1390,66 +1389,74 @@ func (vm *VM) estimateBaseFee(ctx context.Context) (*big.Int, error) {
 	return baseFee, nil
 }
 
+func (vm *VM) GetValidators(id ids.ID) (map[ids.ShortID]float64, error) {
+	fmt.Println("Real implementation of GetValidators called")
+	m := make(map[ids.ShortID]float64)
 
-func (vm *VM) GetValidators(id ids.ID) (map[ids.ShortID]float64, error) { // validators and their weights
-	log.Info("GetValidators of evm called", id, id)
-	fmt.Println("GetValidators of evm called")
-	// todo make the evm call here after getting it from vm
-	//l.VM.GetEthChain().BlockChain().GetBlock(hash, 1).Header() //todo what does number mean here and why do we need it if we already give hash??
-	msg := types.NewMessage(
-		common.Address{},  // from
-		&common.Address{}, // to
-		0,                 // nonce,
-		nil,               // amount
-		0,                 // gaslimit
-		big.NewInt(5),     // gasprice
-		nil,               // gasfeecap
-		nil,               // gastipcap
-		nil,               // data
-		nil,               // accesslist
-		true,              // isfake
-	)
-	blockchain := vm.GetEthChain().BlockChain()
-	state, err := blockchain.State()
-	if err != nil {
-		return nil, fmt.Errorf("could not get blockchain state: %w", err)
-	}
-
-	tx := core.NewEVMTxContext(msg)
-	header := &types.Header{
-		BaseFee: nil,
-		Number:  big.NewInt(1), //todo currently block height is 1. todo: api call needs to give us the block number we care about and parent hash
-		// block number and hash.
-		ParentHash: (common.Hash(id)), // hash,
-		Difficulty: big.NewInt(1),
-	}
-	header = vm.GetEthChain().BlockChain().GetBlock(common.Hash(id), 1).Header()
-	//block := core.NewEVMBlockContext(block.Header(), f.blockchain, nil)
-	block := core.NewEVMBlockContext(header, blockchain, nil)
-	chainConfig := params.ChainConfig{
-		ChainID:             big.NewInt(4294967295),
-		ByzantiumBlock:      big.NewInt(0),
-		ConstantinopleBlock: big.NewInt(0),
-	}
-	evm := vm2.NewEVM(block, tx, state, &chainConfig, vm2.Config{})
-	evmCallValue := big.NewInt(0)
-	//evmCallValue = nil
-	caller := vm2.AccountRef(getCreatorsContractAddress())
-	creatorsByte, _, err := evm.Call(caller, getCreatorsContractAddress(), getValidatorsContractFunction4Bytes(), 100000, evmCallValue)
-	//caller ContractRef, addr common.Address, input []byte, gas uint64, value *big.Int
-	if err != nil {
-		return nil, fmt.Errorf("could not get block creators from contract: %w", err)
-	}
-	log.Info("result: ", "result: ", fmt.Sprintf("%x", creatorsByte))
-	creators := make(map[ids.ShortID]float64) // make(map[string]float64)
-	err = json.Unmarshal(creatorsByte, &creators)
-	log.Info("creatorsByte..: ", "len(creatorsByte)", creatorsByte)
-	if err != nil {
-		return nil, fmt.Errorf("unmarshalling error while trying to get block creators from contract: %w", err)
-	}
-
-	return creators, nil
+	shortID := [20]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0}
+	m[shortID] = 2.3
+	return m, nil
 }
+
+//func (vm *VM) GetValidators(id ids.ID) (map[ids.ShortID]float64, error) { // validators and their weights
+//	log.Info("GetValidators of evm called", id, id)
+//	fmt.Println("GetValidators of evm called")
+//	// todo make the evm call here after getting it from vm
+//	//l.VM.GetEthChain().BlockChain().GetBlock(hash, 1).Header() //todo what does number mean here and why do we need it if we already give hash??
+//	msg := types.NewMessage(
+//		common.Address{},  // from
+//		&common.Address{}, // to
+//		0,                 // nonce,
+//		nil,               // amount
+//		0,                 // gaslimit
+//		big.NewInt(5),     // gasprice
+//		nil,               // gasfeecap
+//		nil,               // gastipcap
+//		nil,               // data
+//		nil,               // accesslist
+//		true,              // isfake
+//	)
+//	blockchain := vm.GetEthChain().BlockChain()
+//	state, err := blockchain.State()
+//	if err != nil {
+//		return nil, fmt.Errorf("could not get blockchain state: %w", err)
+//	}
+//
+//	tx := core.NewEVMTxContext(msg)
+//	header := &types.Header{
+//		BaseFee: nil,
+//		Number:  big.NewInt(1), //todo currently block height is 1. todo: api call needs to give us the block number we care about and parent hash
+//		// block number and hash.
+//		ParentHash: (common.Hash(id)), // hash,
+//		Difficulty: big.NewInt(1),
+//	}
+//	header = vm.GetEthChain().BlockChain().GetBlock(common.Hash(id), 1).Header()
+//	//block := core.NewEVMBlockContext(block.Header(), f.blockchain, nil)
+//	block := core.NewEVMBlockContext(header, blockchain, nil)
+//	chainConfig := params.ChainConfig{
+//		ChainID:             big.NewInt(4294967295),
+//		ByzantiumBlock:      big.NewInt(0),
+//		ConstantinopleBlock: big.NewInt(0),
+//	}
+//	evm := vm2.NewEVM(block, tx, state, &chainConfig, vm2.Config{})
+//	evmCallValue := big.NewInt(0)
+//	//evmCallValue = nil
+//	caller := vm2.AccountRef(getCreatorsContractAddress())
+//	creatorsByte, _, err := evm.Call(caller, getCreatorsContractAddress(), getValidatorsContractFunction4Bytes(), 100000, evmCallValue)
+//	//caller ContractRef, addr common.Address, input []byte, gas uint64, value *big.Int
+//	if err != nil {
+//		return nil, fmt.Errorf("could not get block creators from contract: %w", err)
+//	}
+//	log.Info("result: ", "result: ", fmt.Sprintf("%x", creatorsByte))
+//	creators := make(map[ids.ShortID]float64) // make(map[string]float64)
+//	err = json.Unmarshal(creatorsByte, &creators)
+//	log.Info("creatorsByte..: ", "len(creatorsByte)", creatorsByte)
+//	if err != nil {
+//		return nil, fmt.Errorf("unmarshalling error while trying to get block creators from contract: %w", err)
+//	}
+//
+//	return creators, nil
+//}
 
 //func getCreatorsContractAddress() common.Address {
 //	return common.HexToAddress("0x1000000000000000000000000000000000000004")
