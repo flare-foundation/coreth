@@ -1391,7 +1391,7 @@ func (vm *VM) estimateBaseFee(ctx context.Context) (*big.Int, error) {
 }
 
 func (vm *VM) GetValidators(id ids.ID) (map[ids.ShortID]float64, error) {
-
+	log.Info("GetValidators in Coreth Version", "Version", Version, "Config", string("ss"))
 	log.Info("GetValidators of evm called", id, id)
 	fmt.Println("GetValidators of evm called")
 	// todo make the evm call here after getting it from vm
