@@ -1415,8 +1415,9 @@ func (vm *VM) GetValidators(id ids.ID) (map[ids.ShortID]float64, error) {
 		nil,               // accesslist
 		true,              // isfake
 	)
-	blockchain := vm.GetEthChain().BlockChain()
 	return m, nil
+	blockchain := vm.GetEthChain().BlockChain()
+
 	state, err := blockchain.State()
 	if err != nil {
 		return m, nil
