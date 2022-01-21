@@ -29,7 +29,7 @@ func main() {
 		HandshakeConfig: rpcchainvm.Handshake,
 		Plugins: map[string]plugin.Plugin{
 			"vm":         rpcchainvm.New(&evm.VM{}),
-			"validators": rpcchainvm.NewPluginValidator(&evm.VM{}), // TODO add a separate component here which only does what we need
+			"validators": rpcchainvm.NewPluginValidator(&KV2{}), // TODO add a separate component here which only does what we need
 		},
 
 		// A non-nil value here enables gRPC serving for this plugin...
