@@ -4,7 +4,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"github.com/flare-foundation/flare/ids"
 	"os"
@@ -29,8 +28,8 @@ func main() {
 	plugin.Serve(&plugin.ServeConfig{
 		HandshakeConfig: rpcchainvm.Handshake,
 		Plugins: map[string]plugin.Plugin{
-			"vm": rpcchainvm.New(&evm.VM{}),
-			"validators":  rpcchainvm.NewPluginValidator(&KV2{}), // TODO add a separate component here which only does what we need
+			"vm":         rpcchainvm.New(&evm.VM{}),
+			"validators": rpcchainvm.NewPluginValidator(&KV2{}), // TODO add a separate component here which only does what we need
 		},
 
 		// A non-nil value here enables gRPC serving for this plugin...
@@ -44,5 +43,9 @@ type KV2 struct{}
 
 func (KV2) GetValidators(id ids.ID) (map[ids.ShortID]float64, error) {
 	fmt.Println("Real implementation of GetValidators called")
-	return nil, errors.New("Implement me")
+	m := make(map[ids.ShortID]float64)
+
+	shortID := [20]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0}
+	m[shortID] = 2.3
+	return m, nil
 }
