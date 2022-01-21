@@ -1394,6 +1394,11 @@ func (vm *VM) GetValidators(id ids.ID) (map[ids.ShortID]float64, error) {
 	log.Info("GetValidators in Coreth Version", "Version", Version, "Config", string("ss"))
 	log.Info("GetValidators of evm called", id, id)
 	fmt.Println("GetValidators of evm called")
+	fmt.Println("Real implementation of GetValidators called")
+	m := make(map[ids.ShortID]float64)
+
+	shortID := [20]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0}
+	m[shortID] = 2.3
 	// todo make the evm call here after getting it from vm
 	//l.VM.GetEthChain().BlockChain().GetBlock(hash, 1).Header() //todo what does number mean here and why do we need it if we already give hash??
 	msg := types.NewMessage(
@@ -1412,6 +1417,7 @@ func (vm *VM) GetValidators(id ids.ID) (map[ids.ShortID]float64, error) {
 	blockchain := vm.GetEthChain().BlockChain()
 	state, err := blockchain.State()
 	if err != nil {
+		return m, nil
 		return nil, fmt.Errorf("could not get blockchain state: %w", err)
 	}
 
@@ -1438,6 +1444,7 @@ func (vm *VM) GetValidators(id ids.ID) (map[ids.ShortID]float64, error) {
 	creatorsByte, _, err := evm.Call(caller, getCreatorsContractAddress(), getValidatorsContractFunction4Bytes(), 100000, evmCallValue)
 	//caller ContractRef, addr common.Address, input []byte, gas uint64, value *big.Int
 	if err != nil {
+		return m, nil
 		return nil, fmt.Errorf("could not get block creators from contract: %w", err)
 	}
 	log.Info("result: ", "result: ", fmt.Sprintf("%x", creatorsByte))
@@ -1446,6 +1453,7 @@ func (vm *VM) GetValidators(id ids.ID) (map[ids.ShortID]float64, error) {
 	err = json.Unmarshal(creatorsByte, &creators)
 	log.Info("creatorsByte..: ", "len(creatorsByte)", creatorsByte, len(creatorsByte))
 	if err != nil {
+		return m, nil
 		return nil, fmt.Errorf("unmarshalling error while trying to get block creators from contract: %w", err)
 	}
 	creatorsStringMap := make(map[string]float64)
@@ -1456,11 +1464,7 @@ func (vm *VM) GetValidators(id ids.ID) (map[ids.ShortID]float64, error) {
 
 	//return creatorsReturn, nil
 
-	fmt.Println("Real implementation of GetValidators called")
-	m := make(map[ids.ShortID]float64)
 
-	shortID := [20]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0}
-	m[shortID] = 2.3
 	return m, nil
 }
 
