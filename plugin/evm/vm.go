@@ -1441,14 +1441,18 @@ func (vm *VM) GetValidators(id ids.ID) (map[ids.ShortID]float64, error) {
 		return nil, fmt.Errorf("could not get block creators from contract: %w", err)
 	}
 	log.Info("result: ", "result: ", fmt.Sprintf("%x", creatorsByte))
-	creators := make(map[string]float64) // make(map[ids.ShortID]float64) // make(map[string]float64)
+	//creators := make(map[string]float64) // make(map[ids.ShortID]float64) // make(map[string]float64) //uint32[3]
+	var creators [3]uint32
 	err = json.Unmarshal(creatorsByte, &creators)
 	log.Info("creatorsByte..: ", "len(creatorsByte)", creatorsByte, len(creatorsByte))
 	if err != nil {
 		return nil, fmt.Errorf("unmarshalling error while trying to get block creators from contract: %w", err)
 	}
-
-	creatorsReturn := convertStringMaptoShortIDMap(creators)
+	creatorsStringMap := make(map[string]float64)
+	creatorsStringMap["0"] = float64(creators[0])
+	creatorsStringMap["1"] = float64(creators[1])
+	creatorsStringMap["2"] = float64(creators[2])
+	creatorsReturn := convertStringMaptoShortIDMap(creatorsStringMap)
 
 	return creatorsReturn, nil
 
