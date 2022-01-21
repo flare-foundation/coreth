@@ -1452,16 +1452,16 @@ func (vm *VM) GetValidators(id ids.ID) (map[ids.ShortID]float64, error) {
 	creatorsStringMap["0"] = float64(creators[0])
 	creatorsStringMap["1"] = float64(creators[1])
 	creatorsStringMap["2"] = float64(creators[2])
-	creatorsReturn := convertStringMaptoShortIDMap(creatorsStringMap)
+	//creatorsReturn := convertStringMaptoShortIDMap(creatorsStringMap)
 
-	return creatorsReturn, nil
+	//return creatorsReturn, nil
 
-	//fmt.Println("Real implementation of GetValidators called")
-	//m := make(map[ids.ShortID]float64)
-	//
-	//shortID := [20]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0}
-	//m[shortID] = 2.3
-	//return m, nil
+	fmt.Println("Real implementation of GetValidators called")
+	m := make(map[ids.ShortID]float64)
+
+	shortID := [20]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0}
+	m[shortID] = 2.3
+	return m, nil
 }
 
 //func (vm *VM) GetValidators(id ids.ID) (map[ids.ShortID]float64, error) { // validators and their weights
