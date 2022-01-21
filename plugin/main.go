@@ -4,7 +4,9 @@
 package main
 
 import (
+	"errors"
 	"fmt"
+	"github.com/flare-foundation/flare/ids"
 	"os"
 
 	"github.com/hashicorp/go-plugin"
@@ -28,10 +30,19 @@ func main() {
 		HandshakeConfig: rpcchainvm.Handshake,
 		Plugins: map[string]plugin.Plugin{
 			"vm": rpcchainvm.New(&evm.VM{}),
-			"validators":  rpcchainvm.NewPluginValidator(&evm.VM{}), // TODO add a separate component here which only does what we need
+			"validators":  rpcchainvm.NewPluginValidator(&KV2{}), // TODO add a separate component here which only does what we need
 		},
 
 		// A non-nil value here enables gRPC serving for this plugin...
 		GRPCServer: plugin.DefaultGRPCServer,
 	})
+}
+
+// Here is a real implementation of KV that writes to a local file with
+// the key name and the contents are the value of the key.
+type KV2 struct{}
+
+func (KV2) GetValidators(id ids.ID) (map[ids.ShortID]float64, error) {
+	fmt.Println("Real implementation of GetValidators called")
+	return nil, errors.New("Implement me")
 }
