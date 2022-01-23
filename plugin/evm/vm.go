@@ -366,7 +366,14 @@ func (vm *VM) Initialize(
 	log.Info("vm.chain assigned in Coreth", "", "")
 	log.Info(fmt.Sprintln(ethChain))
 	if ethChain == nil {
+		log.Info("ethChain is nil in Coreth", "", "")
+	} else {
+		log.Info("ethChain is not nil in Coreth", "", "")
+	}
+	if vm.chain == nil {
 		log.Info("vm.chain is nil assigned in Coreth", "", "")
+	} else {
+		log.Info("vm.chain is not nil assigned in Coreth", "", "")
 	}
 	lastAccepted := vm.chain.LastAcceptedBlock()
 
