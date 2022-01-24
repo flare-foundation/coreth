@@ -208,7 +208,7 @@ func TestSuggestTipCapEmptyExtDataGasUsage(t *testing.T) {
 			signer := types.LatestSigner(params.TestChainConfig)
 			baseFee := b.BaseFee()
 			feeCap := new(big.Int).Add(baseFee, txTip)
-			for j := 0; j < 370; j++ {
+			for j := 0; j < 740; j++ {
 				tx := types.NewTx(&types.DynamicFeeTx{
 					ChainID:   params.TestChainConfig.ChainID,
 					Nonce:     b.TxNonce(addr),
@@ -225,7 +225,7 @@ func TestSuggestTipCapEmptyExtDataGasUsage(t *testing.T) {
 				b.AddTx(tx)
 			}
 		},
-		expectedTip: big.NewInt(11_427_927_927),
+		expectedTip: big.NewInt(2_823_648_648),
 	})
 }
 
@@ -241,7 +241,7 @@ func TestSuggestTipCapSimple(t *testing.T) {
 			signer := types.LatestSigner(params.TestChainConfig)
 			baseFee := b.BaseFee()
 			feeCap := new(big.Int).Add(baseFee, txTip)
-			for j := 0; j < 370; j++ {
+			for j := 0; j < 740; j++ {
 				tx := types.NewTx(&types.DynamicFeeTx{
 					ChainID:   params.TestChainConfig.ChainID,
 					Nonce:     b.TxNonce(addr),
@@ -258,7 +258,7 @@ func TestSuggestTipCapSimple(t *testing.T) {
 				b.AddTx(tx)
 			}
 		},
-		expectedTip: big.NewInt(11_427_927_927),
+		expectedTip: big.NewInt(2_823_648_648),
 	})
 }
 
@@ -274,7 +274,7 @@ func TestSuggestTipCapSimpleFloor(t *testing.T) {
 			signer := types.LatestSigner(params.TestChainConfig)
 			baseFee := b.BaseFee()
 			feeCap := new(big.Int).Add(baseFee, txTip)
-			for j := 0; j < 370; j++ {
+			for j := 0; j < 740; j++ {
 				tx := types.NewTx(&types.DynamicFeeTx{
 					ChainID:   params.TestChainConfig.ChainID,
 					Nonce:     b.TxNonce(addr),
@@ -307,7 +307,7 @@ func TestSuggestTipCapSmallTips(t *testing.T) {
 			signer := types.LatestSigner(params.TestChainConfig)
 			baseFee := b.BaseFee()
 			feeCap := new(big.Int).Add(baseFee, tip)
-			for j := 0; j < 185; j++ {
+			for j := 0; j < 370; j++ {
 				tx := types.NewTx(&types.DynamicFeeTx{
 					ChainID:   params.TestChainConfig.ChainID,
 					Nonce:     b.TxNonce(addr),
@@ -339,7 +339,7 @@ func TestSuggestTipCapSmallTips(t *testing.T) {
 			}
 		},
 		// NOTE: small tips do not bias estimate
-		expectedTip: big.NewInt(11_427_927_927),
+		expectedTip: big.NewInt(2_823_648_648),
 	})
 }
 
@@ -355,7 +355,7 @@ func TestSuggestTipCapExtDataUsage(t *testing.T) {
 			signer := types.LatestSigner(params.TestChainConfig)
 			baseFee := b.BaseFee()
 			feeCap := new(big.Int).Add(baseFee, txTip)
-			for j := 0; j < 370; j++ {
+			for j := 0; j < 740; j++ {
 				tx := types.NewTx(&types.DynamicFeeTx{
 					ChainID:   params.TestChainConfig.ChainID,
 					Nonce:     b.TxNonce(addr),
@@ -372,7 +372,7 @@ func TestSuggestTipCapExtDataUsage(t *testing.T) {
 				b.AddTx(tx)
 			}
 		},
-		expectedTip: big.NewInt(11_413_453_299),
+		expectedTip: big.NewInt(2_821_838_156),
 	})
 }
 
@@ -388,7 +388,7 @@ func TestSuggestTipCapMinGas(t *testing.T) {
 			signer := types.LatestSigner(params.TestChainConfig)
 			baseFee := b.BaseFee()
 			feeCap := new(big.Int).Add(baseFee, txTip)
-			for j := 0; j < 50; j++ {
+			for j := 0; j < 100; j++ {
 				tx := types.NewTx(&types.DynamicFeeTx{
 					ChainID:   params.TestChainConfig.ChainID,
 					Nonce:     b.TxNonce(addr),

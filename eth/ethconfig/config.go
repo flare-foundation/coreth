@@ -64,7 +64,7 @@ func NewDefaultConfig() Config {
 		SnapshotCache:           128,
 		Miner:                   miner.Config{},
 		TxPool:                  core.DefaultTxPoolConfig,
-		RPCGasCap:               25000000,
+		RPCGasCap:               120000000,
 		RPCEVMTimeout:           5 * time.Second,
 		GPO:                     DefaultFullGPOConfig,
 		RPCTxFeeCap:             1, // 1 AVAX

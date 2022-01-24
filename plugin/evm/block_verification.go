@@ -505,10 +505,10 @@ func (blockValidatorPhase5) SyntacticVerify(b *Block) error {
 			ethHeader.Nonce.Uint64(), errInvalidNonce,
 		)
 	}
-	if ethHeader.GasLimit != params.ApricotPhase1GasLimit {
+	if ethHeader.GasLimit != params.ApricotPhase5GasLimit {
 		return fmt.Errorf(
-			"expected gas limit to be %d in apricot phase 1 but got %d",
-			params.ApricotPhase1GasLimit, ethHeader.GasLimit,
+			"expected gas limit to be %d in apricot phase 5 but got %d",
+			params.ApricotPhase5GasLimit, ethHeader.GasLimit,
 		)
 	}
 	if ethHeader.MixDigest != (common.Hash{}) {

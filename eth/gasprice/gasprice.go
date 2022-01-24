@@ -51,7 +51,7 @@ var (
 	DefaultMaxPrice   = big.NewInt(150 * params.GWei)
 	DefaultMinPrice   = big.NewInt(0 * params.GWei)
 	DefaultMinBaseFee = big.NewInt(params.ApricotPhase3InitialBaseFee)
-	DefaultMinGasUsed = big.NewInt(6_000_000) // block gas limit is 8,000,000
+	DefaultMinGasUsed = big.NewInt(12_000_000) // block gas limit is 30,000,000
 )
 
 type Config struct {
@@ -180,6 +180,10 @@ func (oracle *Oracle) EstimateBaseFee(ctx context.Context) (*big.Int, error) {
 		log.Warn("failed to estimate next base fee", "err", err)
 		return baseFee, nil
 	}
+	// If base fees have not been enabled, return a nil value.
+	if nextBaseFee == nil {
+		return nil, nil
+	}
 
 	baseFee = math.BigMin(baseFee, nextBaseFee)
 	return baseFee, nil
@@ -222,11 +226,14 @@ func (oracle *Oracle) SuggestPrice(ctx context.Context) (*big.Int, error) {
 	// If [nextBaseFee] is lower than the estimate from sampling, then we return it
 	// to prevent returning an incorrectly high fee when the network is quiescent.
 	nextBaseFee, err := oracle.estimateNextBaseFee(ctx)
-	if err == nil {
+	if err != nil {
 		log.Info("baseFee.String(), nextBaseFee.String(): ",baseFee.String(), nextBaseFee.String())
-		baseFee = math.BigMin(baseFee, baseFee)
-	} else {
 		log.Warn("failed to estimate next base fee", "err", err)
+	}
+	// Separately from checking the error value, check that [nextBaseFee] is non-nil
+	// before attempting to take the minimum.
+	if nextBaseFee != nil {
+		baseFee = math.BigMin(baseFee, nextBaseFee)
 	}
 
 	return new(big.Int).Add(tip, baseFee), nil

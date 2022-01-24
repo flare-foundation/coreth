@@ -84,7 +84,11 @@ func (self *DummyEngine) verifyHeaderGasFields(config *params.ChainConfig, heade
 	if header.GasUsed > header.GasLimit {
 		return fmt.Errorf("invalid gasUsed: have %d, gasLimit %d", header.GasUsed, header.GasLimit)
 	}
-	if config.IsApricotPhase1(timestamp) {
+	if config.IsApricotPhase5(timestamp) {
+		if header.GasLimit != params.ApricotPhase5GasLimit {
+			return fmt.Errorf("expected gas limit to be %d, but found %d", params.ApricotPhase5GasLimit, header.GasLimit)
+		}
+	} else if config.IsApricotPhase1(timestamp) {
 		if header.GasLimit != params.ApricotPhase1GasLimit {
 			return fmt.Errorf("expected gas limit to be %d, but found %d", params.ApricotPhase1GasLimit, header.GasLimit)
 		}
