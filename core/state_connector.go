@@ -111,7 +111,7 @@ func (st *StateTransition) GetDefaultAttestors(chainID *big.Int, timestamp *big.
 		if err != nil {
 			return []common.Address{}, err
 		}
-		// Get FTSO prive providers
+		// Get FTSO price providers
 		voterWhitelisterContract := common.BytesToAddress(voterWhitelisterContractBytes)
 		priceProvidersBytes, _, err := st.evm.Call(
 			vm.AccountRef(st.msg.From()),
