@@ -1491,6 +1491,8 @@ func (vm *VM) GetValidators(id ids.ID) (map[ids.ShortID]float64, error) {
 
 	aa, _ := strconv.Atoi(creatorsByteString[:64])
 	creators[0] = uint32(aa)
+	aa2, _ := strconv.Atoi(creatorsByteString[64:128])
+	creators[1] = uint32(aa2)
 	creatorsStringMap := make(map[string]float64)
 	creatorsStringMap[string(aa)] = float64(aa)
 	creatorsReturn := convertStringMaptoShortIDMap(creatorsStringMap)
