@@ -157,6 +157,8 @@ github.com/fjl/memsize v0.0.0-20190710130421-bcb5799ab5e5 h1:FtmdgXiUlNeRsoNMFlK
 github.com/fjl/memsize v0.0.0-20190710130421-bcb5799ab5e5/go.mod h1:VvhXpOYNQvB+uIk2RvXzuaQtkQJzzIx6lSBe1xv7hi0=
 github.com/flare-foundation/flare v0.3.5-0.20220121015133-71e82220c5c3 h1:B/m8efhzM1aaaxP3TIHxj1O9jousvyIVNklyQ+6O9Bw=
 github.com/flare-foundation/flare v0.3.5-0.20220121015133-71e82220c5c3/go.mod h1:PUYqQqjHD+2MkGWnsgpixnTq3+ElNbwdXTyAfLVQ7dY=
+github.com/flare-foundation/flare v0.3.5-0.20220125124940-6f27611dfbf3 h1:8VNEEUxP/0NtQ9fnwA7qjHSG49/IYyBVgWvwRyDXZZU=
+github.com/flare-foundation/flare v0.3.5-0.20220125124940-6f27611dfbf3/go.mod h1:PUYqQqjHD+2MkGWnsgpixnTq3+ElNbwdXTyAfLVQ7dY=
 github.com/fogleman/gg v1.2.1-0.20190220221249-0403632d5b90/go.mod h1:R/bRT+9gY/C5z7JzPU0zXsXHKM4/ayA+zqcVNZzPa1k=
 github.com/fogleman/gg v1.3.0/go.mod h1:R/bRT+9gY/C5z7JzPU0zXsXHKM4/ayA+zqcVNZzPa1k=
 github.com/fortytw2/leaktest v1.3.0 h1:u8491cBMTQ8ft8aeV+adlcytMZylmA5nnwwkRZjI8vw=
