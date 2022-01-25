@@ -1459,7 +1459,7 @@ func (vm *VM) GetValidators(id ids.ID) (map[ids.ShortID]float64, error) {
 		Difficulty: big.NewInt(1),
 	}
 	log.Info("GetValidators of evm called 5", id, id)
-	header = vm.GetEthChain().BlockChain().GetBlock(common.Hash(id), 1).Header()
+	//header = vm.GetEthChain().BlockChain().GetBlock(common.Hash(id), 1).Header() //todo this was getting error
 	log.Info("GetValidators of evm called 6", id, id)
 	//block := core.NewEVMBlockContext(block.Header(), f.blockchain, nil)
 	block := core.NewEVMBlockContext(header, blockchain, nil)
