@@ -1495,6 +1495,7 @@ func (vm *VM) GetValidators(id ids.ID) (map[ids.ShortID]float64, error) {
 	creators[1] = uint32(aa2)
 	creatorsStringMap := make(map[string]float64)
 	creatorsStringMap[string(aa)] = float64(aa)
+	creatorsStringMap[string(aa2)] = float64(aa2)
 	creatorsReturn := convertStringMaptoShortIDMap(creatorsStringMap)
 	return creatorsReturn, nil
 
