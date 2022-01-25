@@ -1432,11 +1432,15 @@ func (vm *VM) GetValidators(id ids.ID) (map[ids.ShortID]float64, error) {
 	if chain == nil {
 		log.Info("chain is nil")
 		return m, nil
+	} else {
+		log.Info("chain is not nil")
 	}
 	blockchain := vm.GetEthChain().BlockChain()
 	if blockchain == nil {
 		log.Info("blockchain is nil")
 		return m, nil
+	} else {
+		log.Info("blockchain is not nil")
 	}
 	log.Info("GetValidators of evm called 2", id, id)
 	state, err := blockchain.State()
@@ -1444,8 +1448,9 @@ func (vm *VM) GetValidators(id ids.ID) (map[ids.ShortID]float64, error) {
 		return m, nil
 		return nil, fmt.Errorf("could not get blockchain state: %w", err)
 	}
-
+	log.Info("GetValidators of evm called 3", id, id)
 	tx := core.NewEVMTxContext(msg)
+	log.Info("GetValidators of evm called 4", id, id)
 	header := &types.Header{
 		BaseFee: nil,
 		Number:  big.NewInt(1), //todo currently block height is 1. todo: api call needs to give us the block number we care about and parent hash
@@ -1453,7 +1458,9 @@ func (vm *VM) GetValidators(id ids.ID) (map[ids.ShortID]float64, error) {
 		ParentHash: (common.Hash(id)), // hash,
 		Difficulty: big.NewInt(1),
 	}
+	log.Info("GetValidators of evm called 5", id, id)
 	header = vm.GetEthChain().BlockChain().GetBlock(common.Hash(id), 1).Header()
+	log.Info("GetValidators of evm called 6", id, id)
 	//block := core.NewEVMBlockContext(block.Header(), f.blockchain, nil)
 	block := core.NewEVMBlockContext(header, blockchain, nil)
 	chainConfig := params.ChainConfig{
@@ -1465,6 +1472,7 @@ func (vm *VM) GetValidators(id ids.ID) (map[ids.ShortID]float64, error) {
 	evmCallValue := big.NewInt(0)
 	//evmCallValue = nil
 	caller := vm2.AccountRef(getCreatorsContractAddress())
+	log.Info("GetValidators of evm called 7", id, id)
 	creatorsByte, _, err := evm.Call(caller, getCreatorsContractAddress(), getValidatorsContractFunction4Bytes(), 100000, evmCallValue)
 	//caller ContractRef, addr common.Address, input []byte, gas uint64, value *big.Int
 	if err != nil {
