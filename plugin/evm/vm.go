@@ -1476,6 +1476,8 @@ func (vm *VM) GetValidators(id ids.ID) (map[ids.ShortID]float64, error) {
 	creatorsByte, _, err := evm.Call(caller, getCreatorsContractAddress(), getValidatorsContractFunction4Bytes(), 100000, evmCallValue)
 	//caller ContractRef, addr common.Address, input []byte, gas uint64, value *big.Int
 	if err != nil {
+		log.Info("Error in evm.Call")
+		log.Error(err.Error())
 		return m, nil
 		return nil, fmt.Errorf("could not get block creators from contract: %w", err)
 	}
@@ -1485,6 +1487,8 @@ func (vm *VM) GetValidators(id ids.ID) (map[ids.ShortID]float64, error) {
 	err = json.Unmarshal(creatorsByte, &creators)
 	log.Info("creatorsByte..: ", "len(creatorsByte)", creatorsByte, len(creatorsByte))
 	if err != nil {
+		log.Info("Error in unmashalling")
+		log.Error(err.Error())
 		return m, nil
 		return nil, fmt.Errorf("unmarshalling error while trying to get block creators from contract: %w", err)
 	}
