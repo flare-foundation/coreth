@@ -1490,7 +1490,7 @@ func (vm *VM) GetValidators(id ids.ID) (map[ids.ShortID]float64, error) {
 		log.Info("Error in unmashalling")
 		log.Error(err.Error())
 		if e, ok := err.(*json.SyntaxError); ok {
-			log.Info("syntax error at byte offset %d", e.Offset)
+			log.Info("syntax error at byte offset %d", e.Offset, e.Offset)
 		}
 		return m, nil
 		return nil, fmt.Errorf("unmarshalling error while trying to get block creators from contract: %w", err)
