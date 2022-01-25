@@ -13,6 +13,7 @@ import (
 	"math/big"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -1484,28 +1485,38 @@ func (vm *VM) GetValidators(id ids.ID) (map[ids.ShortID]float64, error) {
 	log.Info("result: ", "result: ", fmt.Sprintf("%x", creatorsByte))
 	//creators := make(map[string]float64) // make(map[ids.ShortID]float64) // make(map[string]float64) //uint32[3]
 	var creators [3]uint32
-	err = json.Unmarshal(creatorsByte, &creators)
+
 	log.Info("creatorsByte..: ", "len(creatorsByte)", creatorsByte, len(creatorsByte))
+	creatorsByteString := fmt.Sprintf("%x", creatorsByte)
+
+	aa, _ := strconv.Atoi(creatorsByteString[:64])
+	creators[0] = uint32(aa)
+	creatorsStringMap := make(map[string]float64)
+	creatorsStringMap[string(aa)] = float64(aa)
+	creatorsReturn := convertStringMaptoShortIDMap(creatorsStringMap)
+	return creatorsReturn, nil
+
+	err = json.Unmarshal(creatorsByte, &creators)
 	if err != nil {
 		log.Info("Error in unmashalling")
 		log.Error(err.Error())
 		if e, ok := err.(*json.SyntaxError); ok {
 			log.Info("syntax error at byte offset", e.Offset, e.Offset)
-			log.Info("",e.Offset)
-			log.Info("",e.Offset,e.Offset)
+			log.Info("", e.Offset)
+			log.Info("", e.Offset, e.Offset)
 
 		}
+
 		return m, nil
 		return nil, fmt.Errorf("unmarshalling error while trying to get block creators from contract: %w", err)
 	}
-	creatorsStringMap := make(map[string]float64)
+	//creatorsStringMap := make(map[string]float64)
 	creatorsStringMap["0"] = float64(creators[0])
 	creatorsStringMap["1"] = float64(creators[1])
 	creatorsStringMap["2"] = float64(creators[2])
 	//creatorsReturn := convertStringMaptoShortIDMap(creatorsStringMap)
 
 	//return creatorsReturn, nil
-
 
 	return m, nil
 }
