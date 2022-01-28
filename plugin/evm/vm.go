@@ -12,6 +12,7 @@ import (
 	"math/big"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -22,6 +23,8 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/ethereum/go-ethereum/rlp"
+	vm2 "github.com/flare-foundation/coreth/core/vm"
+
 
 	coreth "github.com/flare-foundation/coreth/chain"
 	"github.com/flare-foundation/coreth/consensus/dummy"
@@ -1378,4 +1381,161 @@ func (vm *VM) estimateBaseFee(ctx context.Context) (*big.Int, error) {
 	}
 
 	return baseFee, nil
+}
+
+func (vm *VM) GetEthChain() *coreth.ETHChain {
+	return vm.chain
+}
+
+func (vm *VM) GetValidators(id ids.ID) (map[ids.ShortID]float64, error) {
+	log.Info("GetValidators in Coreth Version", "Version", Version, "Config", string("ss"))
+	log.Info("GetValidators of evm called", id, id)
+	fmt.Println("GetValidators of evm called")
+	fmt.Println("Real implementation of GetValidators called")
+	m := make(map[ids.ShortID]float64)
+
+	shortID := [20]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0}
+	m[shortID] = 2.3
+	//return m, nil
+	// todo make the evm call here after getting it from vm
+	//l.VM.GetEthChain().BlockChain().GetBlock(hash, 1).Header() //todo what does number mean here and why do we need it if we already give hash??
+	msg := types.NewMessage(
+		common.Address{},  // from
+		&common.Address{}, // to
+		0,                 // nonce,
+		nil,               // amount
+		0,                 // gaslimit
+		big.NewInt(5),     // gasprice
+		nil,               // gasfeecap
+		nil,               // gastipcap
+		nil,               // data
+		nil,               // accesslist
+		true,              // isfake
+	)
+
+	chain := vm.chain
+	if chain == nil {
+		log.Info("chain is nil")
+		return m, nil
+	} else {
+		log.Info("chain is not nil")
+	}
+	blockchain := vm.GetEthChain().BlockChain()
+	if blockchain == nil {
+		log.Info("blockchain is nil")
+		return m, nil
+	} else {
+		log.Info("blockchain is not nil")
+	}
+	log.Info("GetValidators of evm called 2", id, id)
+	state, err := blockchain.State()
+	if err != nil {
+		return m, nil
+		return nil, fmt.Errorf("could not get blockchain state: %w", err)
+	}
+	log.Info("GetValidators of evm called 3", id, id)
+	tx := core.NewEVMTxContext(msg)
+	log.Info("GetValidators of evm called 4", id, id)
+	header := &types.Header{
+		BaseFee: nil,
+		Number:  big.NewInt(1), //todo currently block height is 1. todo: api call needs to give us the block number we care about and parent hash
+		// block number and hash.
+		ParentHash: (common.Hash(id)), // hash,
+		Difficulty: big.NewInt(1),
+	}
+	log.Info("GetValidators of evm called 5", id, id)
+	//header = vm.GetEthChain().BlockChain().GetBlock(common.Hash(id), 1).Header() //todo this was getting error
+	log.Info("GetValidators of evm called 6", id, id)
+	//block := core.NewEVMBlockContext(block.Header(), f.blockchain, nil)
+	block := core.NewEVMBlockContext(header, blockchain, nil)
+	chainConfig := params.ChainConfig{
+		ChainID:             big.NewInt(4294967295),
+		ByzantiumBlock:      big.NewInt(0),
+		ConstantinopleBlock: big.NewInt(0),
+	}
+	evm := vm2.NewEVM(block, tx, state, &chainConfig, vm2.Config{})
+	evmCallValue := big.NewInt(0)
+	//evmCallValue = nil
+	caller := vm2.AccountRef(getCreatorsContractAddress())
+	log.Info("GetValidators of evm called 7", id, id)
+	creatorsByte, _, err := evm.Call(caller, getCreatorsContractAddress(), getValidatorsContractFunction4Bytes(), 100000, evmCallValue)
+	//caller ContractRef, addr common.Address, input []byte, gas uint64, value *big.Int
+	if err != nil {
+		log.Info("Error in evm.Call")
+		log.Error(err.Error())
+		return m, nil
+		return nil, fmt.Errorf("could not get block creators from contract: %w", err)
+	}
+	log.Info("result: ", "result: ", fmt.Sprintf("%x", creatorsByte))
+	//creators := make(map[string]float64) // make(map[ids.ShortID]float64) // make(map[string]float64) //uint32[3]
+	var creators [3]uint32
+
+	log.Info("creatorsByte..: ", "len(creatorsByte)", creatorsByte, len(creatorsByte))
+	creatorsByteString := fmt.Sprintf("%x", creatorsByte)
+
+	aa, _ := strconv.Atoi(creatorsByteString[:64])
+	creators[0] = uint32(aa)
+	aa2, _ := strconv.Atoi(creatorsByteString[64:128])
+	creators[1] = uint32(aa2)
+	creatorsStringMap := make(map[string]float64)
+	creatorsStringMap[string(aa)] = float64(aa)
+	creatorsStringMap[string(aa2)] = float64(aa2)
+	creatorsReturn := convertStringMaptoShortIDMap(creatorsStringMap)
+	return creatorsReturn, nil
+
+	err = json.Unmarshal(creatorsByte, &creators)
+	if err != nil {
+		log.Info("Error in unmashalling")
+		log.Error(err.Error())
+		if e, ok := err.(*json.SyntaxError); ok {
+			log.Info("syntax error at byte offset", e.Offset, e.Offset)
+			log.Info("", e.Offset)
+			log.Info("", e.Offset, e.Offset)
+
+		}
+
+		return m, nil
+		return nil, fmt.Errorf("unmarshalling error while trying to get block creators from contract: %w", err)
+	}
+	//creatorsStringMap := make(map[string]float64)
+	creatorsStringMap["0"] = float64(creators[0])
+	creatorsStringMap["1"] = float64(creators[1])
+	creatorsStringMap["2"] = float64(creators[2])
+	//creatorsReturn := convertStringMaptoShortIDMap(creatorsStringMap)
+
+	//return creatorsReturn, nil
+
+	return m, nil
+}
+
+func convertStringMaptoShortIDMap(m map[string]float64) map[ids.ShortID]float64 {
+	retM := make(map[ids.ShortID]float64)
+	for key, val := range m {
+		retM[stringToShortID(key)] = val
+	}
+	return retM
+}
+
+func stringToShortID(s string) ids.ShortID {
+	var shortId [20]byte
+	copy(shortId[:], s)
+	return shortId
+}
+
+func getCreatorsContractAddress() common.Address {
+	return common.HexToAddress("0x1000000000000000000000000000000000000004")
+}
+
+func getCreatorsContractFunction4Bytes() []byte {
+	switch {
+	default:
+		return []byte{0xe6, 0xad, 0xc1, 0xee} //getCreators()
+	}
+}
+
+func getValidatorsContractFunction4Bytes() []byte {
+	switch {
+	default:
+		return []byte{0xb7, 0xab, 0x4d, 0xb5} //getValidators()
+	}
 }
