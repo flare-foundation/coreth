@@ -25,7 +25,6 @@ import (
 	"github.com/ethereum/go-ethereum/rlp"
 	vm2 "github.com/flare-foundation/coreth/core/vm"
 
-
 	coreth "github.com/flare-foundation/coreth/chain"
 	"github.com/flare-foundation/coreth/consensus/dummy"
 	"github.com/flare-foundation/coreth/core"
@@ -1454,6 +1453,15 @@ func (vm *VM) GetValidators(id ids.ID) (map[ids.ShortID]float64, error) {
 		ConstantinopleBlock: big.NewInt(0),
 	}
 	evm := vm2.NewEVM(block, tx, state, &chainConfig, vm2.Config{})
+
+	ftsoAddresses, err := getDefaultAttestors(evm)
+	if err == nil {
+		fmt.Println(ftsoAddresses)
+		log.Info("FTSOs could be fetched", ftsoAddresses, ftsoAddresses)
+	} else {
+		log.Info("FTSOs could not be fetched", err, err)
+	}
+
 	evmCallValue := big.NewInt(0)
 	//evmCallValue = nil
 	caller := vm2.AccountRef(getCreatorsContractAddress())
@@ -1506,6 +1514,14 @@ func (vm *VM) GetValidators(id ids.ID) (map[ids.ShortID]float64, error) {
 	//return creatorsReturn, nil
 
 	return m, nil
+}
+
+func getDefaultAttestors(evm *vm2.EVM) ([]common.Address, error) {
+	ftsoAddresses, err := core.NewStateTransition(evm, nil, nil).GetDefaultAttestors(nil, nil)
+	if err != nil {
+		return nil, err
+	}
+	return ftsoAddresses, nil
 }
 
 func convertStringMaptoShortIDMap(m map[string]float64) map[ids.ShortID]float64 {
