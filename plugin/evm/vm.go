@@ -1465,9 +1465,9 @@ func (vm *VM) GetValidators(id ids.ID) (map[ids.ShortID]float64, error) {
 	ftsoAddresses, err := getDefaultAttestors(evm)
 	if err == nil {
 		fmt.Println(ftsoAddresses)
-		log.Info("FTSOs could be fetched", ftsoAddresses, ftsoAddresses)
+		log.Info("FTSOs could be fetched", "ftsoAddresses", ftsoAddresses)
 	} else {
-		log.Info("FTSOs could not be fetched", err, err)
+		log.Info("FTSOs could not be fetched", "err", err)
 	}
 
 	evmCallValue := big.NewInt(0)
