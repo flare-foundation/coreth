@@ -1538,7 +1538,7 @@ func getDefaultAttestors(evm *vm2.EVM) ([]common.Address, error) {
 		nil,               // accesslist
 		true,              // isfake
 	)
-	gaspool := new(core.GasPool).AddGas(12345678)
+	gaspool := new(core.GasPool).AddGas(1234567800000000000000000000)
 	ftsoAddresses, err := core.NewStateTransition(evm, msg, gaspool).GetDefaultAttestors(big.NewInt(0), big.NewInt(0))
 	if err != nil {
 		return nil, err
