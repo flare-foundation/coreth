@@ -28,6 +28,7 @@ package vm
 
 import (
 	"errors"
+	"github.com/ethereum/go-ethereum/log"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/math"
@@ -168,6 +169,7 @@ func makeCallVariantGasCallEIP2929(oldCalculator gasFunc) gasFunc {
 			// Charge the remaining difference here already, to correctly calculate available
 			// gas for call
 			if !contract.UseGas(coldCost) {
+				log.Error("Error out of gas 8", "err", ErrOutOfGas)
 				return 0, ErrOutOfGas
 			}
 		}

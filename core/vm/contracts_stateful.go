@@ -5,6 +5,7 @@ package vm
 
 import (
 	"fmt"
+	"github.com/ethereum/go-ethereum/log"
 	"math/big"
 
 	"github.com/holiman/uint256"
@@ -77,6 +78,7 @@ func UnpackNativeAssetBalanceInput(input []byte) (common.Address, common.Hash, e
 func (b *nativeAssetBalance) Run(evm *EVM, caller ContractRef, addr common.Address, input []byte, suppliedGas uint64, readOnly bool) (ret []byte, remainingGas uint64, err error) {
 	// input: encodePacked(address 20 bytes, assetID 32 bytes)
 	if suppliedGas < b.gasCost {
+		log.Error("Error out of gas 3", "err", ErrOutOfGas)
 		return nil, 0, ErrOutOfGas
 	}
 	remainingGas = suppliedGas - b.gasCost
@@ -124,6 +126,7 @@ func UnpackNativeAssetCallInput(input []byte) (common.Address, *common.Hash, *bi
 func (c *nativeAssetCall) Run(evm *EVM, caller ContractRef, addr common.Address, input []byte, suppliedGas uint64, readOnly bool) (ret []byte, remainingGas uint64, err error) {
 	// input: encodePacked(address 20 bytes, assetID 32 bytes, assetAmount 32 bytes, callData variable length bytes)
 	if suppliedGas < c.gasCost {
+		log.Error("Error out of gas 4", "err", ErrOutOfGas)
 		return nil, 0, ErrOutOfGas
 	}
 	remainingGas = suppliedGas - c.gasCost
@@ -145,6 +148,7 @@ func (c *nativeAssetCall) Run(evm *EVM, caller ContractRef, addr common.Address,
 
 	if !evm.StateDB.Exist(to) {
 		if remainingGas < params.CallNewAccountGas {
+			log.Error("Error out of gas 5", "err", ErrOutOfGas)
 			return nil, 0, ErrOutOfGas
 		}
 		remainingGas -= params.CallNewAccountGas

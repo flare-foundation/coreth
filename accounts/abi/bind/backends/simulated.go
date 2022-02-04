@@ -603,6 +603,7 @@ func (b *SimulatedBackend) EstimateGas(ctx context.Context, call interfaces.Call
 		}
 		if failed {
 			if result != nil && result.Err != vm.ErrOutOfGas {
+				log.Error("Error out of gas 1", "err", result.Err)
 				if len(result.Revert()) > 0 {
 					return 0, newRevertError(result)
 				}

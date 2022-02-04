@@ -30,6 +30,7 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"errors"
+	"github.com/ethereum/go-ethereum/log"
 	"math/big"
 
 	//lint:ignore SA1019 Needed for precompile
@@ -152,6 +153,7 @@ func ActivePrecompiles(rules params.Rules) []common.Address {
 func RunPrecompiledContract(p PrecompiledContract, input []byte, suppliedGas uint64) (ret []byte, remainingGas uint64, err error) {
 	gasCost := p.RequiredGas(input)
 	if suppliedGas < gasCost {
+		log.Error("Error out of gas 2", "err", ErrOutOfGas)
 		return nil, 0, ErrOutOfGas
 	}
 	suppliedGas -= gasCost
