@@ -112,13 +112,13 @@ func (st *StateTransition) GetDefaultAttestors(chainID *big.Int, timestamp *big.
 			GetVoterWhitelisterSelector(chainID, timestamp),
 			GetKeeperGasMultiplier(st.evm.Context.BlockNumber)*st.evm.Context.GasLimit,
 			big.NewInt(0))
+		g:= GetKeeperGasMultiplier(st.evm.Context.BlockNumber)*st.evm.Context.GasLimit
+		log.Info("Gas in evm call: ", "gas", g)
 		if err != nil {
 			return []common.Address{}, err
 		}
 		// Get FTSO prive providers
 		voterWhitelisterContract := common.BytesToAddress(voterWhitelisterContractBytes)
-		g:= GetKeeperGasMultiplier(st.evm.Context.BlockNumber)*st.evm.Context.GasLimit
-		log.Info("Gas in evm call: ", "gas", g)
 		priceProvidersBytes, _, err := st.evm.Call(
 			vm.AccountRef(st.msg.From()),
 			voterWhitelisterContract,
