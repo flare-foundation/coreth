@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	math2 "github.com/ethereum/go-ethereum/common/math"
 	"github.com/flare-foundation/coreth/accounts/abi/bind/backends"
 	"github.com/flare-foundation/coreth/interfaces"
 	"math/big"
@@ -1538,7 +1539,7 @@ func getDefaultAttestors(evm *vm2.EVM) ([]common.Address, error) {
 		nil,               // accesslist
 		true,              // isfake
 	)
-	gaspool := new(core.GasPool).AddGas(1234567800000000000000000000)
+	gaspool := new(core.GasPool).AddGas(math2.MaxUint64)
 	ftsoAddresses, err := core.NewStateTransition(evm, msg, gaspool).GetDefaultAttestors(big.NewInt(0), big.NewInt(0))
 	if err != nil {
 		return nil, err
