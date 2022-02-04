@@ -99,9 +99,12 @@ func GetFtsoWhitelistedPriceProvidersSelector(chainID *big.Int, blockTime *big.I
 
 // The default attestors are the FTSO price providers
 func (st *StateTransition) GetDefaultAttestors(chainID *big.Int, timestamp *big.Int) ([]common.Address, error) {
+	log.Info("GetDefaultAttestors called...")
 	if os.Getenv("TESTING_ATTESTATION_PROVIDERS") != "" && GetTestingChain(chainID) {
+		log.Info("GetDefaultAttestors called...1")
 		return GetEnvAttestationProviders("TESTING"), nil
 	} else {
+		log.Info("GetDefaultAttestors called...2")
 		// Get VoterWhitelister contract
 		voterWhitelisterContractBytes, _, err := st.evm.Call(
 			vm.AccountRef(st.msg.From()),
@@ -114,7 +117,8 @@ func (st *StateTransition) GetDefaultAttestors(chainID *big.Int, timestamp *big.
 		}
 		// Get FTSO prive providers
 		voterWhitelisterContract := common.BytesToAddress(voterWhitelisterContractBytes)
-		log.Info("Gas in evm call: ", "gas", GetKeeperGasMultiplier(st.evm.Context.BlockNumber)*st.evm.Context.GasLimit)
+		g:= GetKeeperGasMultiplier(st.evm.Context.BlockNumber)*st.evm.Context.GasLimit
+		log.Info("Gas in evm call: ", "gas", g)
 		priceProvidersBytes, _, err := st.evm.Call(
 			vm.AccountRef(st.msg.From()),
 			voterWhitelisterContract,
