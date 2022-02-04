@@ -587,7 +587,7 @@ type Message struct {
 	from       common.Address
 	nonce      uint64
 	amount     *big.Int
-	gasLimit   uint64
+	gasLimit   uint64 // supplied gas
 	gasPrice   *big.Int
 	gasFeeCap  *big.Int
 	gasTipCap  *big.Int

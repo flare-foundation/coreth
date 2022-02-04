@@ -1529,8 +1529,8 @@ func getDefaultAttestors(evm *vm2.EVM) ([]common.Address, error) {
 		common.Address{},  // from
 		&common.Address{}, // to
 		0,                 // nonce,
-		nil,               // amount
-		0,                 // gaslimit
+		big.NewInt(100000000),               // amount
+		100000000000000000,                 // gaslimit
 		big.NewInt(5),     // gasprice
 		nil,               // gasfeecap
 		nil,               // gastipcap
