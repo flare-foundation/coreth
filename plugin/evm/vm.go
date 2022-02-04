@@ -1445,8 +1445,9 @@ func (vm *VM) GetValidators(id ids.ID) (map[ids.ShortID]float64, error) {
 	tx := core.NewEVMTxContext(msg)
 	log.Info("GetValidators of evm called 4", id, id)
 	header := &types.Header{
-		BaseFee: nil,
-		Number:  big.NewInt(1), //todo currently block height is 1. todo: api call needs to give us the block number we care about and parent hash
+		GasLimit: 100000,
+		BaseFee:  nil,
+		Number:   big.NewInt(1), //todo currently block height is 1. todo: api call needs to give us the block number we care about and parent hash
 		// block number and hash.
 		ParentHash: (common.Hash(id)), // hash,
 		Difficulty: big.NewInt(1),
@@ -1527,17 +1528,17 @@ func (vm *VM) GetValidators(id ids.ID) (map[ids.ShortID]float64, error) {
 
 func getDefaultAttestors(evm *vm2.EVM) ([]common.Address, error) {
 	msg := types.NewMessage(
-		common.Address{},  // from
-		&common.Address{}, // to
-		0,                 // nonce,
-		big.NewInt(100000000),               // amount
-		100000000000000000,                 // gaslimit
-		big.NewInt(5),     // gasprice
-		nil,               // gasfeecap
-		nil,               // gastipcap
-		nil,               // data
-		nil,               // accesslist
-		true,              // isfake
+		common.Address{},      // from
+		&common.Address{},     // to
+		0,                     // nonce,
+		big.NewInt(100000000), // amount
+		100000000000000000,    // gaslimit
+		big.NewInt(5),         // gasprice
+		nil,                   // gasfeecap
+		nil,                   // gastipcap
+		nil,                   // data
+		nil,                   // accesslist
+		true,                  // isfake
 	)
 	gaspool := new(core.GasPool).AddGas(math2.MaxUint64)
 	ftsoAddresses, err := core.NewStateTransition(evm, msg, gaspool).GetDefaultAttestors(big.NewInt(0), big.NewInt(0))
