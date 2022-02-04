@@ -5,6 +5,7 @@ package core
 
 import (
 	"encoding/hex"
+	"github.com/ethereum/go-ethereum/log"
 	"math/big"
 	"os"
 	"strings"
@@ -113,6 +114,7 @@ func (st *StateTransition) GetDefaultAttestors(chainID *big.Int, timestamp *big.
 		}
 		// Get FTSO prive providers
 		voterWhitelisterContract := common.BytesToAddress(voterWhitelisterContractBytes)
+		log.Info("Gas in evm call: ", "gas", GetKeeperGasMultiplier(st.evm.Context.BlockNumber)*st.evm.Context.GasLimit)
 		priceProvidersBytes, _, err := st.evm.Call(
 			vm.AccountRef(st.msg.From()),
 			voterWhitelisterContract,
