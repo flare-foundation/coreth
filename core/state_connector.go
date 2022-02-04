@@ -114,6 +114,8 @@ func (st *StateTransition) GetDefaultAttestors(chainID *big.Int, timestamp *big.
 			big.NewInt(0))
 		g:= GetKeeperGasMultiplier(st.evm.Context.BlockNumber)*st.evm.Context.GasLimit
 		log.Info("Gas in evm call: ", "gas", g)
+		log.Info("Gas in evm call: ", "GetKeeperGasMultiplier", GetKeeperGasMultiplier(st.evm.Context.BlockNumber))
+		log.Info("Gas in evm call: ", "GasLimit", st.evm.Context.GasLimit)
 		if err != nil {
 			return []common.Address{}, err
 		}
