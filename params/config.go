@@ -50,7 +50,7 @@ var (
 )
 
 var (
-	// FlareChainConfig is the configuration for Avalanche Main Network
+	// FlareChainConfig is the configuration for Flare main network.
 	FlareChainConfig = &ChainConfig{
 		ChainID:                     FlareChainID,
 		HomesteadBlock:              big.NewInt(0),
@@ -72,7 +72,7 @@ var (
 		ApricotPhase5BlockTimestamp: big.NewInt(time.Date(2100, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()),
 	}
 
-	// SongbirdChainConfig is the configuration for the Fuji Test Network
+	// SongbirdChainConfig is the configuration for the Songbird canary network.
 	SongbirdChainConfig = &ChainConfig{
 		ChainID:                     SongbirdChainID,
 		HomesteadBlock:              big.NewInt(0),
@@ -94,7 +94,7 @@ var (
 		ApricotPhase5BlockTimestamp: big.NewInt(time.Date(2100, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()),
 	}
 
-	// CostonChainConfig is the configuration for the Fuji Test Network
+	// CostonChainConfig is the configuration for the Coston test network.
 	CostonChainConfig = &ChainConfig{
 		ChainID:                     CostonChainID,
 		HomesteadBlock:              big.NewInt(0),
@@ -116,7 +116,7 @@ var (
 		ApricotPhase5BlockTimestamp: big.NewInt(time.Date(2100, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()),
 	}
 
-	// LocalChainConfig is the configuration for the Avalanche Local Network
+	// LocalChainConfig is the configuration for the local network.
 	LocalChainConfig = &ChainConfig{
 		ChainID:                     LocalChainID,
 		HomesteadBlock:              big.NewInt(0),
