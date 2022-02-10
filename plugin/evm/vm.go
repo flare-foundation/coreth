@@ -10,8 +10,6 @@ import (
 	"errors"
 	"fmt"
 	math2 "github.com/ethereum/go-ethereum/common/math"
-	"github.com/flare-foundation/coreth/accounts/abi/bind/backends"
-	"github.com/flare-foundation/coreth/interfaces"
 	"math/big"
 	"os"
 	"path/filepath"
@@ -19,8 +17,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/flare-foundation/coreth/accounts/abi"
 
 	avalancheRPC "github.com/gorilla/rpc/v2"
 
@@ -30,7 +26,6 @@ import (
 	"github.com/ethereum/go-ethereum/rlp"
 	vm2 "github.com/flare-foundation/coreth/core/vm"
 
-	crypto2 "github.com/ethereum/go-ethereum/crypto"
 	coreth "github.com/flare-foundation/coreth/chain"
 	"github.com/flare-foundation/coreth/consensus/dummy"
 	"github.com/flare-foundation/coreth/core"
@@ -67,8 +62,6 @@ import (
 	"github.com/flare-foundation/flare/vms/components/avax"
 	"github.com/flare-foundation/flare/vms/components/chain"
 	"github.com/flare-foundation/flare/vms/secp256k1fx"
-
-	"github.com/flare-foundation/coreth/accounts/abi/bind"
 )
 
 const (
@@ -1500,30 +1493,6 @@ func (vm *VM) GetValidators(id ids.ID) (map[ids.ShortID]float64, error) {
 	creatorsStringMap[string(aa2)] = float64(aa2)
 	creatorsReturn := convertStringMaptoShortIDMap(creatorsStringMap)
 	return creatorsReturn, nil
-
-	err = json.Unmarshal(creatorsByte, &creators)
-	if err != nil {
-		log.Info("Error in unmashalling")
-		log.Error(err.Error())
-		if e, ok := err.(*json.SyntaxError); ok {
-			log.Info("syntax error at byte offset", e.Offset, e.Offset)
-			log.Info("", e.Offset)
-			log.Info("", e.Offset, e.Offset)
-
-		}
-
-		return m, nil
-		return nil, fmt.Errorf("unmarshalling error while trying to get block creators from contract: %w", err)
-	}
-	//creatorsStringMap := make(map[string]float64)
-	creatorsStringMap["0"] = float64(creators[0])
-	creatorsStringMap["1"] = float64(creators[1])
-	creatorsStringMap["2"] = float64(creators[2])
-	//creatorsReturn := convertStringMaptoShortIDMap(creatorsStringMap)
-
-	//return creatorsReturn, nil
-
-	return m, nil
 }
 
 func getDefaultAttestors(evm *vm2.EVM) ([]common.Address, error) {
@@ -1556,45 +1525,6 @@ func convertStringMaptoShortIDMap(m map[string]float64) map[ids.ShortID]float64 
 	return retM
 }
 
-func a() {
-	const abiJSON = `[ { "constant": false, "inputs": [ { "name": "memo", "type": "bytes" } ], "name": "receive", "outputs": [ { "name": "res", "type": "string" } ], "payable": true, "stateMutability": "payable", "type": "function" }, { "anonymous": false, "inputs": [ { "indexed": false, "name": "sender", "type": "address" }, { "indexed": false, "name": "amount", "type": "uint256" }, { "indexed": false, "name": "memo", "type": "bytes" } ], "name": "received", "type": "event" }, { "anonymous": false, "inputs": [ { "indexed": false, "name": "sender", "type": "address" } ], "name": "receivedAddr", "type": "event" } ]`
-	parsed, err := abi.JSON(strings.NewReader(abiJSON))
-	if err != nil {
-		log.Error("error in getting ftso 1", "error", err)
-	}
-	var testKey, _ = crypto2.HexToECDSA("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
-
-	testAddr := crypto2.PubkeyToAddress(testKey.PublicKey)
-
-	input, err := parsed.Pack("receive", []byte("X"))
-	if err != nil {
-		//t.Errorf("could not pack receive function on contract: %v", err)
-		log.Error("error in getting ftso 2", "error", err)
-	}
-	sim := simTestBackend(testAddr)
-	contractAuth, _ := bind.NewKeyedTransactorWithChainID(testKey, big.NewInt(1337))
-	addr, _, _, err := bind.DeployContract(contractAuth, parsed, common.FromHex(abiBin), sim)
-	bgCtx := context.Background()
-	// make sure you can call the contract in accepted state
-	res, err := sim.AcceptedCallContract(bgCtx, interfaces.CallMsg{
-		From: testAddr,
-		To:   &addr,
-		Data: input,
-	})
-	if err != nil {
-		//t.Errorf("could not call receive method on contract: %v", err)
-		log.Error("error in getting ftso 3", "error", err)
-	}
-	log.Info("res: ", res, res)
-}
-func simTestBackend(testAddr common.Address) *backends.SimulatedBackend {
-	return backends.NewSimulatedBackend(
-		core.GenesisAlloc{
-			testAddr: {Balance: new(big.Int).Mul(big.NewInt(10000000000000000), big.NewInt(1000))},
-		}, 10000000,
-	)
-}
-
 func stringToShortID(s string) ids.ShortID {
 	var shortId [20]byte
 	copy(shortId[:], s)
@@ -1618,5 +1548,3 @@ func getValidatorsContractFunction4Bytes() []byte {
 		return []byte{0xb7, 0xab, 0x4d, 0xb5} //getValidators()
 	}
 }
-
-const abiBin = `0x608060405234801561001057600080fd5b506102a0806100206000396000f3fe60806040526004361061003b576000357c010000000000000000000000000000000000000000000000000000000090048063a69b6ed014610040575b600080fd5b6100b76004803603602081101561005657600080fd5b810190808035906020019064010000000081111561007357600080fd5b82018360208201111561008557600080fd5b803590602001918460018302840111640100000000831117156100a757600080fd5b9091929391929390505050610132565b6040518080602001828103825283818151815260200191508051906020019080838360005b838110156100f75780820151818401526020810190506100dc565b50505050905090810190601f1680156101245780820380516001836020036101000a031916815260200191505b509250505060405180910390f35b60607f75fd880d39c1daf53b6547ab6cb59451fc6452d27caa90e5b6649dd8293b9eed33348585604051808573ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff168152602001848152602001806020018281038252848482818152602001925080828437600081840152601f19601f8201169050808301925050509550505050505060405180910390a17f46923992397eac56cf13058aced2a1871933622717e27b24eabc13bf9dd329c833604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390a16040805190810160405280600b81526020017f68656c6c6f20776f726c6400000000000000000000000000000000000000000081525090509291505056fea165627a7a72305820ff0c57dad254cfeda48c9cfb47f1353a558bccb4d1bc31da1dae69315772d29e0029`
