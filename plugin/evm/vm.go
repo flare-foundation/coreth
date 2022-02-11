@@ -1389,17 +1389,6 @@ func (vm *VM) GetEthChain() *coreth.ETHChain {
 }
 
 func (vm *VM) GetValidators(id ids.ID) (map[ids.ShortID]float64, error) {
-	log.Info("GetValidators in Coreth Version", "Version", Version, "Config", string("ss"))
-	log.Info("GetValidators of evm called", id, id)
-	fmt.Println("GetValidators of evm called")
-	fmt.Println("Real implementation of GetValidators called")
-	m := make(map[ids.ShortID]float64)
-
-	shortID := [20]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0}
-	m[shortID] = 2.3
-	//return m, nil
-	// todo make the evm call here after getting it from vm
-	//l.VM.GetEthChain().BlockChain().GetBlock(hash, 1).Header() //todo what does number mean here and why do we need it if we already give hash??
 	msg := types.NewMessage(
 		common.Address{},  // from
 		&common.Address{}, // to
@@ -1417,21 +1406,20 @@ func (vm *VM) GetValidators(id ids.ID) (map[ids.ShortID]float64, error) {
 	chain := vm.chain
 	if chain == nil {
 		log.Info("chain is nil")
-		return m, nil
+		return nil, fmt.Errorf("could not get vm chain")
 	} else {
 		log.Info("chain is not nil")
 	}
 	blockchain := vm.GetEthChain().BlockChain()
 	if blockchain == nil {
 		log.Info("blockchain is nil")
-		return m, nil
+		return nil, fmt.Errorf("could not get Blockchain")
 	} else {
 		log.Info("blockchain is not nil")
 	}
 	log.Info("GetValidators of evm called 2", id, id)
 	state, err := blockchain.State()
 	if err != nil {
-		return m, nil
 		return nil, fmt.Errorf("could not get blockchain state: %w", err)
 	}
 	log.Info("GetValidators of evm called 3", id, id)
@@ -1446,7 +1434,6 @@ func (vm *VM) GetValidators(id ids.ID) (map[ids.ShortID]float64, error) {
 		Difficulty: big.NewInt(1),
 	}
 	log.Info("GetValidators of evm called 5", id, id)
-	//header = vm.GetEthChain().BlockChain().GetBlock(common.Hash(id), 1).Header() //todo this was getting error
 	log.Info("GetValidators of evm called 6", id, id)
 	//block := core.NewEVMBlockContext(block.Header(), f.blockchain, nil)
 	block := core.NewEVMBlockContext(header, blockchain, nil)
@@ -1457,6 +1444,9 @@ func (vm *VM) GetValidators(id ids.ID) (map[ids.ShortID]float64, error) {
 	}
 	evm := vm2.NewEVM(block, tx, state, &chainConfig, vm2.Config{})
 
+	// Here we are just printing the ftsoAddresses and not returning yet as it is not fully verified.
+	// At the end of this function we are simply returning return value of a predefined fake contract as a placeholder.
+	// todo return actual ftso addresses along with their weights
 	ftsoAddresses, err := getDefaultAttestors(evm)
 	if err == nil {
 		fmt.Println(ftsoAddresses)
@@ -1465,8 +1455,8 @@ func (vm *VM) GetValidators(id ids.ID) (map[ids.ShortID]float64, error) {
 		log.Info("FTSOs could not be fetched", "err", err)
 	}
 
+	// Now we are getting the creators/validators from the fake contract which is a place holder
 	evmCallValue := big.NewInt(0)
-	//evmCallValue = nil
 	caller := vm2.AccountRef(getCreatorsContractAddress())
 	log.Info("GetValidators of evm called 7", id, id)
 	creatorsByte, _, err := evm.Call(caller, getCreatorsContractAddress(), getValidatorsContractFunction4Bytes(), 100000, evmCallValue)
@@ -1474,11 +1464,9 @@ func (vm *VM) GetValidators(id ids.ID) (map[ids.ShortID]float64, error) {
 	if err != nil {
 		log.Info("Error in evm.Call")
 		log.Error(err.Error())
-		return m, nil
 		return nil, fmt.Errorf("could not get block creators from contract: %w", err)
 	}
 	log.Info("result: ", "result: ", fmt.Sprintf("%x", creatorsByte))
-	//creators := make(map[string]float64) // make(map[ids.ShortID]float64) // make(map[string]float64) //uint32[3]
 	var creators [3]uint32
 
 	log.Info("creatorsByte..: ", "len(creatorsByte)", creatorsByte, len(creatorsByte))
