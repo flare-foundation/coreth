@@ -1608,6 +1608,13 @@ func GetWnatSelector() []byte { //wNat
 	}
 } //21 18 d5 d0
 
+func GetRewardManagerSelector() []byte { //rewardManager
+	switch {
+	default:
+		return []byte{0xb7, 0xf4, 0x1e, 0x2d}
+	}
+}//b7 f4 1e 2d
+
 func GetFtsosSelector() []byte { //getFtsos()
 	switch {
 	default:
@@ -1619,6 +1626,13 @@ func GetFTSORewardManagerContract(blockTime *big.Int) string {
 	switch {
 	default:
 		return "0xc5738334b972745067fFa666040fdeADc66Cb925"
+	}
+}
+
+func GetPriceSubmittedContract() common.Address { //PriceSubmitter contract
+	switch {
+	default:
+		return  common.HexToAddress("0x1000000000000000000000000000000000000003")
 	}
 }
 

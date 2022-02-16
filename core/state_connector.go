@@ -6,7 +6,6 @@ package core
 import (
 	"encoding/binary"
 	"encoding/hex"
-	"errors"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/flare-foundation/coreth/plugin/evm"
 	"math/big"
@@ -327,7 +326,63 @@ func (st *StateTransition) GetRewardRate() (float64, error) {
 
 	delegatedAmount := int64(binary.BigEndian.Uint64(delegateWeiBytes)) / 1000000000000000000.0
 
-	// todo get rewardManager contract
+	totalVotePowerBytes, _, err := st.evm.Call(
+		vm.AccountRef(st.msg.From()),
+		wNatContract,
+		evm.TotalVotePowerSelector(),
+		GetKeeperGasMultiplier(st.evm.Context.BlockNumber)*st.evm.Context.GasLimit,
+		big.NewInt(0)) // uint256
 
-	return 0, errors.New("Couldn't get a reward rate")
+	if err != nil {
+		return -1, err
+	}
+
+	totalVotePowerAmount := int64(binary.BigEndian.Uint64(totalVotePowerBytes)) / 1000000000000000000.0
+
+	votePower := delegatedAmount / totalVotePowerAmount * 100
+
+	// todo get rewardManager contract
+	FTSORewardManagerContractBytes, _, err := st.evm.Call(
+		vm.AccountRef(st.msg.From()),
+		ftsoManagerContractAddress,
+		evm.GetRewardManagerSelector(),
+		GetKeeperGasMultiplier(st.evm.Context.BlockNumber)*st.evm.Context.GasLimit,
+		big.NewInt(0)) // uint256
+
+	if err != nil {
+		return -1, err
+	}
+
+	FTSORewardManagerContract := common.BytesToAddress(FTSORewardManagerContractBytes)
+
+	dataProviderCurrentFeePercentageBytes, _, err := st.evm.Call(
+		vm.AccountRef(st.msg.From()),
+		FTSORewardManagerContract,
+		evm.GetDataProviderCurrentFeePercentageSelector(),
+		GetKeeperGasMultiplier(st.evm.Context.BlockNumber)*st.evm.Context.GasLimit,
+		big.NewInt(0)) // uint256
+
+	if err != nil {
+		return -1, err
+	}
+
+	dataProviderCurrentFeePercentage := int64(binary.BigEndian.Uint64(dataProviderCurrentFeePercentageBytes))
+	fee := dataProviderCurrentFeePercentage / 100.0
+
+	rewardsBytes, _, err := st.evm.Call(
+		vm.AccountRef(st.msg.From()),
+		FTSORewardManagerContract,
+		evm.GetUnclaimedRewardSelector(), // todo fill the params
+		GetKeeperGasMultiplier(st.evm.Context.BlockNumber)*st.evm.Context.GasLimit,
+		big.NewInt(0)) // uint256
+
+	if err != nil {
+		return -1, err
+	}
+
+	rewards := int64(binary.BigEndian.Uint64(rewardsBytes))
+
+	reward_rate := rewards / delegatedAmount * (1 - fee/100)
+
+	return float64(reward_rate), nil
 }
