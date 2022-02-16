@@ -1536,3 +1536,125 @@ func getValidatorsContractFunction4Bytes() []byte {
 		return []byte{0xb7, 0xab, 0x4d, 0xb5} //getValidators()
 	}
 }
+
+func GetCurrentRewardEpochSelector() []byte { //getCurrentRewardEpoch()
+	switch {
+	default:
+		return []byte{0xe7, 0xc8, 0x30, 0xd4}
+	}
+} //e7 c8 30 d4
+
+func GetRewardEpochVotePowerBlockSelector(currentRewardEpoch int64) []byte { //getRewardEpochVotePowerBlock(uint256)
+	// todo use the currentRewardEpoch input
+	switch {
+	default:
+		return []byte{0xf2, 0xed, 0xab, 0x5a}
+	}
+} // 0x f2 ed ab 5a
+
+func VotePowerOfAtSelector() []byte { //votePowerOfAt(address,uint256)
+	switch {
+	default:
+		return []byte{0x92, 0xbf, 0xe6, 0xd8}
+	}
+} // 0x 92 bf e6 d8
+
+func TotalVotePowerSelector() []byte { //totalVotePower() //todo verify if this is the right function as it should take an input
+	switch {
+	default:
+		return []byte{0xf5, 0xf3, 0xd4, 0xf7}
+	}
+} // f5 f3 d4 f7
+
+func GetDataProviderCurrentFeePercentageSelector() []byte { //getDataProviderCurrentFeePercentage(address)
+	switch {
+	default:
+		return []byte{0xcf, 0xbc, 0xd2, 0x5f}
+	}
+} //0x cf bc d2 5f
+
+func GetUnclaimedRewardSelector() []byte { //getUnclaimedReward(uint256,address)
+	switch {
+	default:
+		return []byte{0x65, 0x7d, 0x96, 0x95}
+	}
+} //0x 65 7d 96 95
+
+func GetFtsoManagerSelector(blockTime *big.Int, chainID *big.Int) []byte { //getFtsoManager()
+	switch {
+	default:
+		return []byte{0xb3, 0x9c, 0x68, 0x58}
+	}
+} //b3 9c 68 58
+
+func GetFtsoManagerContract() []byte { //getFtsoManager()
+	switch {
+	default:
+		return []byte{0xb3, 0x9c, 0x68, 0x58}
+	}
+} //0x b3 9c 68 58
+
+func GetWnatContract(blockTime *big.Int) string {
+	switch {
+	default:
+		return "0x02f0826ef6aD107Cfc861152B32B52fD11BaB9ED"
+	}
+}
+
+func GetWnatSelector() []byte { //wNat
+	switch {
+	default:
+		return []byte{0x21, 0x18, 0xd5, 0xd0}
+	}
+} //21 18 d5 d0
+
+func GetFtsosSelector() []byte { //getFtsos()
+	switch {
+	default:
+		return []byte{0xce, 0x69, 0xf8, 0x33}
+	}
+} //0x ce 69 f8 33
+
+func GetFTSORewardManagerContract(blockTime *big.Int) string {
+	switch {
+	default:
+		return "0xc5738334b972745067fFa666040fdeADc66Cb925"
+	}
+}
+
+//Contracts & Methods needed:
+//     1. ftsoManagerContract
+//         a. getCurrentRewardEpoch
+//         b. getRewardEpochVotePowerBlock
+//     2. wnatContract
+//         a. votePowerOfAt
+//         b. totalVotePower
+//     3. ftsoRewardManagerContract
+//         a. getDataProviderCurrentFeePercentage
+//         b. getUnclaimedReward
+//
+//// Current reward epoch
+//let res = await ftsoManagerContract.methods.getCurrentRewardEpoch().call();
+//const currRewardEpoch = Number(res);
+//
+//// Reward’s block number
+//const rewardEVPBlock = await ftsoManagerContract.methods.getRewardEpochVotePowerBlock(currRewardEpoch).call();
+//
+//// Delegated funds
+//res = await wnatContract.methods.votePowerOfAt(FTSO, rewardEVPBlock).call()
+//const delegated = (Number(res)) / 1000000000000000000.0;
+//
+//// Vote power
+//res = await wnatContract.methods.totalVotePower().call();
+//const totalVotePower = res / 1000000000000000000.0;
+//const votePower = delegated / totalVotePower * 100;
+//
+//// Current fee
+//res = await ftsoRewardManagerContract.methods.getDataProviderCurrentFeePercentage(FTSO).call();
+//const fee = Number(res) / 100.0;
+//
+//// Earned rewards
+//
+//const rewards = await ftsoRewardManagerContract.methods.getUnclaimedReward(currRewardEpoch, FTSO).call();
+//
+//const reward_rate = rewards * 100 / delegated * (1 - fee / 100.0);

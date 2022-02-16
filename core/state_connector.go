@@ -4,8 +4,11 @@
 package core
 
 import (
+	"encoding/binary"
 	"encoding/hex"
+	"errors"
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/flare-foundation/coreth/plugin/evm"
 	"math/big"
 	"os"
 	"strings"
@@ -112,7 +115,7 @@ func (st *StateTransition) GetDefaultAttestors(chainID *big.Int, timestamp *big.
 			GetVoterWhitelisterSelector(chainID, timestamp),
 			GetKeeperGasMultiplier(st.evm.Context.BlockNumber)*st.evm.Context.GasLimit,
 			big.NewInt(0))
-		g:= GetKeeperGasMultiplier(st.evm.Context.BlockNumber)*st.evm.Context.GasLimit
+		g := GetKeeperGasMultiplier(st.evm.Context.BlockNumber) * st.evm.Context.GasLimit
 		log.Info("Gas in evm call: ", "gas", g)
 		log.Info("Gas in evm call: ", "GetKeeperGasMultiplier", GetKeeperGasMultiplier(st.evm.Context.BlockNumber))
 		log.Info("Gas in evm call: ", "GasLimit", st.evm.Context.GasLimit)
@@ -237,4 +240,94 @@ func (st *StateTransition) FinalisePreviousRound(chainID *big.Int, timestamp *bi
 		// Issue rewards to defaultAttestationVotes.majorityAttestors here:
 	}
 	return nil
+}
+
+func (st *StateTransition) GetFTSOManagerContract(blockTime *big.Int, chainID *big.Int) (common.Address, error) { //"0xbfA12e4E1411B62EdA8B035d71735667422A6A9e"
+	FTSOManagerContractBytes, _, err := st.evm.Call(
+		vm.AccountRef(st.msg.From()),
+		common.HexToAddress(GetPrioritisedFTSOContract(blockTime)),
+		evm.GetFtsoManagerSelector(chainID, blockTime),
+		GetKeeperGasMultiplier(st.evm.Context.BlockNumber)*st.evm.Context.GasLimit,
+		big.NewInt(0))
+	if err != nil {
+		return common.Address{}, err
+	}
+
+	FTSOManagerContract := common.BytesToAddress(FTSOManagerContractBytes)
+
+	return FTSOManagerContract, nil
+}
+
+func (st *StateTransition) GetRewardRate() (float64, error) {
+
+	ftsoManagerContractAddress, err := st.GetFTSOManagerContract(nil, nil) // todo fill the fields
+	if err != nil {
+		return -1, err
+	}
+
+	getCurrentRewardEpochBytes, _, err := st.evm.Call(
+		vm.AccountRef(st.msg.From()),
+		ftsoManagerContractAddress,
+		evm.GetCurrentRewardEpochSelector(),
+		GetKeeperGasMultiplier(st.evm.Context.BlockNumber)*st.evm.Context.GasLimit,
+		big.NewInt(0)) // uint256
+
+	currentRewardEpoch := int64(binary.BigEndian.Uint64(getCurrentRewardEpochBytes))
+
+	getRewardEpochVotePowerBlockBytes, _, err := st.evm.Call(
+		vm.AccountRef(st.msg.From()),
+		ftsoManagerContractAddress,
+		evm.GetRewardEpochVotePowerBlockSelector(currentRewardEpoch), // todo fill the field with currentRewardEpoch
+		GetKeeperGasMultiplier(st.evm.Context.BlockNumber)*st.evm.Context.GasLimit,
+		big.NewInt(0)) // uint256
+
+	rewardEpochVotePowerBlock := int64(binary.BigEndian.Uint64(getRewardEpochVotePowerBlockBytes))
+
+	ftsosBytes, _, err := st.evm.Call(
+		vm.AccountRef(st.msg.From()),
+		ftsoManagerContractAddress,
+		evm.GetFtsosSelector(),
+		GetKeeperGasMultiplier(st.evm.Context.BlockNumber)*st.evm.Context.GasLimit,
+		big.NewInt(0)) // uint256
+
+	if err != nil {
+		return -1, err
+	}
+	NUM_FTSOS := len(ftsosBytes) / 32
+	var ftsos []common.Address
+	for i := 0; i < NUM_FTSOS; i++ {
+		ftsos = append(ftsos, common.BytesToAddress(ftsosBytes[i*32:(i+1)*32]))
+	}
+
+	ftsoContract := ftsos[0]
+	// Now from this ftso contract retrieve wNat
+	wNatBytes, _, err := st.evm.Call(
+		vm.AccountRef(st.msg.From()),
+		ftsoContract,
+		evm.GetWnatSelector(), //todo check if this is the correct way. If not, now to get public variables?
+		GetKeeperGasMultiplier(st.evm.Context.BlockNumber)*st.evm.Context.GasLimit,
+		big.NewInt(0)) // uint256
+
+	if err != nil {
+		return -1, err
+	}
+
+	wNatContract := common.BytesToAddress(wNatBytes)
+
+	delegateWeiBytes, _, err := st.evm.Call(
+		vm.AccountRef(st.msg.From()),
+		wNatContract,
+		evm.VotePowerOfAtSelector(), //todo add parameters as this is empty!
+		GetKeeperGasMultiplier(st.evm.Context.BlockNumber)*st.evm.Context.GasLimit,
+		big.NewInt(0)) // uint256
+
+	if err != nil {
+		return -1, err
+	}
+
+	delegatedAmount := int64(binary.BigEndian.Uint64(delegateWeiBytes)) / 1000000000000000000.0
+
+	// todo get rewardManager contract
+
+	return 0, errors.New("Couldn't get a reward rate")
 }
