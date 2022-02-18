@@ -12,7 +12,6 @@ import (
 	"math/big"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -406,9 +405,6 @@ func (vm *VM) Initialize(
 	}
 
 	bonusBlockHeights := make(map[uint64]ids.ID)
-	if vm.chainID.Cmp(params.AvalancheMainnetChainID) == 0 {
-		bonusBlockHeights = bonusBlockMainnetHeights
-	}
 	if err := vm.repairAtomicRepositoryForBonusBlockTxs(getAtomicRepositoryRepairHeights(vm.chainID), vm.getAtomicTxFromPreApricot5BlockByHeight); err != nil {
 		return fmt.Errorf("failed to repair atomic repository: %w", err)
 	}
@@ -1422,20 +1418,7 @@ func (vm *VM) estimateBaseFee(ctx context.Context) (*big.Int, error) {
 }
 
 func getAtomicRepositoryRepairHeights(chainID *big.Int) []uint64 {
-	if chainID.Cmp(params.AvalancheMainnetChainID) != 0 {
-		return nil
-	}
-	repairHeights := make([]uint64, 0, len(bonusBlockMainnetHeights)+len(canonicalBonusBlocks))
-	for height := range bonusBlockMainnetHeights {
-		repairHeights = append(repairHeights, height)
-	}
-	for _, height := range canonicalBonusBlocks {
-		if _, exists := bonusBlockMainnetHeights[height]; !exists {
-			repairHeights = append(repairHeights, height)
-		}
-	}
-	sort.Slice(repairHeights, func(i, j int) bool { return repairHeights[i] < repairHeights[j] })
-	return repairHeights
+	return nil
 }
 
 func (vm *VM) getAtomicTxFromPreApricot5BlockByHeight(height uint64) (*Tx, error) {
