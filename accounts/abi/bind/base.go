@@ -38,9 +38,9 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/event"
 
-	"github.com/flare-foundation/coreth/accounts/abi"
-	"github.com/flare-foundation/coreth/core/types"
-	"github.com/flare-foundation/coreth/interfaces"
+	"github.com/ava-labs/coreth/accounts/abi"
+	"github.com/ava-labs/coreth/core/types"
+	"github.com/ava-labs/coreth/interfaces"
 )
 
 // SignerFn is a signer function callback when a contract requires a method to

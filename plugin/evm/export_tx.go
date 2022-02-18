@@ -6,8 +6,8 @@ package evm
 import (
 	"math/big"
 
-	"github.com/flare-foundation/coreth/core/state"
-	"github.com/flare-foundation/coreth/params"
+	"github.com/ava-labs/coreth/core/state"
+	"github.com/ava-labs/coreth/params"
 	"github.com/flare-foundation/flare/chains/atomic"
 	"github.com/flare-foundation/flare/ids"
 	"github.com/flare-foundation/flare/snow"

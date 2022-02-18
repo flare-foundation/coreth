@@ -29,8 +29,8 @@ package memorydb
 import (
 	"testing"
 
-	"github.com/flare-foundation/coreth/ethdb"
-	"github.com/flare-foundation/coreth/ethdb/dbtest"
+	"github.com/ava-labs/coreth/ethdb"
+	"github.com/ava-labs/coreth/ethdb/dbtest"
 )
 
 func TestMemoryDB(t *testing.T) {

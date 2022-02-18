@@ -31,7 +31,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/flare-foundation/coreth/core/state"
+	"github.com/ava-labs/coreth/core/state"
 )
 
 // txNoncer is a tiny virtual state database to manage the executable nonces of

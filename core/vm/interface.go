@@ -31,7 +31,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/flare-foundation/coreth/core/types"
+	"github.com/ava-labs/coreth/core/types"
 )
 
 // StateDB is an EVM database for full state querying.

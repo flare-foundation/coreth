@@ -31,7 +31,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common/bitutil"
 
-	"github.com/flare-foundation/coreth/core/rawdb"
+	"github.com/ava-labs/coreth/core/rawdb"
 )
 
 const (

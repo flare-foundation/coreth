@@ -40,9 +40,9 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
 
-	"github.com/flare-foundation/coreth/ethdb"
-	"github.com/flare-foundation/coreth/ethdb/memorydb"
-	"github.com/flare-foundation/coreth/trie"
+	"github.com/ava-labs/coreth/ethdb"
+	"github.com/ava-labs/coreth/ethdb/memorydb"
+	"github.com/ava-labs/coreth/trie"
 )
 
 // Tests that snapshot generation from an empty database.

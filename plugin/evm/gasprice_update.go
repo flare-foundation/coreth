@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/flare-foundation/coreth/params"
+	"github.com/ava-labs/coreth/params"
 )
 
 type gasPriceUpdater struct {

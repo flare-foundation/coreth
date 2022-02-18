@@ -27,7 +27,7 @@
 package node
 
 import (
-	"github.com/flare-foundation/coreth/rpc"
+	"github.com/ava-labs/coreth/rpc"
 )
 
 const (

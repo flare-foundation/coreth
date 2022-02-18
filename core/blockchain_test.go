@@ -9,13 +9,13 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/flare-foundation/coreth/consensus/dummy"
-	"github.com/flare-foundation/coreth/core/rawdb"
-	"github.com/flare-foundation/coreth/core/state"
-	"github.com/flare-foundation/coreth/core/types"
-	"github.com/flare-foundation/coreth/core/vm"
-	"github.com/flare-foundation/coreth/ethdb"
-	"github.com/flare-foundation/coreth/params"
+	"github.com/ava-labs/coreth/consensus/dummy"
+	"github.com/ava-labs/coreth/core/rawdb"
+	"github.com/ava-labs/coreth/core/state"
+	"github.com/ava-labs/coreth/core/types"
+	"github.com/ava-labs/coreth/core/vm"
+	"github.com/ava-labs/coreth/ethdb"
+	"github.com/ava-labs/coreth/params"
 )
 
 func TestArchiveBlockChain(t *testing.T) {

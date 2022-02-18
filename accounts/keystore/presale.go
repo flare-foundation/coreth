@@ -40,7 +40,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/crypto"
 
-	"github.com/flare-foundation/coreth/accounts"
+	"github.com/ava-labs/coreth/accounts"
 )
 
 // creates a Key and stores that in the given KeyStore by decrypting a presale key JSON

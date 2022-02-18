@@ -39,13 +39,13 @@ import (
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/crypto"
 
-	"github.com/flare-foundation/coreth/core"
-	"github.com/flare-foundation/coreth/core/state"
-	"github.com/flare-foundation/coreth/core/state/snapshot"
-	"github.com/flare-foundation/coreth/core/types"
-	"github.com/flare-foundation/coreth/core/vm"
-	"github.com/flare-foundation/coreth/ethdb"
-	"github.com/flare-foundation/coreth/params"
+	"github.com/ava-labs/coreth/core"
+	"github.com/ava-labs/coreth/core/state"
+	"github.com/ava-labs/coreth/core/state/snapshot"
+	"github.com/ava-labs/coreth/core/types"
+	"github.com/ava-labs/coreth/core/vm"
+	"github.com/ava-labs/coreth/ethdb"
+	"github.com/ava-labs/coreth/params"
 )
 
 // StateTest checks transaction processing without block context.

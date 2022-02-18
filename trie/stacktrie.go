@@ -39,7 +39,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
 
-	"github.com/flare-foundation/coreth/ethdb"
+	"github.com/ava-labs/coreth/ethdb"
 )
 
 var ErrCommitDisabled = errors.New("no database for committing")

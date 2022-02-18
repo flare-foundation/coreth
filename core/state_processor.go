@@ -33,12 +33,12 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 
-	"github.com/flare-foundation/coreth/consensus"
-	"github.com/flare-foundation/coreth/consensus/misc"
-	"github.com/flare-foundation/coreth/core/state"
-	"github.com/flare-foundation/coreth/core/types"
-	"github.com/flare-foundation/coreth/core/vm"
-	"github.com/flare-foundation/coreth/params"
+	"github.com/ava-labs/coreth/consensus"
+	"github.com/ava-labs/coreth/consensus/misc"
+	"github.com/ava-labs/coreth/core/state"
+	"github.com/ava-labs/coreth/core/types"
+	"github.com/ava-labs/coreth/core/vm"
+	"github.com/ava-labs/coreth/params"
 )
 
 // StateProcessor is a basic Processor, which takes care of transitioning

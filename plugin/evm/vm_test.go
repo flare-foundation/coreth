@@ -18,8 +18,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/flare-foundation/coreth/core"
-	"github.com/flare-foundation/coreth/params"
+	"github.com/ava-labs/coreth/core"
+	"github.com/ava-labs/coreth/params"
 	"github.com/flare-foundation/flare/api/keystore"
 	"github.com/flare-foundation/flare/chains/atomic"
 	"github.com/flare-foundation/flare/database/manager"

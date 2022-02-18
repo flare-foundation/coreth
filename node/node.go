@@ -31,8 +31,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/event"
 
-	"github.com/flare-foundation/coreth/accounts"
-	"github.com/flare-foundation/coreth/rpc"
+	"github.com/ava-labs/coreth/accounts"
+	"github.com/ava-labs/coreth/rpc"
 )
 
 // Node is a container on which services can be registered.

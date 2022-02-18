@@ -12,8 +12,8 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
 
-	"github.com/flare-foundation/coreth/core/types"
-	"github.com/flare-foundation/coreth/params"
+	"github.com/ava-labs/coreth/core/types"
+	"github.com/ava-labs/coreth/params"
 	"github.com/flare-foundation/flare/chains/atomic"
 	"github.com/flare-foundation/flare/ids"
 	"github.com/flare-foundation/flare/snow/choices"

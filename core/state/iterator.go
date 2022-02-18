@@ -33,8 +33,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/rlp"
 
-	"github.com/flare-foundation/coreth/core/types"
-	"github.com/flare-foundation/coreth/trie"
+	"github.com/ava-labs/coreth/core/types"
+	"github.com/ava-labs/coreth/trie"
 )
 
 // NodeIterator is an iterator to traverse the entire state trie post-order,

@@ -42,7 +42,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/event"
 
-	"github.com/flare-foundation/coreth/accounts"
+	"github.com/ava-labs/coreth/accounts"
 )
 
 var testSigData = make([]byte, 32)

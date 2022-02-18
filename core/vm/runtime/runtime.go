@@ -34,10 +34,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 
-	"github.com/flare-foundation/coreth/core/rawdb"
-	"github.com/flare-foundation/coreth/core/state"
-	"github.com/flare-foundation/coreth/core/vm"
-	"github.com/flare-foundation/coreth/params"
+	"github.com/ava-labs/coreth/core/rawdb"
+	"github.com/ava-labs/coreth/core/state"
+	"github.com/ava-labs/coreth/core/vm"
+	"github.com/ava-labs/coreth/params"
 )
 
 // Config is a basic type specifying certain configuration flags for running

@@ -57,7 +57,7 @@ import (
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
 
-	"github.com/flare-foundation/coreth/accounts"
+	"github.com/ava-labs/coreth/accounts"
 )
 
 // Scheme is the URI prefix for smartcard wallets.

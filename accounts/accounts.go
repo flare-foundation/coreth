@@ -36,8 +36,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/event"
 
-	"github.com/flare-foundation/coreth/core/types"
-	"github.com/flare-foundation/coreth/interfaces"
+	"github.com/ava-labs/coreth/core/types"
+	"github.com/ava-labs/coreth/interfaces"
 )
 
 // Account represents an Ethereum account located at a specific location defined

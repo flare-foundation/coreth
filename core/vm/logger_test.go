@@ -34,8 +34,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/flare-foundation/coreth/core/state"
-	"github.com/flare-foundation/coreth/params"
+	"github.com/ava-labs/coreth/core/state"
+	"github.com/ava-labs/coreth/params"
 )
 
 type dummyContractRef struct {

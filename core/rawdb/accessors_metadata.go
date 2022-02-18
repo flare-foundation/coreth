@@ -33,8 +33,8 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
 
-	"github.com/flare-foundation/coreth/ethdb"
-	"github.com/flare-foundation/coreth/params"
+	"github.com/ava-labs/coreth/ethdb"
+	"github.com/ava-labs/coreth/params"
 )
 
 // ReadDatabaseVersion retrieves the version number of the database.

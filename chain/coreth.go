@@ -9,14 +9,14 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/flare-foundation/coreth/consensus/dummy"
-	"github.com/flare-foundation/coreth/core"
-	"github.com/flare-foundation/coreth/core/state"
-	"github.com/flare-foundation/coreth/core/types"
-	"github.com/flare-foundation/coreth/eth"
-	"github.com/flare-foundation/coreth/ethdb"
-	"github.com/flare-foundation/coreth/node"
-	"github.com/flare-foundation/coreth/rpc"
+	"github.com/ava-labs/coreth/consensus/dummy"
+	"github.com/ava-labs/coreth/core"
+	"github.com/ava-labs/coreth/core/state"
+	"github.com/ava-labs/coreth/core/types"
+	"github.com/ava-labs/coreth/eth"
+	"github.com/ava-labs/coreth/ethdb"
+	"github.com/ava-labs/coreth/node"
+	"github.com/ava-labs/coreth/rpc"
 	"github.com/flare-foundation/flare/utils/timer/mockable"
 )
 

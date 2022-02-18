@@ -12,9 +12,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
 
-	"github.com/flare-foundation/coreth/core/rawdb"
-	"github.com/flare-foundation/coreth/core/state"
-	"github.com/flare-foundation/coreth/params"
+	"github.com/ava-labs/coreth/core/rawdb"
+	"github.com/ava-labs/coreth/core/state"
+	"github.com/ava-labs/coreth/params"
 )
 
 func TestPrecompiledContractSpendsGas(t *testing.T) {

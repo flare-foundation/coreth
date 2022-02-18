@@ -33,8 +33,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/flare-foundation/coreth/core/types"
-	"github.com/flare-foundation/coreth/interfaces"
+	"github.com/ava-labs/coreth/core/types"
+	"github.com/ava-labs/coreth/interfaces"
 )
 
 var (

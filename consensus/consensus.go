@@ -32,9 +32,9 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/flare-foundation/coreth/core/state"
-	"github.com/flare-foundation/coreth/core/types"
-	"github.com/flare-foundation/coreth/params"
+	"github.com/ava-labs/coreth/core/state"
+	"github.com/ava-labs/coreth/core/types"
+	"github.com/ava-labs/coreth/params"
 )
 
 // ChainHeaderReader defines a small collection of methods needed to access the local

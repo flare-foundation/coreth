@@ -38,7 +38,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 
-	"github.com/flare-foundation/coreth/ethdb/memorydb"
+	"github.com/ava-labs/coreth/ethdb/memorydb"
 )
 
 func init() {

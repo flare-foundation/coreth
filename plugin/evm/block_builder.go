@@ -10,8 +10,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/log"
 
-	coreth "github.com/flare-foundation/coreth/chain"
-	"github.com/flare-foundation/coreth/params"
+	coreth "github.com/ava-labs/coreth/chain"
+	"github.com/ava-labs/coreth/params"
 	"github.com/flare-foundation/flare/snow"
 	commonEng "github.com/flare-foundation/flare/snow/engine/common"
 	"github.com/flare-foundation/flare/utils/timer"

@@ -50,9 +50,9 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/log"
 
-	"github.com/flare-foundation/coreth/accounts"
-	"github.com/flare-foundation/coreth/core/types"
-	"github.com/flare-foundation/coreth/interfaces"
+	"github.com/ava-labs/coreth/accounts"
+	"github.com/ava-labs/coreth/core/types"
+	"github.com/ava-labs/coreth/interfaces"
 )
 
 // ErrPairingPasswordNeeded is returned if opening the smart card requires pairing with a pairing

@@ -39,7 +39,7 @@ import (
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/ethereum/go-ethereum/rlp"
 
-	"github.com/flare-foundation/coreth/core/types"
+	"github.com/ava-labs/coreth/core/types"
 )
 
 var emptyCodeHash = crypto.Keccak256(nil)

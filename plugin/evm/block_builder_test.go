@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/flare-foundation/coreth/params"
+	"github.com/ava-labs/coreth/params"
 	"github.com/flare-foundation/flare/snow"
 )
 

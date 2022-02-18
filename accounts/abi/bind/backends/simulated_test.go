@@ -40,12 +40,12 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 
-	"github.com/flare-foundation/coreth/accounts/abi"
-	"github.com/flare-foundation/coreth/accounts/abi/bind"
-	"github.com/flare-foundation/coreth/core"
-	"github.com/flare-foundation/coreth/core/types"
-	"github.com/flare-foundation/coreth/interfaces"
-	"github.com/flare-foundation/coreth/params"
+	"github.com/ava-labs/coreth/accounts/abi"
+	"github.com/ava-labs/coreth/accounts/abi/bind"
+	"github.com/ava-labs/coreth/core"
+	"github.com/ava-labs/coreth/core/types"
+	"github.com/ava-labs/coreth/interfaces"
+	"github.com/ava-labs/coreth/params"
 )
 
 func TestSimulatedBackend(t *testing.T) {

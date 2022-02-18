@@ -38,14 +38,14 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/asm"
 
-	"github.com/flare-foundation/coreth/consensus"
-	"github.com/flare-foundation/coreth/core"
-	"github.com/flare-foundation/coreth/core/rawdb"
-	"github.com/flare-foundation/coreth/core/state"
-	"github.com/flare-foundation/coreth/core/types"
-	"github.com/flare-foundation/coreth/core/vm"
-	"github.com/flare-foundation/coreth/eth/tracers"
-	"github.com/flare-foundation/coreth/params"
+	"github.com/ava-labs/coreth/consensus"
+	"github.com/ava-labs/coreth/core"
+	"github.com/ava-labs/coreth/core/rawdb"
+	"github.com/ava-labs/coreth/core/state"
+	"github.com/ava-labs/coreth/core/types"
+	"github.com/ava-labs/coreth/core/vm"
+	"github.com/ava-labs/coreth/eth/tracers"
+	"github.com/ava-labs/coreth/params"
 )
 
 func TestDefaults(t *testing.T) {

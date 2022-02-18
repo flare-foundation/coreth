@@ -38,12 +38,12 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 
-	"github.com/flare-foundation/coreth/core"
-	"github.com/flare-foundation/coreth/core/rawdb"
-	"github.com/flare-foundation/coreth/core/types"
-	"github.com/flare-foundation/coreth/core/vm"
-	"github.com/flare-foundation/coreth/params"
-	"github.com/flare-foundation/coreth/tests"
+	"github.com/ava-labs/coreth/core"
+	"github.com/ava-labs/coreth/core/rawdb"
+	"github.com/ava-labs/coreth/core/types"
+	"github.com/ava-labs/coreth/core/vm"
+	"github.com/ava-labs/coreth/params"
+	"github.com/ava-labs/coreth/tests"
 )
 
 // To generate a new callTracer test, copy paste the makeTest method below into

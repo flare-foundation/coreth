@@ -31,7 +31,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/flare-foundation/coreth/ethdb/memorydb"
+	"github.com/ava-labs/coreth/ethdb/memorydb"
 )
 
 // Tests that the trie database returns a missing trie node error if attempting

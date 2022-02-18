@@ -36,11 +36,11 @@ import (
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
 
-	"github.com/flare-foundation/coreth/accounts"
-	"github.com/flare-foundation/coreth/core/types"
-	"github.com/flare-foundation/coreth/interfaces"
-	"github.com/flare-foundation/coreth/rpc"
-	"github.com/flare-foundation/coreth/signer/core/apitypes"
+	"github.com/ava-labs/coreth/accounts"
+	"github.com/ava-labs/coreth/core/types"
+	"github.com/ava-labs/coreth/interfaces"
+	"github.com/ava-labs/coreth/rpc"
+	"github.com/ava-labs/coreth/signer/core/apitypes"
 )
 
 type ExternalBackend struct {

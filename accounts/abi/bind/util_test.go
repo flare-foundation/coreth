@@ -36,10 +36,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 
-	"github.com/flare-foundation/coreth/accounts/abi/bind"
-	"github.com/flare-foundation/coreth/accounts/abi/bind/backends"
-	"github.com/flare-foundation/coreth/core"
-	"github.com/flare-foundation/coreth/core/types"
+	"github.com/ava-labs/coreth/accounts/abi/bind"
+	"github.com/ava-labs/coreth/accounts/abi/bind/backends"
+	"github.com/ava-labs/coreth/core"
+	"github.com/ava-labs/coreth/core/types"
 )
 
 var testKey, _ = crypto.HexToECDSA("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")

@@ -37,11 +37,11 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/flare-foundation/coreth/consensus"
-	"github.com/flare-foundation/coreth/core/rawdb"
-	"github.com/flare-foundation/coreth/core/types"
-	"github.com/flare-foundation/coreth/ethdb"
-	"github.com/flare-foundation/coreth/params"
+	"github.com/ava-labs/coreth/consensus"
+	"github.com/ava-labs/coreth/core/rawdb"
+	"github.com/ava-labs/coreth/core/types"
+	"github.com/ava-labs/coreth/ethdb"
+	"github.com/ava-labs/coreth/params"
 )
 
 const (

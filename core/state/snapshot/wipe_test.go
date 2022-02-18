@@ -32,8 +32,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/flare-foundation/coreth/core/rawdb"
-	"github.com/flare-foundation/coreth/ethdb/memorydb"
+	"github.com/ava-labs/coreth/core/rawdb"
+	"github.com/ava-labs/coreth/ethdb/memorydb"
 )
 
 // Tests that given a database with random data content, all parts of a snapshot

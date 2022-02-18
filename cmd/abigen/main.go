@@ -42,9 +42,9 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/log"
 
-	"github.com/flare-foundation/coreth/accounts/abi"
-	"github.com/flare-foundation/coreth/accounts/abi/bind"
-	"github.com/flare-foundation/coreth/internal/flags"
+	"github.com/ava-labs/coreth/accounts/abi"
+	"github.com/ava-labs/coreth/accounts/abi/bind"
+	"github.com/ava-labs/coreth/internal/flags"
 )
 
 var (

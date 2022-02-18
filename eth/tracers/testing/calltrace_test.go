@@ -15,15 +15,15 @@ import (
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/rlp"
 
-	"github.com/flare-foundation/coreth/core"
-	"github.com/flare-foundation/coreth/core/rawdb"
-	"github.com/flare-foundation/coreth/core/types"
-	"github.com/flare-foundation/coreth/core/vm"
-	"github.com/flare-foundation/coreth/eth/tracers"
-	"github.com/flare-foundation/coreth/tests"
+	"github.com/ava-labs/coreth/core"
+	"github.com/ava-labs/coreth/core/rawdb"
+	"github.com/ava-labs/coreth/core/types"
+	"github.com/ava-labs/coreth/core/vm"
+	"github.com/ava-labs/coreth/eth/tracers"
+	"github.com/ava-labs/coreth/tests"
 
 	// Force-load the native, to trigger registration
-	_ "github.com/flare-foundation/coreth/eth/tracers/native"
+	_ "github.com/ava-labs/coreth/eth/tracers/native"
 )
 
 type callContext struct {

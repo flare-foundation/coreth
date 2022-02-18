@@ -32,7 +32,7 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/flare-foundation/coreth/ethdb"
+	"github.com/ava-labs/coreth/ethdb"
 )
 
 // TestDatabaseSuite runs a suite of tests against a KeyValueStore database

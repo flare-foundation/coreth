@@ -9,7 +9,7 @@ import (
 
 	"github.com/hashicorp/go-plugin"
 
-	"github.com/flare-foundation/coreth/plugin/evm"
+	"github.com/ava-labs/coreth/plugin/evm"
 	"github.com/flare-foundation/flare/vms/rpcchainvm"
 )
 

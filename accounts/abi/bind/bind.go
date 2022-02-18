@@ -42,7 +42,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/log"
 
-	"github.com/flare-foundation/coreth/accounts/abi"
+	"github.com/ava-labs/coreth/accounts/abi"
 )
 
 // Lang is a target programming language selector to generate bindings for.

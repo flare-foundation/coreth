@@ -33,8 +33,8 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/flare-foundation/coreth/core/vm"
-	"github.com/flare-foundation/coreth/eth/tracers/internal/tracers"
+	"github.com/ava-labs/coreth/core/vm"
+	"github.com/ava-labs/coreth/eth/tracers/internal/tracers"
 )
 
 // Tracer interface extends vm.EVMLogger and additionally

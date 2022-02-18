@@ -9,7 +9,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/log"
 
-	"github.com/flare-foundation/coreth/core/types"
+	"github.com/ava-labs/coreth/core/types"
 )
 
 // TestPayment tests basic payment (balance, not multi-coin)

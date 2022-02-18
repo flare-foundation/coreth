@@ -38,9 +38,9 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
 
-	"github.com/flare-foundation/coreth/core/rawdb"
-	"github.com/flare-foundation/coreth/ethdb"
-	"github.com/flare-foundation/coreth/trie"
+	"github.com/ava-labs/coreth/core/rawdb"
+	"github.com/ava-labs/coreth/ethdb"
+	"github.com/ava-labs/coreth/trie"
 )
 
 // journalGenerator is a disk layer entry containing the generator progress marker.

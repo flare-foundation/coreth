@@ -32,7 +32,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
 
-	"github.com/flare-foundation/coreth/ethdb"
+	"github.com/ava-labs/coreth/ethdb"
 )
 
 // ReadSnapshotRoot retrieves the root of the block whose state is contained in

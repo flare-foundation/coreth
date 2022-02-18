@@ -46,8 +46,8 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/event"
 
-	"github.com/flare-foundation/coreth/accounts"
-	"github.com/flare-foundation/coreth/core/types"
+	"github.com/ava-labs/coreth/accounts"
+	"github.com/ava-labs/coreth/core/types"
 )
 
 var (

@@ -35,7 +35,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 
-	"github.com/flare-foundation/coreth/params"
+	"github.com/ava-labs/coreth/params"
 )
 
 var ErrInvalidChainId = errors.New("invalid chain id for signer")

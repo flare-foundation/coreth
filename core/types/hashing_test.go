@@ -39,8 +39,8 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rlp"
 
-	"github.com/flare-foundation/coreth/core/types"
-	"github.com/flare-foundation/coreth/trie"
+	"github.com/ava-labs/coreth/core/types"
+	"github.com/ava-labs/coreth/trie"
 )
 
 func TestDeriveSha(t *testing.T) {

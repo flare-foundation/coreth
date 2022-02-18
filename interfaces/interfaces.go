@@ -34,7 +34,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/flare-foundation/coreth/core/types"
+	"github.com/ava-labs/coreth/core/types"
 )
 
 // NotFound is returned by API methods if the requested item does not exist.

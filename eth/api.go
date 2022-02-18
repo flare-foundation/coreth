@@ -41,13 +41,13 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
 
-	"github.com/flare-foundation/coreth/core"
-	"github.com/flare-foundation/coreth/core/rawdb"
-	"github.com/flare-foundation/coreth/core/state"
-	"github.com/flare-foundation/coreth/core/types"
-	"github.com/flare-foundation/coreth/internal/ethapi"
-	"github.com/flare-foundation/coreth/rpc"
-	"github.com/flare-foundation/coreth/trie"
+	"github.com/ava-labs/coreth/core"
+	"github.com/ava-labs/coreth/core/rawdb"
+	"github.com/ava-labs/coreth/core/state"
+	"github.com/ava-labs/coreth/core/types"
+	"github.com/ava-labs/coreth/internal/ethapi"
+	"github.com/ava-labs/coreth/rpc"
+	"github.com/ava-labs/coreth/trie"
 )
 
 // PublicEthereumAPI provides an API to access Ethereum full node-related

@@ -37,8 +37,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
 
-	"github.com/flare-foundation/coreth/ethdb"
-	"github.com/flare-foundation/coreth/ethdb/memorydb"
+	"github.com/ava-labs/coreth/ethdb"
+	"github.com/ava-labs/coreth/ethdb/memorydb"
 )
 
 // nofreezedb is a database wrapper that disables freezer data retrievals.

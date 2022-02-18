@@ -16,7 +16,7 @@ import (
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/log"
 
-	"github.com/flare-foundation/coreth/params"
+	"github.com/ava-labs/coreth/params"
 	"github.com/flare-foundation/flare/api"
 	"github.com/flare-foundation/flare/ids"
 	"github.com/flare-foundation/flare/utils/constants"

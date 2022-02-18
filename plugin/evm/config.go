@@ -9,7 +9,7 @@ import (
 
 	"github.com/spf13/cast"
 
-	"github.com/flare-foundation/coreth/eth"
+	"github.com/ava-labs/coreth/eth"
 )
 
 const (

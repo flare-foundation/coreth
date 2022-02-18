@@ -35,8 +35,8 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
 
-	"github.com/flare-foundation/coreth/ethdb"
-	"github.com/flare-foundation/coreth/ethdb/memorydb"
+	"github.com/ava-labs/coreth/ethdb"
+	"github.com/ava-labs/coreth/ethdb/memorydb"
 )
 
 // Prove constructs a merkle proof for key. The result contains all encoded nodes

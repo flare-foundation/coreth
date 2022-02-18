@@ -37,10 +37,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 
-	"github.com/flare-foundation/coreth/accounts/abi/bind"
-	"github.com/flare-foundation/coreth/core/types"
-	"github.com/flare-foundation/coreth/interfaces"
-	"github.com/flare-foundation/coreth/rpc"
+	"github.com/ava-labs/coreth/accounts/abi/bind"
+	"github.com/ava-labs/coreth/core/types"
+	"github.com/ava-labs/coreth/interfaces"
+	"github.com/ava-labs/coreth/rpc"
 	"github.com/flare-foundation/flare/ids"
 )
 

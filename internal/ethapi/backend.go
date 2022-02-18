@@ -35,16 +35,16 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/event"
 
-	"github.com/flare-foundation/coreth/accounts"
-	"github.com/flare-foundation/coreth/consensus"
-	"github.com/flare-foundation/coreth/core"
-	"github.com/flare-foundation/coreth/core/bloombits"
-	"github.com/flare-foundation/coreth/core/state"
-	"github.com/flare-foundation/coreth/core/types"
-	"github.com/flare-foundation/coreth/core/vm"
-	"github.com/flare-foundation/coreth/ethdb"
-	"github.com/flare-foundation/coreth/params"
-	"github.com/flare-foundation/coreth/rpc"
+	"github.com/ava-labs/coreth/accounts"
+	"github.com/ava-labs/coreth/consensus"
+	"github.com/ava-labs/coreth/core"
+	"github.com/ava-labs/coreth/core/bloombits"
+	"github.com/ava-labs/coreth/core/state"
+	"github.com/ava-labs/coreth/core/types"
+	"github.com/ava-labs/coreth/core/vm"
+	"github.com/ava-labs/coreth/ethdb"
+	"github.com/ava-labs/coreth/params"
+	"github.com/ava-labs/coreth/rpc"
 )
 
 // Backend interface provides the common API services (that are provided by

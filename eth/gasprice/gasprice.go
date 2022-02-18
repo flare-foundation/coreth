@@ -39,11 +39,11 @@ import (
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
 
-	"github.com/flare-foundation/coreth/consensus/dummy"
-	"github.com/flare-foundation/coreth/core"
-	"github.com/flare-foundation/coreth/core/types"
-	"github.com/flare-foundation/coreth/params"
-	"github.com/flare-foundation/coreth/rpc"
+	"github.com/ava-labs/coreth/consensus/dummy"
+	"github.com/ava-labs/coreth/core"
+	"github.com/ava-labs/coreth/core/types"
+	"github.com/ava-labs/coreth/params"
+	"github.com/ava-labs/coreth/rpc"
 	"github.com/flare-foundation/flare/utils/timer/mockable"
 )
 

@@ -31,7 +31,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/flare-foundation/coreth/core/vm/runtime"
+	"github.com/ava-labs/coreth/core/vm/runtime"
 )
 
 func ExampleExecute() {
