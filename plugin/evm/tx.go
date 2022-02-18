@@ -12,8 +12,9 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/ava-labs/coreth/core/state"
-	"github.com/ava-labs/coreth/params"
+	"github.com/flare-foundation/coreth/core/state"
+	"github.com/flare-foundation/coreth/params"
+
 	"github.com/flare-foundation/flare/chains/atomic"
 	"github.com/flare-foundation/flare/codec"
 	"github.com/flare-foundation/flare/ids"
@@ -27,13 +28,16 @@ import (
 )
 
 var (
-	errNoValueOutput = errors.New("output has no value")
-	errNoValueInput  = errors.New("input has no value")
-	errNilOutput     = errors.New("nil output")
-	errNilInput      = errors.New("nil input")
-	errEmptyAssetID  = errors.New("empty asset ID is not valid")
-	errNilBaseFee    = errors.New("cannot calculate dynamic fee with nil baseFee")
-	errFeeOverflow   = errors.New("overflow occurred while calculating the fee")
+	errWrongBlockchainID = errors.New("wrong blockchain ID provided")
+	errWrongNetworkID    = errors.New("tx was issued with a different network ID")
+	errNilTx             = errors.New("tx is nil")
+	errNoValueOutput     = errors.New("output has no value")
+	errNoValueInput      = errors.New("input has no value")
+	errNilOutput         = errors.New("nil output")
+	errNilInput          = errors.New("nil input")
+	errEmptyAssetID      = errors.New("empty asset ID is not valid")
+	errNilBaseFee        = errors.New("cannot calculate dynamic fee with nil baseFee")
+	errFeeOverflow       = errors.New("overflow occurred while calculating the fee")
 )
 
 // Constants for calculating the gas consumed by atomic transactions
@@ -98,15 +102,16 @@ type UnsignedTx interface {
 type UnsignedAtomicTx interface {
 	UnsignedTx
 
-	// UTXOs this tx consumes
+	// InputUTXOs returns the UTXOs this tx consumes
 	InputUTXOs() ids.Set
 	// Verify attempts to verify that the transaction is well formed
 	Verify(ctx *snow.Context, rules params.Rules) error
 	// Attempts to verify this transaction with the provided state.
 	SemanticVerify(vm *VM, stx *Tx, parent *Block, baseFee *big.Int, rules params.Rules) error
-
-	// Accept this transaction with the additionally provided state transitions.
-	Accept() (ids.ID, *atomic.Requests, error)
+	// AtomicOps returns the blockchainID and set of atomic requests that
+	// must be applied to shared memory for this transaction to be accepted.
+	// The set of atomic requests must be returned in a consistent order.
+	AtomicOps() (ids.ID, *atomic.Requests, error)
 
 	EVMStateTransfer(ctx *snow.Context, state *state.StateDB) error
 }
@@ -269,4 +274,35 @@ func calculateDynamicFee(cost uint64, baseFee *big.Int) (uint64, error) {
 		return 0, errFeeOverflow
 	}
 	return feeInNAVAX.Uint64(), nil
+}
+
+func calcBytesCost(len int) uint64 {
+	return uint64(len) * TxBytesGas
+}
+
+// mergeAtomicOps merges atomic requests represented by [txs]
+// to the [output] map, depending on whether [chainID] is present in the map.
+func mergeAtomicOps(txs []*Tx) (map[ids.ID]*atomic.Requests, error) {
+	if len(txs) > 1 {
+		// txs should be stored in order of txID to ensure consistency
+		// with txs initialized from the txID index.
+		copyTxs := make([]*Tx, len(txs))
+		copy(copyTxs, txs)
+		sort.Slice(copyTxs, func(i, j int) bool { return copyTxs[i].ID().Hex() < copyTxs[j].ID().Hex() })
+		txs = copyTxs
+	}
+	output := make(map[ids.ID]*atomic.Requests)
+	for _, tx := range txs {
+		chainID, txRequest, err := tx.UnsignedAtomicTx.AtomicOps()
+		if err != nil {
+			return nil, err
+		}
+		if request, exists := output[chainID]; exists {
+			request.PutRequests = append(request.PutRequests, txRequest.PutRequests...)
+			request.RemoveRequests = append(request.RemoveRequests, txRequest.RemoveRequests...)
+		} else {
+			output[chainID] = txRequest
+		}
+	}
+	return output, nil
 }

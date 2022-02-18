@@ -33,8 +33,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/rlp"
-
-	"github.com/ava-labs/coreth/ethdb"
+	"github.com/flare-foundation/coreth/ethdb"
 )
 
 // Iterator is a key-value trie iterator that traverses a Trie.
@@ -286,7 +285,7 @@ func (it *nodeIterator) seek(prefix []byte) error {
 	}
 }
 
-// init initializes the the iterator.
+// init initializes the iterator.
 func (it *nodeIterator) init() (*nodeIteratorState, error) {
 	root := it.trie.Hash()
 	state := &nodeIteratorState{node: it.trie.root, index: -1}

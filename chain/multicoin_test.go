@@ -32,16 +32,15 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/log"
-
-	"github.com/ava-labs/coreth/accounts/keystore"
-	"github.com/ava-labs/coreth/consensus/dummy"
-	"github.com/ava-labs/coreth/core"
-	"github.com/ava-labs/coreth/core/rawdb"
-	"github.com/ava-labs/coreth/core/types"
-	"github.com/ava-labs/coreth/core/vm"
-	"github.com/ava-labs/coreth/eth"
-	"github.com/ava-labs/coreth/eth/ethconfig"
-	"github.com/ava-labs/coreth/node"
+	"github.com/flare-foundation/coreth/accounts/keystore"
+	"github.com/flare-foundation/coreth/consensus/dummy"
+	"github.com/flare-foundation/coreth/core"
+	"github.com/flare-foundation/coreth/core/rawdb"
+	"github.com/flare-foundation/coreth/core/types"
+	"github.com/flare-foundation/coreth/core/vm"
+	"github.com/flare-foundation/coreth/eth"
+	"github.com/flare-foundation/coreth/eth/ethconfig"
+	"github.com/flare-foundation/coreth/node"
 	"github.com/flare-foundation/flare/utils/timer/mockable"
 )
 
@@ -66,7 +65,29 @@ func TestMulticoin(t *testing.T) {
 
 	config.Genesis = genesisBlock
 
-	// NOTE: use precompiled `mc_test.sol` for portability.
+	// NOTE: use precompiled `mc_test.sol` for portability, do not remove the
+	// following code (for debug purpose)
+	//
+	//// compile the smart contract
+	//gopath := os.Getenv("GOPATH")
+	//if gopath == "" {
+	//	gopath = build.Default.GOPATH
+	//}
+	//counterSrc, err := filepath.Abs(gopath + "/src/github.com/flare-foundation/coreth/examples/multicoin/mc_test.sol")
+	//if err != nil {
+	// 	t.Fatal(err)
+	// }
+	//contracts, err := compiler.CompileSolidity("", counterSrc)
+	//if err != nil {
+	// 	t.Fatal(err)
+	// }
+	//contract, _ := contracts[fmt.Sprintf("%s:%s", counterSrc, "MCTest")]
+	// abiStr, err := json.Marshal(contract.Info.AbiDefinition)
+	// contractAbi, err := abi.JSON(strings.NewReader(string(abiStr)))
+	// if err != nil {
+	// 	t.Fatal(err)
+	// }
+	// code := common.Hex2Bytes(contract.Code[2:])
 
 	// see `mc_test.sol`
 	contract := "608060405234801561001057600080fd5b50610426806100206000396000f3fe60806040526004361061002d5760003560e01c8063a41fe49f14610039578063ba7b37d41461008857610034565b3661003457005b600080fd5b34801561004557600080fd5b506100866004803603606081101561005c57600080fd5b810190808035906020019092919080359060200190929190803590602001909291905050506100c3565b005b34801561009457600080fd5b506100c1600480360360208110156100ab57600080fd5b810190808035906020019092919050505061025a565b005b600073010000000000000000000000000000000000000073ffffffffffffffffffffffffffffffffffffffff1633858585604051602401808573ffffffffffffffffffffffffffffffffffffffff1681526020018481526020018381526020018281526020019450505050506040516020818303038152906040527fb6510bb3000000000000000000000000000000000000000000000000000000007bffffffffffffffffffffffffffffffffffffffffffffffffffffffff19166020820180517bffffffffffffffffffffffffffffffffffffffffffffffffffffffff83818316178352505050506040518082805190602001908083835b602083106101df57805182526020820191506020810190506020830392506101bc565b6001836020036101000a0380198251168184511680821785525050505050509050019150506000604051808303816000865af19150503d8060008114610241576040519150601f19603f3d011682016040523d82523d6000602084013e610246565b606091505b505090508061025457600080fd5b50505050565b60008073010000000000000000000000000000000000000073ffffffffffffffffffffffffffffffffffffffff1683604051602401808281526020019150506040516020818303038152906040527f1e010439000000000000000000000000000000000000000000000000000000007bffffffffffffffffffffffffffffffffffffffffffffffffffffffff19166020820180517bffffffffffffffffffffffffffffffffffffffffffffffffffffffff83818316178352505050506040518082805190602001908083835b602083106103495780518252602082019150602081019050602083039250610326565b6001836020036101000a0380198251168184511680821785525050505050509050019150506000604051808303816000865af19150503d80600081146103ab576040519150601f19603f3d011682016040523d82523d6000602084013e6103b0565b606091505b5091509150816103bf57600080fd5b8080602001905160208110156103d457600080fd5b810190808051906020019092919050505060008190555050505056fea26469706673582212207931f8bf71bbaeaffac554cafb419604155328b1466fae52488964ccba082f5464736f6c63430007060033"

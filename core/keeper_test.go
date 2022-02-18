@@ -11,7 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
 
-	"github.com/ava-labs/coreth/core/vm"
+	"github.com/flare-foundation/coreth/core/vm"
 )
 
 // Define a mock structure to spy and mock values for keeper calls

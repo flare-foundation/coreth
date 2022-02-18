@@ -9,8 +9,10 @@ import (
 
 	"github.com/hashicorp/go-plugin"
 
-	"github.com/ava-labs/coreth/plugin/evm"
+	"github.com/flare-foundation/flare/utils/ulimit"
 	"github.com/flare-foundation/flare/vms/rpcchainvm"
+
+	"github.com/flare-foundation/coreth/plugin/evm"
 )
 
 func main() {
@@ -22,6 +24,10 @@ func main() {
 	if version {
 		fmt.Println(evm.Version)
 		os.Exit(0)
+	}
+	if err := ulimit.Set(ulimit.DefaultFDLimit); err != nil {
+		fmt.Printf("failed to set fd limit correctly due to: %s", err)
+		os.Exit(1)
 	}
 	plugin.Serve(&plugin.ServeConfig{
 		HandshakeConfig: rpcchainvm.Handshake,

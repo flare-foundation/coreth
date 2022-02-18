@@ -26,9 +26,13 @@
 
 package bind
 
+<<<<<<< HEAD
 import (
-	"github.com/ava-labs/coreth/accounts/abi"
+	"github.com/flare-foundation/coreth/accounts/abi"
 )
+=======
+import "github.com/flare-foundation/coreth/accounts/abi"
+>>>>>>> upstream-v0.8.5-rc.2
 
 // tmplData is the data structure required to fill the binding template.
 type tmplData struct {
@@ -104,13 +108,21 @@ import (
 	"strings"
 	"errors"
 
+<<<<<<< HEAD
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/event"
 
-	"github.com/ava-labs/coreth/accounts/abi"
-	"github.com/ava-labs/coreth/accounts/abi/bind"
-	"github.com/ava-labs/coreth/core/types"
-	"github.com/ava-labs/coreth/interfaces"
+=======
+>>>>>>> upstream-v0.8.5-rc.2
+	"github.com/flare-foundation/coreth/accounts/abi"
+	"github.com/flare-foundation/coreth/accounts/abi/bind"
+	"github.com/flare-foundation/coreth/core/types"
+	"github.com/flare-foundation/coreth/interfaces"
+<<<<<<< HEAD
+=======
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/event"
+>>>>>>> upstream-v0.8.5-rc.2
 )
 
 // Reference imports to suppress errors if they are not otherwise used.

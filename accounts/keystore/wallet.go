@@ -30,10 +30,9 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/crypto"
-
-	"github.com/ava-labs/coreth/accounts"
-	"github.com/ava-labs/coreth/core/types"
-	"github.com/ava-labs/coreth/interfaces"
+	"github.com/flare-foundation/coreth/accounts"
+	"github.com/flare-foundation/coreth/core/types"
+	"github.com/flare-foundation/coreth/interfaces"
 )
 
 // keystoreWallet implements the accounts.Wallet interface for the original

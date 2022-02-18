@@ -33,11 +33,10 @@ import (
 	"path/filepath"
 
 	"github.com/ethereum/go-ethereum/log"
-
-	"github.com/ava-labs/coreth/accounts"
-	"github.com/ava-labs/coreth/accounts/external"
-	"github.com/ava-labs/coreth/accounts/keystore"
-	"github.com/ava-labs/coreth/rpc"
+	"github.com/flare-foundation/coreth/accounts"
+	"github.com/flare-foundation/coreth/accounts/external"
+	"github.com/flare-foundation/coreth/accounts/keystore"
+	"github.com/flare-foundation/coreth/rpc"
 )
 
 // Config represents a small collection of configuration values to fine tune the

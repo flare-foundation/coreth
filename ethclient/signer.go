@@ -31,8 +31,7 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
-
-	"github.com/ava-labs/coreth/core/types"
+	"github.com/flare-foundation/coreth/core/types"
 )
 
 // senderFromServer is a types.Signer that remembers the sender address returned by the RPC
@@ -56,7 +55,7 @@ func (s *senderFromServer) Equal(other types.Signer) bool {
 }
 
 func (s *senderFromServer) Sender(tx *types.Transaction) (common.Address, error) {
-	if s.blockhash == (common.Hash{}) {
+	if s.addr == (common.Address{}) {
 		return common.Address{}, errNotCached
 	}
 	return s.addr, nil

@@ -4,7 +4,8 @@
 package evm
 
 import (
-	"github.com/ava-labs/coreth/ethdb"
+	"github.com/flare-foundation/coreth/ethdb"
+
 	"github.com/flare-foundation/flare/database"
 )
 

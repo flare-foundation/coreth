@@ -30,9 +30,8 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/flare-foundation/coreth/params"
 	"github.com/holiman/uint256"
-
-	"github.com/ava-labs/coreth/params"
 )
 
 var activators = map[int]func(*JumpTable){
@@ -167,8 +166,8 @@ func enableAP1(jt *JumpTable) {
 }
 
 func enableAP2(jt *JumpTable) {
-	jt[BALANCEMC] = nil
-	jt[CALLEX] = nil
+	jt[BALANCEMC] = &operation{execute: opUndefined, maxStack: maxStack(0, 0)}
+	jt[CALLEX] = &operation{execute: opUndefined, maxStack: maxStack(0, 0)}
 }
 
 // enable3198 applies EIP-3198 (BASEFEE Opcode)

@@ -28,9 +28,8 @@ package state
 
 import (
 	"github.com/ethereum/go-ethereum/common"
-
-	"github.com/ava-labs/coreth/core/rawdb"
-	"github.com/ava-labs/coreth/ethdb"
+	"github.com/flare-foundation/coreth/core/rawdb"
+	"github.com/flare-foundation/coreth/ethdb"
 )
 
 type stateTest struct {

@@ -9,8 +9,7 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
-
-	"github.com/ava-labs/coreth/core/types"
+	"github.com/flare-foundation/coreth/core/types"
 )
 
 func TestVerifyBlockFee(t *testing.T) {

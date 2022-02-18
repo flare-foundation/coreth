@@ -298,9 +298,9 @@ var bindTests = []struct {
 		`
 			"math/big"
 
-			"github.com/ava-labs/coreth/accounts/abi/bind"
-			"github.com/ava-labs/coreth/accounts/abi/bind/backends"
-			"github.com/ava-labs/coreth/core"
+			"github.com/flare-foundation/coreth/accounts/abi/bind"
+			"github.com/flare-foundation/coreth/accounts/abi/bind/backends"
+			"github.com/flare-foundation/coreth/core"
 			"github.com/ethereum/go-ethereum/crypto"
 		`,
 		`
@@ -353,9 +353,9 @@ var bindTests = []struct {
 		`
 			"math/big"
 
-			"github.com/ava-labs/coreth/accounts/abi/bind"
-			"github.com/ava-labs/coreth/accounts/abi/bind/backends"
-			"github.com/ava-labs/coreth/core"
+			"github.com/flare-foundation/coreth/accounts/abi/bind"
+			"github.com/flare-foundation/coreth/accounts/abi/bind/backends"
+			"github.com/flare-foundation/coreth/core"
 			"github.com/ethereum/go-ethereum/crypto"
 		`,
 		`
@@ -399,9 +399,9 @@ var bindTests = []struct {
 		`
 			"math/big"
 
-			"github.com/ava-labs/coreth/accounts/abi/bind"
-			"github.com/ava-labs/coreth/accounts/abi/bind/backends"
-			"github.com/ava-labs/coreth/core"
+			"github.com/flare-foundation/coreth/accounts/abi/bind"
+			"github.com/flare-foundation/coreth/accounts/abi/bind/backends"
+			"github.com/flare-foundation/coreth/core"
 			"github.com/ethereum/go-ethereum/crypto"
 		`,
 		`
@@ -456,10 +456,10 @@ var bindTests = []struct {
 			"math/big"
 			"reflect"
 
-			"github.com/ava-labs/coreth/accounts/abi/bind"
-			"github.com/ava-labs/coreth/accounts/abi/bind/backends"
+			"github.com/flare-foundation/coreth/accounts/abi/bind"
+			"github.com/flare-foundation/coreth/accounts/abi/bind/backends"
 			"github.com/ethereum/go-ethereum/common"
-			"github.com/ava-labs/coreth/core"
+			"github.com/flare-foundation/coreth/core"
 			"github.com/ethereum/go-ethereum/crypto"
 		`,
 		`
@@ -505,9 +505,9 @@ var bindTests = []struct {
 		`
 			"math/big"
 
-			"github.com/ava-labs/coreth/accounts/abi/bind"
-			"github.com/ava-labs/coreth/accounts/abi/bind/backends"
-			"github.com/ava-labs/coreth/core"
+			"github.com/flare-foundation/coreth/accounts/abi/bind"
+			"github.com/flare-foundation/coreth/accounts/abi/bind/backends"
+			"github.com/flare-foundation/coreth/core"
 			"github.com/ethereum/go-ethereum/crypto"
 		`,
 		`
@@ -571,9 +571,9 @@ var bindTests = []struct {
 		`
 			"math/big"
 
-			"github.com/ava-labs/coreth/accounts/abi/bind"
-			"github.com/ava-labs/coreth/accounts/abi/bind/backends"
-			"github.com/ava-labs/coreth/core"
+			"github.com/flare-foundation/coreth/accounts/abi/bind"
+			"github.com/flare-foundation/coreth/accounts/abi/bind/backends"
+			"github.com/flare-foundation/coreth/core"
 			"github.com/ethereum/go-ethereum/crypto"
 		`,
 		`
@@ -616,10 +616,10 @@ var bindTests = []struct {
 		[]string{`6060604052609f8060106000396000f3606060405260e060020a6000350463f97a60058114601a575b005b600060605260c0604052600d60809081527f4920646f6e27742065786973740000000000000000000000000000000000000060a052602060c0908152600d60e081905281906101009060a09080838184600060046012f15050815172ffffffffffffffffffffffffffffffffffffff1916909152505060405161012081900392509050f3`},
 		[]string{`[{"constant":true,"inputs":[],"name":"String","outputs":[{"name":"","type":"string"}],"type":"function"}]`},
 		`
-			"github.com/ava-labs/coreth/accounts/abi/bind"
-			"github.com/ava-labs/coreth/accounts/abi/bind/backends"
+			"github.com/flare-foundation/coreth/accounts/abi/bind"
+			"github.com/flare-foundation/coreth/accounts/abi/bind/backends"
 			"github.com/ethereum/go-ethereum/common"
-			"github.com/ava-labs/coreth/core"
+			"github.com/flare-foundation/coreth/core"
 		`,
 		`
 			// Create a simulator and wrap a non-deployed contract
@@ -655,10 +655,10 @@ var bindTests = []struct {
 		[]string{`6080604052348015600f57600080fd5b5060888061001e6000396000f3fe6080604052348015600f57600080fd5b506004361060285760003560e01c8063d5f6622514602d575b600080fd5b6033604c565b6040805192835260208301919091528051918290030190f35b600a809156fea264697066735822beefbeefbeefbeefbeefbeefbeefbeefbeefbeefbeefbeefbeefbeefbeefbeefbeef64736f6c6343decafe0033`},
 		[]string{`[{"inputs":[],"name":"Struct","outputs":[{"internalType":"uint256","name":"a","type":"uint256"},{"internalType":"uint256","name":"b","type":"uint256"}],"stateMutability":"pure","type":"function"}]`},
 		`
-			"github.com/ava-labs/coreth/accounts/abi/bind"
-			"github.com/ava-labs/coreth/accounts/abi/bind/backends"
+			"github.com/flare-foundation/coreth/accounts/abi/bind"
+			"github.com/flare-foundation/coreth/accounts/abi/bind/backends"
 			"github.com/ethereum/go-ethereum/common"
-			"github.com/ava-labs/coreth/core"
+			"github.com/flare-foundation/coreth/core"
 		`,
 		`
 			// Create a simulator and wrap a non-deployed contract
@@ -703,9 +703,9 @@ var bindTests = []struct {
 		`
 			"math/big"
 
-			"github.com/ava-labs/coreth/accounts/abi/bind"
-			"github.com/ava-labs/coreth/accounts/abi/bind/backends"
-			"github.com/ava-labs/coreth/core"
+			"github.com/flare-foundation/coreth/accounts/abi/bind"
+			"github.com/flare-foundation/coreth/accounts/abi/bind/backends"
+			"github.com/flare-foundation/coreth/core"
 			"github.com/ethereum/go-ethereum/crypto"
 		`,
 		`
@@ -752,10 +752,10 @@ var bindTests = []struct {
 		`
 			"math/big"
 
-			"github.com/ava-labs/coreth/accounts/abi/bind"
-			"github.com/ava-labs/coreth/accounts/abi/bind/backends"
+			"github.com/flare-foundation/coreth/accounts/abi/bind"
+			"github.com/flare-foundation/coreth/accounts/abi/bind/backends"
 			"github.com/ethereum/go-ethereum/common"
-			"github.com/ava-labs/coreth/core"
+			"github.com/flare-foundation/coreth/core"
 			"github.com/ethereum/go-ethereum/crypto"
 		`,
 		`
@@ -779,7 +779,11 @@ var bindTests = []struct {
 				t.Errorf("Invalid address returned, want: %x, got: %x", (common.Address{}), res)
 			}
 
+<<<<<<< HEAD
 			for _, addr := range []common.Address{common.Address{}, common.Address{2}, common.Address{4}} {
+=======
+			for _, addr := range []common.Address{common.Address{}, common.Address{1}, common.Address{2}} {
+>>>>>>> upstream-v0.8.5-rc.2
 				if res, err := callfrom.CallFrom(&bind.CallOpts{From: addr}); err != nil {
 					t.Fatalf("Failed to call constant function: %v", err)
 				} else if res != addr {
@@ -828,9 +832,9 @@ var bindTests = []struct {
 			"fmt"
 			"math/big"
 
-			"github.com/ava-labs/coreth/accounts/abi/bind"
-			"github.com/ava-labs/coreth/accounts/abi/bind/backends"
-			"github.com/ava-labs/coreth/core"
+			"github.com/flare-foundation/coreth/accounts/abi/bind"
+			"github.com/flare-foundation/coreth/accounts/abi/bind/backends"
+			"github.com/flare-foundation/coreth/core"
 			"github.com/ethereum/go-ethereum/crypto"
 		`,
 		`
@@ -921,10 +925,10 @@ var bindTests = []struct {
 			"math/big"
 			"time"
 
-			"github.com/ava-labs/coreth/accounts/abi/bind"
-			"github.com/ava-labs/coreth/accounts/abi/bind/backends"
+			"github.com/flare-foundation/coreth/accounts/abi/bind"
+			"github.com/flare-foundation/coreth/accounts/abi/bind/backends"
 			"github.com/ethereum/go-ethereum/common"
-			"github.com/ava-labs/coreth/core"
+			"github.com/flare-foundation/coreth/core"
 			"github.com/ethereum/go-ethereum/crypto"
 		`,
 		`
@@ -1112,9 +1116,9 @@ var bindTests = []struct {
 		`
 			"math/big"
 
-			"github.com/ava-labs/coreth/accounts/abi/bind"
-			"github.com/ava-labs/coreth/accounts/abi/bind/backends"
-			"github.com/ava-labs/coreth/core"
+			"github.com/flare-foundation/coreth/accounts/abi/bind"
+			"github.com/flare-foundation/coreth/accounts/abi/bind/backends"
+			"github.com/flare-foundation/coreth/core"
 			"github.com/ethereum/go-ethereum/crypto"
 		`,
 		`
@@ -1247,9 +1251,9 @@ var bindTests = []struct {
 			"math/big"
 			"reflect"
 
-			"github.com/ava-labs/coreth/accounts/abi/bind"
-			"github.com/ava-labs/coreth/accounts/abi/bind/backends"
-			"github.com/ava-labs/coreth/core"
+			"github.com/flare-foundation/coreth/accounts/abi/bind"
+			"github.com/flare-foundation/coreth/accounts/abi/bind/backends"
+			"github.com/flare-foundation/coreth/core"
 			"github.com/ethereum/go-ethereum/crypto"
 		`,
 
@@ -1389,9 +1393,9 @@ var bindTests = []struct {
 		`
 			"math/big"
 
-			"github.com/ava-labs/coreth/accounts/abi/bind"
-			"github.com/ava-labs/coreth/accounts/abi/bind/backends"
-			"github.com/ava-labs/coreth/core"
+			"github.com/flare-foundation/coreth/accounts/abi/bind"
+			"github.com/flare-foundation/coreth/accounts/abi/bind/backends"
+			"github.com/flare-foundation/coreth/core"
 			"github.com/ethereum/go-ethereum/crypto"
 		`,
 		`
@@ -1455,11 +1459,11 @@ var bindTests = []struct {
 		"math/big"
 		"time"
 
-		"github.com/ava-labs/coreth/accounts/abi/bind"
-		"github.com/ava-labs/coreth/accounts/abi/bind/backends"
-		"github.com/ava-labs/coreth/core"
+		"github.com/flare-foundation/coreth/accounts/abi/bind"
+		"github.com/flare-foundation/coreth/accounts/abi/bind/backends"
+		"github.com/flare-foundation/coreth/core"
 		"github.com/ethereum/go-ethereum/crypto"
-		"github.com/ava-labs/coreth/params"
+		"github.com/flare-foundation/coreth/params"
 		`,
 		`
 		// Initialize test accounts
@@ -1566,10 +1570,10 @@ var bindTests = []struct {
 		`
 		"math/big"
 
-		"github.com/ava-labs/coreth/accounts/abi/bind"
-		"github.com/ava-labs/coreth/accounts/abi/bind/backends"
+		"github.com/flare-foundation/coreth/accounts/abi/bind"
+		"github.com/flare-foundation/coreth/accounts/abi/bind/backends"
 		"github.com/ethereum/go-ethereum/crypto"
-		"github.com/ava-labs/coreth/core"
+		"github.com/flare-foundation/coreth/core"
 		`,
 		`
 		// Initialize test accounts
@@ -1629,10 +1633,10 @@ var bindTests = []struct {
 		`
 		"math/big"
 
-		"github.com/ava-labs/coreth/accounts/abi/bind"
-		"github.com/ava-labs/coreth/accounts/abi/bind/backends"
+		"github.com/flare-foundation/coreth/accounts/abi/bind"
+		"github.com/flare-foundation/coreth/accounts/abi/bind/backends"
 		"github.com/ethereum/go-ethereum/crypto"
-		"github.com/ava-labs/coreth/core"
+		"github.com/flare-foundation/coreth/core"
         `,
 		`
 		key, _ := crypto.GenerateKey()
@@ -1691,9 +1695,9 @@ var bindTests = []struct {
 		`
 			"math/big"
 
-			"github.com/ava-labs/coreth/accounts/abi/bind"
-			"github.com/ava-labs/coreth/accounts/abi/bind/backends"
-			"github.com/ava-labs/coreth/core"
+			"github.com/flare-foundation/coreth/accounts/abi/bind"
+			"github.com/flare-foundation/coreth/accounts/abi/bind/backends"
+			"github.com/flare-foundation/coreth/core"
 			"github.com/ethereum/go-ethereum/crypto"
 		`,
 		`
@@ -1752,9 +1756,9 @@ var bindTests = []struct {
 			"bytes"
 			"math/big"
 	
-			"github.com/ava-labs/coreth/accounts/abi/bind"
-			"github.com/ava-labs/coreth/accounts/abi/bind/backends"
-			"github.com/ava-labs/coreth/core"
+			"github.com/flare-foundation/coreth/accounts/abi/bind"
+			"github.com/flare-foundation/coreth/accounts/abi/bind/backends"
+			"github.com/flare-foundation/coreth/core"
 			"github.com/ethereum/go-ethereum/crypto"
 	   `,
 		`
@@ -1840,9 +1844,9 @@ var bindTests = []struct {
 		`
 			"math/big"
 
-			"github.com/ava-labs/coreth/accounts/abi/bind"
-			"github.com/ava-labs/coreth/accounts/abi/bind/backends"
-			"github.com/ava-labs/coreth/core"
+			"github.com/flare-foundation/coreth/accounts/abi/bind"
+			"github.com/flare-foundation/coreth/accounts/abi/bind/backends"
+			"github.com/flare-foundation/coreth/core"
 			"github.com/ethereum/go-ethereum/crypto"
 	   `,
 		`
@@ -1909,9 +1913,9 @@ var bindTests = []struct {
 		`
 				"math/big"
 		
-				"github.com/ava-labs/coreth/accounts/abi/bind"
-				"github.com/ava-labs/coreth/accounts/abi/bind/backends"
-				"github.com/ava-labs/coreth/core"
+				"github.com/flare-foundation/coreth/accounts/abi/bind"
+				"github.com/flare-foundation/coreth/accounts/abi/bind/backends"
+				"github.com/flare-foundation/coreth/core"
 				"github.com/ethereum/go-ethereum/crypto"
 		   `,
 		`
@@ -1942,6 +1946,52 @@ var bindTests = []struct {
 		nil,
 		nil,
 	},
+<<<<<<< HEAD
+=======
+	{
+		name: `ConstructorWithStructParam`,
+		contract: `
+		pragma solidity >=0.8.0 <0.9.0;
+		
+		contract ConstructorWithStructParam {
+			struct StructType {
+				uint256 field;
+			}
+		
+			constructor(StructType memory st) {}
+		}
+		`,
+		bytecode: []string{`0x608060405234801561001057600080fd5b506040516101c43803806101c48339818101604052810190610032919061014a565b50610177565b6000604051905090565b600080fd5b600080fd5b6000601f19601f8301169050919050565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052604160045260246000fd5b6100958261004c565b810181811067ffffffffffffffff821117156100b4576100b361005d565b5b80604052505050565b60006100c7610038565b90506100d3828261008c565b919050565b6000819050919050565b6100eb816100d8565b81146100f657600080fd5b50565b600081519050610108816100e2565b92915050565b60006020828403121561012457610123610047565b5b61012e60206100bd565b9050600061013e848285016100f9565b60008301525092915050565b6000602082840312156101605761015f610042565b5b600061016e8482850161010e565b91505092915050565b603f806101856000396000f3fe6080604052600080fdfea2646970667358221220cdffa667affecefac5561f65f4a4ba914204a8d4eb859d8cd426fb306e5c12a364736f6c634300080a0033`},
+		abi:      []string{`[{"inputs":[{"components":[{"internalType":"uint256","name":"field","type":"uint256"}],"internalType":"struct ConstructorWithStructParam.StructType","name":"st","type":"tuple"}],"stateMutability":"nonpayable","type":"constructor"}]`},
+		imports: `
+			"math/big"
+
+			"github.com/flare-foundation/coreth/accounts/abi/bind"
+			"github.com/flare-foundation/coreth/accounts/abi/bind/backends"
+			"github.com/flare-foundation/coreth/core"
+			"github.com/ethereum/go-ethereum/crypto"
+		`,
+		tester: `
+			var (
+				key, _  = crypto.GenerateKey()
+				user, _ = bind.NewKeyedTransactorWithChainID(key, big.NewInt(1337))
+				sim     = backends.NewSimulatedBackend(core.GenesisAlloc{user.From: {Balance: big.NewInt(1000000000000000000)}}, 10000000)
+			)
+			defer sim.Close()
+
+			_, tx, _, err := DeployConstructorWithStructParam(user, sim, ConstructorWithStructParamStructType{Field: big.NewInt(42)})
+			if err != nil {
+				t.Fatalf("DeployConstructorWithStructParam() got err %v; want nil err", err)
+			}
+			sim.Commit(true)
+			
+			if _, err = bind.WaitDeployed(nil, sim, tx); err != nil {
+				t.Logf("Deployment tx: %+v", tx)
+				t.Errorf("bind.WaitDeployed(nil, %T, <deployment tx>) got err %v; want nil err", sim, err)
+			}
+		`,
+	},
+>>>>>>> upstream-v0.8.5-rc.2
 }
 
 // The binding tests have been modified to run in two separate test
@@ -1975,6 +2025,7 @@ func golangBindings(t *testing.T, overload bool) {
 	}
 	// Generate the test suite for all the contracts
 	for i, tt := range bindTests {
+<<<<<<< HEAD
 		// Skip the "Overload" test if [!overload]
 		if !overload && tt.name == "Overload" {
 			continue
@@ -1999,6 +2050,33 @@ func golangBindings(t *testing.T, overload bool) {
 		}
 		// Generate the test file with the injected test code
 		code := fmt.Sprintf(`
+=======
+		t.Run(tt.name, func(t *testing.T) {
+			// Skip the "Overload" test if [!overload]
+			if !overload && tt.name == "Overload" {
+				return
+			}
+			// Skip all tests except for "Overload" if [overload]
+			if overload && tt.name != "Overload" {
+				return
+			}
+			var types []string
+			if tt.types != nil {
+				types = tt.types
+			} else {
+				types = []string{tt.name}
+			}
+			// Generate the binding and create a Go source file in the workspace
+			bind, err := Bind(types, tt.abi, tt.bytecode, tt.fsigs, "bindtest", LangGo, tt.libs, tt.aliases)
+			if err != nil {
+				t.Fatalf("test %d: failed to generate binding: %v", i, err)
+			}
+			if err = ioutil.WriteFile(filepath.Join(pkg, strings.ToLower(tt.name)+".go"), []byte(bind), 0600); err != nil {
+				t.Fatalf("test %d: failed to write binding: %v", i, err)
+			}
+			// Generate the test file with the injected test code
+			code := fmt.Sprintf(`
+>>>>>>> upstream-v0.8.5-rc.2
 			package bindtest
 
 			import (
@@ -2010,9 +2088,16 @@ func golangBindings(t *testing.T, overload bool) {
 				%s
 			}
 		`, tt.imports, tt.name, tt.tester)
+<<<<<<< HEAD
 		if err := ioutil.WriteFile(filepath.Join(pkg, strings.ToLower(tt.name)+"_test.go"), []byte(code), 0600); err != nil {
 			t.Fatalf("test %d: failed to write tests: %v", i, err)
 		}
+=======
+			if err := ioutil.WriteFile(filepath.Join(pkg, strings.ToLower(tt.name)+"_test.go"), []byte(code), 0600); err != nil {
+				t.Fatalf("test %d: failed to write tests: %v", i, err)
+			}
+		})
+>>>>>>> upstream-v0.8.5-rc.2
 	}
 	// Convert the package to go modules and use the current source for go-ethereum
 	moder := exec.Command(gocmd, "mod", "init", "bindtest")
@@ -2021,7 +2106,7 @@ func golangBindings(t *testing.T, overload bool) {
 		t.Fatalf("failed to convert binding test to modules: %v\n%s", err, out)
 	}
 	pwd, _ := os.Getwd()
-	replacer := exec.Command(gocmd, "mod", "edit", "-x", "-require", "github.com/ava-labs/coreth@v0.0.0", "-replace", "github.com/ava-labs/coreth="+filepath.Join(pwd, "..", "..", "..")) // Repo root
+	replacer := exec.Command(gocmd, "mod", "edit", "-x", "-require", "github.com/flare-foundation/coreth@v0.0.0", "-replace", "github.com/flare-foundation/coreth="+filepath.Join(pwd, "..", "..", "..")) // Repo root
 	replacer.Dir = pkg
 	if out, err := replacer.CombinedOutput(); err != nil {
 		t.Fatalf("failed to replace binding test dependency to current source tree: %v\n%s", err, out)

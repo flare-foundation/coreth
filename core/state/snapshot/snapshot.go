@@ -36,14 +36,12 @@ import (
 	"time"
 
 	"github.com/VictoriaMetrics/fastcache"
-
+	"github.com/flare-foundation/coreth/core/rawdb"
+	"github.com/flare-foundation/coreth/ethdb"
+	"github.com/flare-foundation/coreth/trie"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/metrics"
-
-	"github.com/ava-labs/coreth/core/rawdb"
-	"github.com/ava-labs/coreth/ethdb"
-	"github.com/ava-labs/coreth/trie"
 )
 
 const (
@@ -739,10 +737,13 @@ func (t *Tree) Rebuild(blockHash, root common.Hash) {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 
+<<<<<<< HEAD
 	// Firstly delete any recovery flag in the database. Because now we are
 	// building a brand new snapshot. Also reenable the snapshot feature.
 	rawdb.DeleteSnapshotRecoveryNumber(t.diskdb)
 
+=======
+>>>>>>> upstream-v0.8.5-rc.2
 	// Track whether there's a wipe currently running and keep it alive if so
 	var wiper chan struct{}
 

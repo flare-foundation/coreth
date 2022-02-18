@@ -5,9 +5,12 @@ package evm
 
 import (
 	"math/big"
+	"strings"
 	"testing"
 
-	"github.com/ava-labs/coreth/params"
+	"github.com/flare-foundation/coreth/params"
+	"github.com/flare-foundation/flare/chains/atomic"
+	"github.com/flare-foundation/flare/snow"
 )
 
 func TestCalculateDynamicFee(t *testing.T) {

@@ -30,8 +30,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common/bitutil"
-
-	"github.com/ava-labs/coreth/core/rawdb"
+	"github.com/flare-foundation/coreth/core/rawdb"
 )
 
 const (

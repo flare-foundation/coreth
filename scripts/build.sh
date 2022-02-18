@@ -4,7 +4,11 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
+<<<<<<< HEAD
 # Coreth root directory
+=======
+# Avalanche root directory
+>>>>>>> upstream-v0.8.5-rc.2
 CORETH_PATH=$( cd "$( dirname "${BASH_SOURCE[0]}" )"; cd .. && pwd )
 
 # Load the versions
@@ -27,4 +31,4 @@ coreth_commit=${CORETH_COMMIT:-$( git rev-list -1 HEAD )}
 
 # Build Coreth, which is run as a subprocess
 echo "Building Coreth Version: $coreth_version; GitCommit: $coreth_commit"
-go build -ldflags "-X github.com/ava-labs/coreth/plugin/evm.GitCommit=$coreth_commit -X github.com/ava-labs/coreth/plugin/evm.Version=$coreth_version" -o "$binary_path" "plugin/"*.go
+go build -ldflags "-X github.com/flare-foundation/coreth/plugin/evm.GitCommit=$coreth_commit -X github.com/flare-foundation/coreth/plugin/evm.Version=$coreth_version" -o "$binary_path" "plugin/"*.go

@@ -31,10 +31,16 @@ import (
 	"errors"
 	"math/big"
 
+<<<<<<< HEAD
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/ava-labs/coreth/core/types"
-	"github.com/ava-labs/coreth/interfaces"
+	"github.com/flare-foundation/coreth/core/types"
+	"github.com/flare-foundation/coreth/interfaces"
+=======
+	"github.com/flare-foundation/coreth/core/types"
+	"github.com/flare-foundation/coreth/interfaces"
+	"github.com/ethereum/go-ethereum/common"
+>>>>>>> upstream-v0.8.5-rc.2
 )
 
 var (

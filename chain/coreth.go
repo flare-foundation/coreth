@@ -8,15 +8,14 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-
-	"github.com/ava-labs/coreth/consensus/dummy"
-	"github.com/ava-labs/coreth/core"
-	"github.com/ava-labs/coreth/core/state"
-	"github.com/ava-labs/coreth/core/types"
-	"github.com/ava-labs/coreth/eth"
-	"github.com/ava-labs/coreth/ethdb"
-	"github.com/ava-labs/coreth/node"
-	"github.com/ava-labs/coreth/rpc"
+	"github.com/flare-foundation/coreth/consensus/dummy"
+	"github.com/flare-foundation/coreth/core"
+	"github.com/flare-foundation/coreth/core/state"
+	"github.com/flare-foundation/coreth/core/types"
+	"github.com/flare-foundation/coreth/eth"
+	"github.com/flare-foundation/coreth/ethdb"
+	"github.com/flare-foundation/coreth/node"
+	"github.com/flare-foundation/coreth/rpc"
 	"github.com/flare-foundation/flare/utils/timer/mockable"
 )
 
@@ -167,16 +166,33 @@ func (self *ETHChain) NewRPCHandler(maximumDuration time.Duration) *rpc.Server {
 	return rpc.NewServer(maximumDuration)
 }
 
-func (self *ETHChain) AttachEthService(handler *rpc.Server, namespaces []string) {
-	nsmap := make(map[string]bool)
-	for _, ns := range namespaces {
-		nsmap[ns] = true
+// AttachEthService registers the backend RPC services provided by Ethereum
+// to the provided handler under their assigned namespaces.
+func (self *ETHChain) AttachEthService(handler *rpc.Server, names []string) error {
+	enabledServicesSet := make(map[string]struct{})
+	for _, ns := range names {
+		enabledServicesSet[ns] = struct{}{}
 	}
+
+	apiSet := make(map[string]rpc.API)
 	for _, api := range self.backend.APIs() {
-		if nsmap[api.Namespace] {
-			handler.RegisterName(api.Namespace, api.Service)
+		if existingAPI, exists := apiSet[api.Name]; exists {
+			return fmt.Errorf("duplicated API name: %s, namespaces %s and %s", api.Name, api.Namespace, existingAPI.Namespace)
+		}
+		apiSet[api.Name] = api
+	}
+
+	for name := range enabledServicesSet {
+		api, exists := apiSet[name]
+		if !exists {
+			return fmt.Errorf("API service %s not found", name)
+		}
+		if err := handler.RegisterName(api.Namespace, api.Service); err != nil {
+			return err
 		}
 	}
+
+	return nil
 }
 
 func (self *ETHChain) GetTxSubmitCh() <-chan core.NewTxsEvent {

@@ -29,23 +29,26 @@ package node
 import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
-
-	"github.com/ava-labs/coreth/internal/debug"
-	"github.com/ava-labs/coreth/rpc"
+	"github.com/flare-foundation/coreth/internal/debug"
+	"github.com/flare-foundation/coreth/rpc"
 )
 
 // apis returns the collection of built-in RPC APIs.
 func (n *Node) apis() []rpc.API {
-	return []rpc.API{{
-		Namespace: "debug",
-		Version:   "1.0",
-		Service:   debug.Handler,
-	}, {
-		Namespace: "web3",
-		Version:   "1.0",
-		Service:   &publicWeb3API{n},
-		Public:    true,
-	},
+	return []rpc.API{
+		{
+			Namespace: "debug",
+			Version:   "1.0",
+			Service:   debug.Handler,
+			Name:      "debug-handler",
+		},
+		{
+			Namespace: "web3",
+			Version:   "1.0",
+			Service:   &publicWeb3API{n},
+			Public:    true,
+			Name:      "web3",
+		},
 	}
 }
 

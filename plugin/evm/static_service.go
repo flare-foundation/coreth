@@ -7,7 +7,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/ava-labs/coreth/core"
+	"github.com/flare-foundation/coreth/core"
 	"github.com/flare-foundation/flare/utils/formatting"
 )
 

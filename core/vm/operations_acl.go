@@ -31,8 +31,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/math"
-
-	"github.com/ava-labs/coreth/params"
+	"github.com/flare-foundation/coreth/params"
 )
 
 // gasSStoreEIP2929 implements gas cost for SSTORE according to EIP-2929

@@ -22,8 +22,7 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
-
-	"github.com/ava-labs/coreth/rpc"
+	"github.com/flare-foundation/coreth/rpc"
 )
 
 func TestUnmarshalJSONNewFilterArgs(t *testing.T) {

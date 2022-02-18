@@ -32,26 +32,24 @@ import (
 	"sort"
 	"sync"
 
-	lru "github.com/hashicorp/golang-lru"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
-
-	"github.com/ava-labs/coreth/consensus/dummy"
-	"github.com/ava-labs/coreth/core"
-	"github.com/ava-labs/coreth/core/types"
-	"github.com/ava-labs/coreth/params"
-	"github.com/ava-labs/coreth/rpc"
+	"github.com/flare-foundation/coreth/consensus/dummy"
+	"github.com/flare-foundation/coreth/core"
+	"github.com/flare-foundation/coreth/core/types"
+	"github.com/flare-foundation/coreth/params"
+	"github.com/flare-foundation/coreth/rpc"
 	"github.com/flare-foundation/flare/utils/timer/mockable"
+	lru "github.com/hashicorp/golang-lru"
 )
 
 var (
 	DefaultMaxPrice   = big.NewInt(150 * params.GWei)
 	DefaultMinPrice   = big.NewInt(0 * params.GWei)
 	DefaultMinBaseFee = big.NewInt(params.ApricotPhase3InitialBaseFee)
-	DefaultMinGasUsed = big.NewInt(12_000_000) // block gas limit is 30,000,000
+	DefaultMinGasUsed = big.NewInt(12_000_000) // block gas target is 15,000,000
 )
 
 type Config struct {
@@ -114,8 +112,7 @@ func NewOracle(backend OracleBackend, config Config) *Oracle {
 	if percent < 0 {
 		percent = 0
 		log.Warn("Sanitizing invalid gasprice oracle sample percentile", "provided", config.Percentile, "updated", percent)
-	}
-	if percent > 100 {
+	} else if percent > 100 {
 		percent = 100
 		log.Warn("Sanitizing invalid gasprice oracle sample percentile", "provided", config.Percentile, "updated", percent)
 	}
@@ -133,6 +130,16 @@ func NewOracle(backend OracleBackend, config Config) *Oracle {
 	if minGasUsed == nil || minGasUsed.Int64() < 0 {
 		minGasUsed = DefaultMinGasUsed
 		log.Warn("Sanitizing invalid gasprice oracle min gas used", "provided", config.MinGasUsed, "updated", minGasUsed)
+	}
+	maxHeaderHistory := config.MaxHeaderHistory
+	if maxHeaderHistory < 1 {
+		maxHeaderHistory = 1
+		log.Warn("Sanitizing invalid gasprice oracle max header history", "provided", config.MaxHeaderHistory, "updated", maxHeaderHistory)
+	}
+	maxBlockHistory := config.MaxBlockHistory
+	if maxBlockHistory < 1 {
+		maxBlockHistory = 1
+		log.Warn("Sanitizing invalid gasprice oracle max block history", "provided", config.MaxBlockHistory, "updated", maxBlockHistory)
 	}
 
 	cache, _ := lru.New(2048)
@@ -157,8 +164,8 @@ func NewOracle(backend OracleBackend, config Config) *Oracle {
 		minGasUsed:       minGasUsed,
 		checkBlocks:      blocks,
 		percentile:       percent,
-		maxHeaderHistory: config.MaxHeaderHistory,
-		maxBlockHistory:  config.MaxBlockHistory,
+		maxHeaderHistory: maxHeaderHistory,
+		maxBlockHistory:  maxBlockHistory,
 		historyCache:     cache,
 	}
 }
@@ -189,6 +196,11 @@ func (oracle *Oracle) EstimateBaseFee(ctx context.Context) (*big.Int, error) {
 	return baseFee, nil
 }
 
+// estimateNextBaseFee calculates what the base fee should be on the next block if it
+// were produced immediately. If the current time is less than the timestamp of the latest
+// block, this esimtate uses the timestamp of the latest block instead.
+// If the latest block has a nil base fee, this function will return nil as the base fee
+// of the next block.
 func (oracle *Oracle) estimateNextBaseFee(ctx context.Context) (*big.Int, error) {
 	// Fetch the most recent block by number
 	block, err := oracle.backend.BlockByNumber(ctx, rpc.LatestBlockNumber)
@@ -200,17 +212,10 @@ func (oracle *Oracle) estimateNextBaseFee(ctx context.Context) (*big.Int, error)
 		return nil, nil
 	}
 
-	// If the current time is prior to the parent timestamp, then we use the parent
-	// timestamp instead.
-	header := block.Header()
-	timestamp := oracle.clock.Unix()
-	if timestamp < header.Time {
-		timestamp = header.Time
-	}
 	// If the block does have a baseFee, calculate the next base fee
 	// based on the current time and add it to the tip to estimate the
 	// total gas price estimate.
-	_, nextBaseFee, err := dummy.CalcBaseFee(oracle.backend.ChainConfig(), header, timestamp)
+	_, nextBaseFee, err := dummy.EstimateNextBaseFee(oracle.backend.ChainConfig(), block.Header(), oracle.clock.Unix())
 	return nextBaseFee, err
 }
 

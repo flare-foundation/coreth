@@ -7,30 +7,39 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/flare-foundation/coreth/eth"
 	"github.com/spf13/cast"
-
-	"github.com/ava-labs/coreth/eth"
 )
 
 const (
-	defaultEthApiEnabled               = true
-	defaultNetApiEnabled               = true
-	defaultWeb3ApiEnabled              = true
-	defaultPruningEnabled              = true
-	defaultSnapshotAsync               = true
-	defaultRpcGasCap                   = 120_000_000 // Default to 120M Gas Limit
-	defaultRpcTxFeeCap                 = 100         // 100 AVAX
-	defaultMetricsEnabled              = false
-	defaultMetricsExpensiveEnabled     = false
-	defaultApiMaxDuration              = 0 // Default to no maximum API call duration
-	defaultWsCpuRefillRate             = 0 // Default to no maximum WS CPU usage
-	defaultWsCpuMaxStored              = 0 // Default to no maximum WS CPU usage
-	defaultMaxBlocksPerRequest         = 0 // Default to no maximum on the number of blocks per getLogs request
-	defaultContinuousProfilerFrequency = 15 * time.Minute
-	defaultContinuousProfilerMaxFiles  = 5
-	defaultTxRegossipFrequency         = 1 * time.Minute
-	defaultTxRegossipMaxSize           = 15
+	defaultPruningEnabled                       = true
+	defaultSnapshotAsync                        = true
+	defaultRpcGasCap                            = 120_000_000 // Default to 120M Gas Limit
+	defaultRpcTxFeeCap                          = 100         // 100 AVAX
+	defaultMetricsEnabled                       = true
+	defaultMetricsExpensiveEnabled              = false
+	defaultApiMaxDuration                       = 0 // Default to no maximum API call duration
+	defaultWsCpuRefillRate                      = 0 // Default to no maximum WS CPU usage
+	defaultWsCpuMaxStored                       = 0 // Default to no maximum WS CPU usage
+	defaultMaxBlocksPerRequest                  = 0 // Default to no maximum on the number of blocks per getLogs request
+	defaultContinuousProfilerFrequency          = 15 * time.Minute
+	defaultContinuousProfilerMaxFiles           = 5
+	defaultTxRegossipFrequency                  = 1 * time.Minute
+	defaultTxRegossipMaxSize                    = 15
+	defaultOfflinePruningBloomFilterSize uint64 = 512 // Default size (MB) for the offline pruner to use
+	defaultLogLevel                             = "info"
+	defaultMaxOutboundActiveRequests            = 8
 )
+
+var defaultEnabledAPIs = []string{
+	"public-eth",
+	"public-eth-filter",
+	"net",
+	"web3",
+	"internal-public-eth",
+	"internal-public-blockchain",
+	"internal-public-transaction-pool",
+}
 
 type Duration struct {
 	time.Duration
@@ -42,7 +51,10 @@ type Config struct {
 	SnowmanAPIEnabled     bool   `json:"snowman-api-enabled"`
 	CorethAdminAPIEnabled bool   `json:"coreth-admin-api-enabled"`
 	CorethAdminAPIDir     string `json:"coreth-admin-api-dir"`
-	NetAPIEnabled         bool   `json:"net-api-enabled"`
+
+	// EnabledEthAPIs is a list of Ethereum services that should be enabled
+	// If none is specified, then we use the default list [defaultEnabledAPIs]
+	EnabledEthAPIs []string `json:"eth-apis"`
 
 	// Continuous Profiler
 	ContinuousProfilerDir       string   `json:"continuous-profiler-dir"`       // If set to non-empty string creates a continuous profiler
@@ -52,13 +64,6 @@ type Config struct {
 	// Coreth API Gas/Price Caps
 	RPCGasCap   uint64  `json:"rpc-gas-cap"`
 	RPCTxFeeCap float64 `json:"rpc-tx-fee-cap"`
-
-	// Eth APIs
-	EthAPIEnabled      bool `json:"eth-api-enabled"`
-	PersonalAPIEnabled bool `json:"personal-api-enabled"`
-	TxPoolAPIEnabled   bool `json:"tx-pool-api-enabled"`
-	DebugAPIEnabled    bool `json:"debug-api-enabled"`
-	Web3APIEnabled     bool `json:"web3-api-enabled"`
 
 	// Eth Settings
 	Preimages      bool `json:"preimages-enabled"`
@@ -91,29 +96,19 @@ type Config struct {
 
 	// Log level
 	LogLevel string `json:"log-level"`
+
+	// Offline Pruning Settings
+	OfflinePruning                bool   `json:"offline-pruning-enabled"`
+	OfflinePruningBloomFilterSize uint64 `json:"offline-pruning-bloom-filter-size"`
+	OfflinePruningDataDirectory   string `json:"offline-pruning-data-directory"`
+
+	// VM2VM network
+	MaxOutboundActiveRequests int64 `json:"max-outbound-active-requests"`
 }
 
 // EthAPIs returns an array of strings representing the Eth APIs that should be enabled
 func (c Config) EthAPIs() []string {
-	ethAPIs := make([]string, 0)
-
-	if c.EthAPIEnabled {
-		ethAPIs = append(ethAPIs, "eth")
-	}
-	if c.PersonalAPIEnabled {
-		ethAPIs = append(ethAPIs, "personal")
-	}
-	if c.TxPoolAPIEnabled {
-		ethAPIs = append(ethAPIs, "txpool")
-	}
-	if c.DebugAPIEnabled {
-		ethAPIs = append(ethAPIs, "debug")
-	}
-	if c.NetAPIEnabled {
-		ethAPIs = append(ethAPIs, "net")
-	}
-
-	return ethAPIs
+	return c.EnabledEthAPIs
 }
 
 func (c Config) EthBackendSettings() eth.Settings {
@@ -121,9 +116,7 @@ func (c Config) EthBackendSettings() eth.Settings {
 }
 
 func (c *Config) SetDefaults() {
-	c.EthAPIEnabled = defaultEthApiEnabled
-	c.NetAPIEnabled = defaultNetApiEnabled
-	c.Web3APIEnabled = defaultWeb3ApiEnabled
+	c.EnabledEthAPIs = defaultEnabledAPIs
 	c.RPCGasCap = defaultRpcGasCap
 	c.RPCTxFeeCap = defaultRpcTxFeeCap
 	c.MetricsEnabled = defaultMetricsEnabled
@@ -138,6 +131,9 @@ func (c *Config) SetDefaults() {
 	c.SnapshotAsync = defaultSnapshotAsync
 	c.TxRegossipFrequency.Duration = defaultTxRegossipFrequency
 	c.TxRegossipMaxSize = defaultTxRegossipMaxSize
+	c.OfflinePruningBloomFilterSize = defaultOfflinePruningBloomFilterSize
+	c.LogLevel = defaultLogLevel
+	c.MaxOutboundActiveRequests = defaultMaxOutboundActiveRequests
 }
 
 func (d *Duration) UnmarshalJSON(data []byte) (err error) {

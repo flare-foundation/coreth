@@ -27,7 +27,7 @@
 package core
 
 import (
-	"github.com/ava-labs/coreth/core/types"
+	"github.com/flare-foundation/coreth/core/types"
 )
 
 // txSenderCacherRequest is a request for recovering transaction senders with a
