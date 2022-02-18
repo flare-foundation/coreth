@@ -27,11 +27,14 @@
 package core
 
 import (
+	"bytes"
+	"encoding/binary"
 	"fmt"
 	"math"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/log"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/flare-foundation/coreth/core/types"

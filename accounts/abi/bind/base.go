@@ -34,28 +34,18 @@ import (
 	"strings"
 	"sync"
 
-<<<<<<< HEAD
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/event"
-
-	"github.com/flare-foundation/coreth/accounts/abi"
-	"github.com/flare-foundation/coreth/core/types"
-	"github.com/flare-foundation/coreth/interfaces"
-=======
 	"github.com/flare-foundation/coreth/accounts/abi"
 	"github.com/flare-foundation/coreth/core/types"
 	"github.com/flare-foundation/coreth/core/vm"
 	"github.com/flare-foundation/coreth/interfaces"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/event"
 )
 
 var (
 	ErrNilAssetAmount            = errors.New("cannot specify nil asset amount for native asset call")
 	errNativeAssetDeployContract = errors.New("cannot specify native asset params while deploying a contract")
->>>>>>> upstream-v0.8.5-rc.2
 )
 
 // SignerFn is a signer function callback when a contract requires a method to
@@ -70,15 +60,12 @@ type CallOpts struct {
 	Context     context.Context // Network context to support cancellation and timeouts (nil = no timeout)
 }
 
-<<<<<<< HEAD
-=======
 // NativeAssetCallOpts contains params for native asset call
 type NativeAssetCallOpts struct {
 	AssetID     common.Hash // Asset ID
 	AssetAmount *big.Int    // Asset amount
 }
 
->>>>>>> upstream-v0.8.5-rc.2
 // TransactOpts is the collection of authorization data required to create a
 // valid Ethereum transaction.
 type TransactOpts struct {
@@ -95,8 +82,6 @@ type TransactOpts struct {
 	Context context.Context // Network context to support cancellation and timeouts (nil = no timeout)
 
 	NoSend bool // Do all transact steps but do not send the transaction
-<<<<<<< HEAD
-=======
 
 	// If set, the transaction is transformed to perform the requested call through the native asset
 	// precompile. This will update the to address of the transaction to that of the native asset precompile
@@ -105,7 +90,6 @@ type TransactOpts struct {
 	// data and attempt to atomically transfer [assetAmount] of [assetID] to the [to] address and invoke the
 	// contract at [to] if present, passing in the original [input] data.
 	NativeAssetCall *NativeAssetCallOpts
->>>>>>> upstream-v0.8.5-rc.2
 }
 
 // FilterOpts is the collection of options to fine tune filtering for events
@@ -276,8 +260,6 @@ func (c *BoundContract) Transfer(opts *TransactOpts) (*types.Transaction, error)
 	// or not, reject invalid transaction at the first place
 	return c.transact(opts, &c.address, nil)
 }
-<<<<<<< HEAD
-=======
 
 // wrapNativeAssetCall preprocesses the arguments to transform the requested call to go through the
 // native asset call precompile if it is specified on [opts].
@@ -311,7 +293,6 @@ func wrapNativeAssetCall(opts *TransactOpts, contract *common.Address, input []b
 	return contract, input, nil
 }
 
->>>>>>> upstream-v0.8.5-rc.2
 func (c *BoundContract) createDynamicTx(opts *TransactOpts, contract *common.Address, input []byte, head *types.Header) (*types.Transaction, error) {
 	// Normalize value
 	value := opts.Value
@@ -447,14 +428,11 @@ func (c *BoundContract) transact(opts *TransactOpts, contract *common.Address, i
 		rawTx *types.Transaction
 		err   error
 	)
-<<<<<<< HEAD
-=======
 	// Preprocess native asset call arguments if present
 	contract, input, err = wrapNativeAssetCall(opts, contract, input)
 	if err != nil {
 		return nil, err
 	}
->>>>>>> upstream-v0.8.5-rc.2
 	if opts.GasPrice != nil {
 		rawTx, err = c.createLegacyTx(opts, contract, input)
 	} else {

@@ -33,21 +33,12 @@ import (
 	"testing"
 	"time"
 
-<<<<<<< HEAD
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-
-=======
->>>>>>> upstream-v0.8.5-rc.2
 	"github.com/flare-foundation/coreth/accounts/abi/bind"
 	"github.com/flare-foundation/coreth/accounts/abi/bind/backends"
 	"github.com/flare-foundation/coreth/core"
 	"github.com/flare-foundation/coreth/core/types"
-<<<<<<< HEAD
-=======
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
->>>>>>> upstream-v0.8.5-rc.2
 )
 
 var testKey, _ = crypto.HexToECDSA("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")

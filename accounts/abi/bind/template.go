@@ -26,13 +26,7 @@
 
 package bind
 
-<<<<<<< HEAD
-import (
-	"github.com/flare-foundation/coreth/accounts/abi"
-)
-=======
 import "github.com/flare-foundation/coreth/accounts/abi"
->>>>>>> upstream-v0.8.5-rc.2
 
 // tmplData is the data structure required to fill the binding template.
 type tmplData struct {

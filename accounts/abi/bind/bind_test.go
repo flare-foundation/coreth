@@ -779,11 +779,7 @@ var bindTests = []struct {
 				t.Errorf("Invalid address returned, want: %x, got: %x", (common.Address{}), res)
 			}
 
-<<<<<<< HEAD
-			for _, addr := range []common.Address{common.Address{}, common.Address{2}, common.Address{4}} {
-=======
 			for _, addr := range []common.Address{common.Address{}, common.Address{1}, common.Address{2}} {
->>>>>>> upstream-v0.8.5-rc.2
 				if res, err := callfrom.CallFrom(&bind.CallOpts{From: addr}); err != nil {
 					t.Fatalf("Failed to call constant function: %v", err)
 				} else if res != addr {
@@ -1946,8 +1942,6 @@ var bindTests = []struct {
 		nil,
 		nil,
 	},
-<<<<<<< HEAD
-=======
 	{
 		name: `ConstructorWithStructParam`,
 		contract: `
@@ -1991,7 +1985,6 @@ var bindTests = []struct {
 			}
 		`,
 	},
->>>>>>> upstream-v0.8.5-rc.2
 }
 
 // The binding tests have been modified to run in two separate test
@@ -2025,32 +2018,6 @@ func golangBindings(t *testing.T, overload bool) {
 	}
 	// Generate the test suite for all the contracts
 	for i, tt := range bindTests {
-<<<<<<< HEAD
-		// Skip the "Overload" test if [!overload]
-		if !overload && tt.name == "Overload" {
-			continue
-		}
-		// Skip all tests except for "Overload" if [overload]
-		if overload && tt.name != "Overload" {
-			continue
-		}
-		var types []string
-		if tt.types != nil {
-			types = tt.types
-		} else {
-			types = []string{tt.name}
-		}
-		// Generate the binding and create a Go source file in the workspace
-		bind, err := Bind(types, tt.abi, tt.bytecode, tt.fsigs, "bindtest", LangGo, tt.libs, tt.aliases)
-		if err != nil {
-			t.Fatalf("test %d: failed to generate binding: %v", i, err)
-		}
-		if err = ioutil.WriteFile(filepath.Join(pkg, strings.ToLower(tt.name)+".go"), []byte(bind), 0600); err != nil {
-			t.Fatalf("test %d: failed to write binding: %v", i, err)
-		}
-		// Generate the test file with the injected test code
-		code := fmt.Sprintf(`
-=======
 		t.Run(tt.name, func(t *testing.T) {
 			// Skip the "Overload" test if [!overload]
 			if !overload && tt.name == "Overload" {
@@ -2076,7 +2043,6 @@ func golangBindings(t *testing.T, overload bool) {
 			}
 			// Generate the test file with the injected test code
 			code := fmt.Sprintf(`
->>>>>>> upstream-v0.8.5-rc.2
 			package bindtest
 
 			import (
@@ -2088,16 +2054,10 @@ func golangBindings(t *testing.T, overload bool) {
 				%s
 			}
 		`, tt.imports, tt.name, tt.tester)
-<<<<<<< HEAD
-		if err := ioutil.WriteFile(filepath.Join(pkg, strings.ToLower(tt.name)+"_test.go"), []byte(code), 0600); err != nil {
-			t.Fatalf("test %d: failed to write tests: %v", i, err)
-		}
-=======
 			if err := ioutil.WriteFile(filepath.Join(pkg, strings.ToLower(tt.name)+"_test.go"), []byte(code), 0600); err != nil {
 				t.Fatalf("test %d: failed to write tests: %v", i, err)
 			}
 		})
->>>>>>> upstream-v0.8.5-rc.2
 	}
 	// Convert the package to go modules and use the current source for go-ethereum
 	moder := exec.Command(gocmd, "mod", "init", "bindtest")

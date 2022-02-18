@@ -34,23 +34,13 @@ import (
 	"io/ioutil"
 	"math/big"
 
-<<<<<<< HEAD
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/log"
-
-=======
->>>>>>> upstream-v0.8.5-rc.2
 	"github.com/flare-foundation/coreth/accounts"
 	"github.com/flare-foundation/coreth/accounts/external"
 	"github.com/flare-foundation/coreth/accounts/keystore"
 	"github.com/flare-foundation/coreth/core/types"
-<<<<<<< HEAD
-=======
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/log"
->>>>>>> upstream-v0.8.5-rc.2
 )
 
 // ErrNoChainID is returned whenever the user failed to specify a chain id.

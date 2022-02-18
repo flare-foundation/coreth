@@ -31,16 +31,9 @@ import (
 	"errors"
 	"time"
 
-<<<<<<< HEAD
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
-
 	"github.com/flare-foundation/coreth/core/types"
-=======
-	"github.com/flare-foundation/coreth/core/types"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/log"
->>>>>>> upstream-v0.8.5-rc.2
 )
 
 // WaitMined waits for tx to be mined on the blockchain.

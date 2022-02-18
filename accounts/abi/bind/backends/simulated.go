@@ -34,16 +34,13 @@ import (
 	"sync"
 	"time"
 
-<<<<<<< HEAD
+	"github.com/flare-foundation/coreth/eth"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
-=======
-	"github.com/flare-foundation/coreth/eth"
->>>>>>> upstream-v0.8.5-rc.2
-
 	"github.com/flare-foundation/coreth/accounts/abi"
 	"github.com/flare-foundation/coreth/accounts/abi/bind"
 	"github.com/flare-foundation/coreth/consensus/dummy"
@@ -53,23 +50,11 @@ import (
 	"github.com/flare-foundation/coreth/core/state"
 	"github.com/flare-foundation/coreth/core/types"
 	"github.com/flare-foundation/coreth/core/vm"
-<<<<<<< HEAD
-	"github.com/flare-foundation/coreth/eth"
-=======
->>>>>>> upstream-v0.8.5-rc.2
 	"github.com/flare-foundation/coreth/eth/filters"
 	"github.com/flare-foundation/coreth/ethdb"
 	"github.com/flare-foundation/coreth/interfaces"
 	"github.com/flare-foundation/coreth/params"
 	"github.com/flare-foundation/coreth/rpc"
-<<<<<<< HEAD
-=======
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/common/math"
-	"github.com/ethereum/go-ethereum/event"
-	"github.com/ethereum/go-ethereum/log"
->>>>>>> upstream-v0.8.5-rc.2
 )
 
 // Verify that SimulatedBackend implements required interfaces
@@ -122,11 +107,7 @@ type SimulatedBackend struct {
 func NewSimulatedBackendWithDatabase(database ethdb.Database, alloc core.GenesisAlloc, gasLimit uint64) *SimulatedBackend {
 	cpcfg := params.TestChainConfig
 	cpcfg.ChainID = big.NewInt(1337)
-<<<<<<< HEAD
 	genesis := core.Genesis{Config: cpcfg, GasLimit: gasLimit, Alloc: alloc, Coinbase: common.HexToAddress("0x0100000000000000000000000000000000000000")}
-=======
-	genesis := core.Genesis{Config: cpcfg, GasLimit: gasLimit, Alloc: alloc}
->>>>>>> upstream-v0.8.5-rc.2
 	genesis.MustCommit(database)
 	cacheConfig := &core.CacheConfig{}
 	blockchain, _ := core.NewBlockChain(database, cacheConfig, genesis.Config, dummy.NewFaker(), vm.Config{}, common.Hash{})
@@ -518,12 +499,9 @@ func (b *SimulatedBackend) AcceptedNonceAt(ctx context.Context, account common.A
 // SuggestGasPrice implements ContractTransactor.SuggestGasPrice. Since the simulated
 // chain doesn't have miners, we just return a gas price of 1 for any call.
 func (b *SimulatedBackend) SuggestGasPrice(ctx context.Context) (*big.Int, error) {
-<<<<<<< HEAD
-=======
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
->>>>>>> upstream-v0.8.5-rc.2
 	if b.acceptedBlock.Header().BaseFee != nil {
 		return b.acceptedBlock.Header().BaseFee, nil
 	}

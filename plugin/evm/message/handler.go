@@ -6,29 +6,6 @@ package message
 import (
 	"github.com/ethereum/go-ethereum/log"
 
-<<<<<<< HEAD
-	"github.com/flare-foundation/flare/ids"
-)
-
-var _ Handler = NoopHandler{}
-
-type Handler interface {
-	HandleAtomicTx(nodeID ids.ShortID, requestID uint32, msg *AtomicTx) error
-	HandleEthTxs(nodeID ids.ShortID, requestID uint32, msg *EthTxs) error
-}
-
-type NoopHandler struct{}
-
-func (NoopHandler) HandleAtomicTx(nodeID ids.ShortID, requestID uint32, _ *AtomicTx) error {
-	log.Debug("dropping unexpected AtomicTx message", "peerID", nodeID, "requestID", requestID)
-	return nil
-}
-
-func (NoopHandler) HandleEthTxs(nodeID ids.ShortID, requestID uint32, _ *EthTxs) error {
-	log.Debug("dropping unexpected EthTxs message", "peerID", nodeID, "requestID", requestID)
-	return nil
-}
-=======
 	"github.com/flare-foundation/flare/ids"
 )
 
@@ -68,4 +45,3 @@ type ResponseHandler interface {
 	// The FailureReason outlines the underlying cause.
 	OnFailure(nodeID ids.ShortID, requestID uint32) error
 }
->>>>>>> upstream-v0.8.5-rc.2

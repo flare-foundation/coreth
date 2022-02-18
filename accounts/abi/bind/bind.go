@@ -40,14 +40,8 @@ import (
 	"text/template"
 	"unicode"
 
-<<<<<<< HEAD
 	"github.com/ethereum/go-ethereum/log"
-
 	"github.com/flare-foundation/coreth/accounts/abi"
-=======
-	"github.com/flare-foundation/coreth/accounts/abi"
-	"github.com/ethereum/go-ethereum/log"
->>>>>>> upstream-v0.8.5-rc.2
 )
 
 // Lang is a target programming language selector to generate bindings for.
@@ -104,8 +98,6 @@ func Bind(types []string, abis []string, bytecodes []string, fsigs []map[string]
 			transactIdentifiers = make(map[string]bool)
 			eventIdentifiers    = make(map[string]bool)
 		)
-<<<<<<< HEAD
-=======
 
 		for _, input := range evmABI.Constructor.Inputs {
 			if hasStruct(input.Type) {
@@ -113,7 +105,6 @@ func Bind(types []string, abis []string, bytecodes []string, fsigs []map[string]
 			}
 		}
 
->>>>>>> upstream-v0.8.5-rc.2
 		for _, original := range evmABI.Methods {
 			// Normalize the method for capital cases and non-anonymous inputs/outputs
 			normalized := original
