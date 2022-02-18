@@ -30,7 +30,6 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/flare-foundation/coreth/core/vm/runtime"
 )
 

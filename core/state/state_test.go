@@ -28,7 +28,6 @@ package state
 
 import (
 	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/flare-foundation/coreth/core/rawdb"
 	"github.com/flare-foundation/coreth/ethdb"
 )

@@ -38,7 +38,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
-
 	_ "github.com/flare-foundation/coreth/consensus/misc"
 	"github.com/flare-foundation/coreth/core/types"
 	"github.com/flare-foundation/coreth/rpc"

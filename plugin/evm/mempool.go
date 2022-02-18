@@ -9,7 +9,6 @@ import (
 	"sync"
 
 	"github.com/ethereum/go-ethereum/log"
-
 	"github.com/flare-foundation/flare/cache"
 	"github.com/flare-foundation/flare/ids"
 )

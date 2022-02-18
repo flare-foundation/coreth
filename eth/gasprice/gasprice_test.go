@@ -34,7 +34,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/event"
-
 	"github.com/flare-foundation/coreth/consensus/dummy"
 	"github.com/flare-foundation/coreth/core"
 	"github.com/flare-foundation/coreth/core/rawdb"
@@ -208,7 +207,7 @@ func TestSuggestTipCapEmptyExtDataGasUsage(t *testing.T) {
 			signer := types.LatestSigner(params.TestChainConfig)
 			baseFee := b.BaseFee()
 			feeCap := new(big.Int).Add(baseFee, txTip)
-			for j := 0; j < 740; j++ {
+			for j := 0; j < 370; j++ {
 				tx := types.NewTx(&types.DynamicFeeTx{
 					ChainID:   params.TestChainConfig.ChainID,
 					Nonce:     b.TxNonce(addr),
@@ -225,7 +224,7 @@ func TestSuggestTipCapEmptyExtDataGasUsage(t *testing.T) {
 				b.AddTx(tx)
 			}
 		},
-		expectedTip: big.NewInt(2_823_648_648),
+		expectedTip: big.NewInt(11_427_927_927),
 	})
 }
 
@@ -241,7 +240,7 @@ func TestSuggestTipCapSimple(t *testing.T) {
 			signer := types.LatestSigner(params.TestChainConfig)
 			baseFee := b.BaseFee()
 			feeCap := new(big.Int).Add(baseFee, txTip)
-			for j := 0; j < 740; j++ {
+			for j := 0; j < 370; j++ {
 				tx := types.NewTx(&types.DynamicFeeTx{
 					ChainID:   params.TestChainConfig.ChainID,
 					Nonce:     b.TxNonce(addr),
@@ -258,7 +257,7 @@ func TestSuggestTipCapSimple(t *testing.T) {
 				b.AddTx(tx)
 			}
 		},
-		expectedTip: big.NewInt(2_823_648_648),
+		expectedTip: big.NewInt(11_427_927_927),
 	})
 }
 
@@ -274,7 +273,7 @@ func TestSuggestTipCapSimpleFloor(t *testing.T) {
 			signer := types.LatestSigner(params.TestChainConfig)
 			baseFee := b.BaseFee()
 			feeCap := new(big.Int).Add(baseFee, txTip)
-			for j := 0; j < 740; j++ {
+			for j := 0; j < 370; j++ {
 				tx := types.NewTx(&types.DynamicFeeTx{
 					ChainID:   params.TestChainConfig.ChainID,
 					Nonce:     b.TxNonce(addr),
@@ -307,7 +306,7 @@ func TestSuggestTipCapSmallTips(t *testing.T) {
 			signer := types.LatestSigner(params.TestChainConfig)
 			baseFee := b.BaseFee()
 			feeCap := new(big.Int).Add(baseFee, tip)
-			for j := 0; j < 370; j++ {
+			for j := 0; j < 185; j++ {
 				tx := types.NewTx(&types.DynamicFeeTx{
 					ChainID:   params.TestChainConfig.ChainID,
 					Nonce:     b.TxNonce(addr),
@@ -339,7 +338,7 @@ func TestSuggestTipCapSmallTips(t *testing.T) {
 			}
 		},
 		// NOTE: small tips do not bias estimate
-		expectedTip: big.NewInt(2_823_648_648),
+		expectedTip: big.NewInt(11_427_927_927),
 	})
 }
 
@@ -355,7 +354,7 @@ func TestSuggestTipCapExtDataUsage(t *testing.T) {
 			signer := types.LatestSigner(params.TestChainConfig)
 			baseFee := b.BaseFee()
 			feeCap := new(big.Int).Add(baseFee, txTip)
-			for j := 0; j < 740; j++ {
+			for j := 0; j < 370; j++ {
 				tx := types.NewTx(&types.DynamicFeeTx{
 					ChainID:   params.TestChainConfig.ChainID,
 					Nonce:     b.TxNonce(addr),
@@ -372,7 +371,7 @@ func TestSuggestTipCapExtDataUsage(t *testing.T) {
 				b.AddTx(tx)
 			}
 		},
-		expectedTip: big.NewInt(2_821_838_156),
+		expectedTip: big.NewInt(11_413_453_299),
 	})
 }
 
@@ -388,7 +387,7 @@ func TestSuggestTipCapMinGas(t *testing.T) {
 			signer := types.LatestSigner(params.TestChainConfig)
 			baseFee := b.BaseFee()
 			feeCap := new(big.Int).Add(baseFee, txTip)
-			for j := 0; j < 100; j++ {
+			for j := 0; j < 50; j++ {
 				tx := types.NewTx(&types.DynamicFeeTx{
 					ChainID:   params.TestChainConfig.ChainID,
 					Nonce:     b.TxNonce(addr),
@@ -407,4 +406,41 @@ func TestSuggestTipCapMinGas(t *testing.T) {
 		},
 		expectedTip: big.NewInt(0),
 	})
+}
+
+// Regression test to ensure that SuggestPrice does not panic prior to activation of ApricotPhase3
+// Note: support for gas estimation without activated hard forks has been deprecated, but we still
+// ensure that the call does not panic.
+func TestSuggestGasPricePreAP3(t *testing.T) {
+	config := Config{
+		Blocks:     20,
+		Percentile: 60,
+	}
+
+	backend := newTestBackend(t, params.TestApricotPhase2Config, 3, nil, func(i int, b *core.BlockGen) {
+		b.SetCoinbase(common.Address{1})
+
+		signer := types.LatestSigner(params.TestApricotPhase2Config)
+		gasPrice := big.NewInt(params.ApricotPhase1MinGasPrice)
+		for j := 0; j < 50; j++ {
+			tx := types.NewTx(&types.LegacyTx{
+				Nonce:    b.TxNonce(addr),
+				To:       &common.Address{},
+				Gas:      params.TxGas,
+				GasPrice: gasPrice,
+				Data:     []byte{},
+			})
+			tx, err := types.SignTx(tx, signer, key)
+			if err != nil {
+				t.Fatalf("failed to create tx: %s", err)
+			}
+			b.AddTx(tx)
+		}
+	})
+	oracle := NewOracle(backend, config)
+
+	_, err := oracle.SuggestPrice(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
 }

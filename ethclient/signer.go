@@ -31,7 +31,6 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/flare-foundation/coreth/core/types"
 )
 
@@ -56,7 +55,7 @@ func (s *senderFromServer) Equal(other types.Signer) bool {
 }
 
 func (s *senderFromServer) Sender(tx *types.Transaction) (common.Address, error) {
-	if s.blockhash == (common.Hash{}) {
+	if s.addr == (common.Address{}) {
 		return common.Address{}, errNotCached
 	}
 	return s.addr, nil

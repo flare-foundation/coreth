@@ -8,6 +8,7 @@ import (
 
 	"github.com/flare-foundation/coreth/core/state"
 	"github.com/flare-foundation/coreth/params"
+
 	"github.com/flare-foundation/flare/chains/atomic"
 	"github.com/flare-foundation/flare/ids"
 	"github.com/flare-foundation/flare/snow"

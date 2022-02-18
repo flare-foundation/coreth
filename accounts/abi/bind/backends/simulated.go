@@ -34,12 +34,13 @@ import (
 	"sync"
 	"time"
 
+	"github.com/flare-foundation/coreth/eth"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
-
 	"github.com/flare-foundation/coreth/accounts/abi"
 	"github.com/flare-foundation/coreth/accounts/abi/bind"
 	"github.com/flare-foundation/coreth/consensus/dummy"
@@ -49,7 +50,6 @@ import (
 	"github.com/flare-foundation/coreth/core/state"
 	"github.com/flare-foundation/coreth/core/types"
 	"github.com/flare-foundation/coreth/core/vm"
-	"github.com/flare-foundation/coreth/eth"
 	"github.com/flare-foundation/coreth/eth/filters"
 	"github.com/flare-foundation/coreth/ethdb"
 	"github.com/flare-foundation/coreth/interfaces"
@@ -499,6 +499,9 @@ func (b *SimulatedBackend) AcceptedNonceAt(ctx context.Context, account common.A
 // SuggestGasPrice implements ContractTransactor.SuggestGasPrice. Since the simulated
 // chain doesn't have miners, we just return a gas price of 1 for any call.
 func (b *SimulatedBackend) SuggestGasPrice(ctx context.Context) (*big.Int, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
 	if b.acceptedBlock.Header().BaseFee != nil {
 		return b.acceptedBlock.Header().BaseFee, nil
 	}

@@ -35,7 +35,6 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
-
 	"github.com/flare-foundation/coreth/accounts"
 	"github.com/flare-foundation/coreth/core/types"
 	"github.com/flare-foundation/coreth/interfaces"

@@ -9,11 +9,13 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	coreth "github.com/flare-foundation/coreth/chain"
+	safemath "github.com/flare-foundation/flare/utils/math"
+
 	"github.com/flare-foundation/coreth/core/types"
 	"github.com/flare-foundation/coreth/params"
 	"github.com/flare-foundation/coreth/trie"
-	safemath "github.com/flare-foundation/flare/utils/math"
+
+	coreth "github.com/flare-foundation/coreth/chain"
 )
 
 var (

@@ -32,17 +32,16 @@ import (
 	"errors"
 	"math/big"
 
-	//lint:ignore SA1019 Needed for precompile
-	"golang.org/x/crypto/ripemd160"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/crypto/blake2b"
 	"github.com/ethereum/go-ethereum/crypto/bls12381"
 	"github.com/ethereum/go-ethereum/crypto/bn256"
-
 	"github.com/flare-foundation/coreth/params"
+
+	//lint:ignore SA1019 Needed for precompile
+	"golang.org/x/crypto/ripemd160"
 )
 
 // PrecompiledContract is the basic interface for native Go contracts. The implementation
@@ -102,8 +101,8 @@ var PrecompiledContractsApricotPhase2 = map[common.Address]StatefulPrecompiledCo
 	common.BytesToAddress([]byte{8}): newWrappedPrecompiledContract(&bn256PairingIstanbul{}),
 	common.BytesToAddress([]byte{9}): newWrappedPrecompiledContract(&blake2F{}),
 	genesisContractAddr:              &deprecatedContract{},
-	nativeAssetBalanceAddr:           &nativeAssetBalance{gasCost: params.AssetBalanceApricot},
-	nativeAssetCallAddr:              &nativeAssetCall{gasCost: params.AssetCallApricot},
+	NativeAssetBalanceAddr:           &nativeAssetBalance{gasCost: params.AssetBalanceApricot},
+	NativeAssetCallAddr:              &nativeAssetCall{gasCost: params.AssetCallApricot},
 }
 
 var (
@@ -131,8 +130,6 @@ func init() {
 // ActivePrecompiles returns the precompiles enabled with the current configuration.
 func ActivePrecompiles(rules params.Rules) []common.Address {
 	switch {
-	case rules.IsApricotPhase5:
-		return PrecompiledAddressesIstanbul
 	case rules.IsApricotPhase2:
 		return PrecompiledAddressesApricotPhase2
 	case rules.IsIstanbul:

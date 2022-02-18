@@ -33,16 +33,14 @@ import (
 	"testing"
 	"time"
 
-	"golang.org/x/crypto/sha3"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
-
 	"github.com/flare-foundation/coreth/ethdb"
 	"github.com/flare-foundation/coreth/ethdb/memorydb"
 	"github.com/flare-foundation/coreth/trie"
+	"golang.org/x/crypto/sha3"
 )
 
 // Tests that snapshot generation from an empty database.

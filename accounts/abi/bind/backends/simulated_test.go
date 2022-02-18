@@ -39,7 +39,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-
 	"github.com/flare-foundation/coreth/accounts/abi"
 	"github.com/flare-foundation/coreth/accounts/abi/bind"
 	"github.com/flare-foundation/coreth/core"
@@ -513,7 +512,7 @@ func TestEstimateGas(t *testing.T) {
 			GasPrice: big.NewInt(0),
 			Value:    nil,
 			Data:     common.Hex2Bytes("b9b046f9"),
-		}, 0, errors.New("invalid opcode: opcode 0xfe not defined"), nil},
+		}, 0, errors.New("invalid opcode: INVALID"), nil},
 
 		{"Valid", interfaces.CallMsg{
 			From:     addr,

@@ -32,7 +32,6 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/crypto"
-
 	"github.com/flare-foundation/coreth/core/types"
 )
 

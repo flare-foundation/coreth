@@ -32,13 +32,12 @@ import (
 	"os"
 	"time"
 
-	"github.com/olekukonko/tablewriter"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
-
 	"github.com/flare-foundation/coreth/ethdb"
+	"github.com/flare-foundation/coreth/ethdb/leveldb"
 	"github.com/flare-foundation/coreth/ethdb/memorydb"
+	"github.com/olekukonko/tablewriter"
 )
 
 // nofreezedb is a database wrapper that disables freezer data retrievals.
@@ -63,6 +62,16 @@ func NewMemoryDatabase() ethdb.Database {
 // chain segments into cold storage.
 func NewMemoryDatabaseWithCap(size int) ethdb.Database {
 	return NewDatabase(memorydb.NewWithCap(size))
+}
+
+// NewLevelDBDatabase creates a persistent key-value database without a freezer
+// moving immutable chain segments into cold storage.
+func NewLevelDBDatabase(file string, cache int, handles int, namespace string, readonly bool) (ethdb.Database, error) {
+	db, err := leveldb.New(file, cache, handles, namespace, readonly)
+	if err != nil {
+		return nil, err
+	}
+	return NewDatabase(db), nil
 }
 
 type counter uint64
@@ -181,10 +190,8 @@ func InspectDatabase(db ethdb.Database, keyPrefix, keyStart []byte) error {
 		default:
 			var accounted bool
 			for _, meta := range [][]byte{
-				databaseVersionKey, headHeaderKey, headBlockKey, headFastBlockKey, lastPivotKey,
-				fastTrieProgressKey, snapshotDisabledKey, snapshotRootKey, snapshotJournalKey,
-				snapshotGeneratorKey, snapshotRecoveryKey, txIndexTailKey, fastTxLookupLimitKey,
-				uncleanShutdownKey, badBlockKey,
+				databaseVersionKey, headHeaderKey, headBlockKey,
+				snapshotRootKey, snapshotGeneratorKey, uncleanShutdownKey,
 			} {
 				if bytes.Equal(key, meta) {
 					metadata.Add(size)

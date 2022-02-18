@@ -30,7 +30,6 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common/bitutil"
-
 	"github.com/flare-foundation/coreth/core/rawdb"
 )
 
