@@ -4,32 +4,24 @@
 package evm
 
 import (
-	"context"
-	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"math/big"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/rlp"
-	"github.com/flare-foundation/coreth/trie"
 
 	"github.com/stretchr/testify/assert"
 
 	"github.com/flare-foundation/flare/api/keystore"
 	"github.com/flare-foundation/flare/chains/atomic"
 	"github.com/flare-foundation/flare/database/manager"
-	"github.com/flare-foundation/flare/database/memdb"
 	"github.com/flare-foundation/flare/database/prefixdb"
-	"github.com/flare-foundation/flare/database/versiondb"
 	"github.com/flare-foundation/flare/ids"
 	"github.com/flare-foundation/flare/snow"
 	"github.com/flare-foundation/flare/snow/choices"
@@ -38,22 +30,14 @@ import (
 	"github.com/flare-foundation/flare/utils/formatting"
 	"github.com/flare-foundation/flare/utils/hashing"
 	"github.com/flare-foundation/flare/utils/logging"
-	"github.com/flare-foundation/flare/utils/units"
 	"github.com/flare-foundation/flare/version"
 	"github.com/flare-foundation/flare/vms/components/avax"
-	"github.com/flare-foundation/flare/vms/components/chain"
 	"github.com/flare-foundation/flare/vms/secp256k1fx"
 
 	engCommon "github.com/flare-foundation/flare/snow/engine/common"
 
-	"github.com/flare-foundation/coreth/consensus/dummy"
 	"github.com/flare-foundation/coreth/core"
-	"github.com/flare-foundation/coreth/core/types"
-	"github.com/flare-foundation/coreth/eth"
 	"github.com/flare-foundation/coreth/params"
-	"github.com/flare-foundation/coreth/rpc"
-
-	accountKeystore "github.com/flare-foundation/coreth/accounts/keystore"
 )
 
 var (

@@ -4,11 +4,7 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-<<<<<<< HEAD
 # Coreth root directory
-=======
-# Avalanche root directory
->>>>>>> upstream-v0.8.5-rc.2
 CORETH_PATH=$( cd "$( dirname "${BASH_SOURCE[0]}" )"; cd .. && pwd )
 
 # Load the versions

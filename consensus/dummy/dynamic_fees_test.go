@@ -525,7 +525,7 @@ func TestCalcBlockGasCost(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			assert.Zero(t, test.expected.Cmp(calcBlockGasCost(
-				ApricotPhase4TargetBlockRate,
+				2,
 				ApricotPhase4MinBlockGasCost,
 				ApricotPhase4MaxBlockGasCost,
 				ApricotPhase4BlockGasCostStep,

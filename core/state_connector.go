@@ -15,11 +15,13 @@ import (
 )
 
 var (
-	flareChainID    = new(big.Int).SetUint64(14) // https://github.com/ethereum-lists/chains/blob/master/_data/chains/eip155-14.json
+	costonChainID   = new(big.Int).SetUint64(16) // https://github.com/ethereum-lists/chains/blob/master/_data/chains/eip155-16.json
 	songbirdChainID = new(big.Int).SetUint64(19) // https://github.com/ethereum-lists/chains/blob/master/_data/chains/eip155-19.json
+	flareChainID    = new(big.Int).SetUint64(14) // https://github.com/ethereum-lists/chains/blob/master/_data/chains/eip155-14.json
 
-	flareStateConnectorActivationTime    = new(big.Int).SetUint64(1000000000000)
+	costonStateConnectorActivationTime   = new(big.Int).SetUint64(1000000000000)
 	songbirdStateConnectorActivationTime = new(big.Int).SetUint64(1000000000000)
+	flareStateConnectorActivationTime    = new(big.Int).SetUint64(1000000000000)
 )
 
 type AttestationVotes struct {
@@ -31,24 +33,30 @@ type AttestationVotes struct {
 }
 
 func GetTestingChain(chainID *big.Int) bool {
-	return chainID.Cmp(flareChainID) != 0 && chainID.Cmp(songbirdChainID) != 0
+	return chainID.Cmp(costonChainID) != 0 && chainID.Cmp(songbirdChainID) != 0 && chainID.Cmp(flareChainID) != 0
 }
 
 func GetStateConnectorActivated(chainID *big.Int, blockTime *big.Int) bool {
 	if GetTestingChain(chainID) {
 		return true
-	} else if chainID.Cmp(flareChainID) == 0 {
-		return blockTime.Cmp(flareStateConnectorActivationTime) >= 0
+	} else if chainID.Cmp(costonChainID) == 0 {
+		return blockTime.Cmp(costonStateConnectorActivationTime) >= 0
 	} else if chainID.Cmp(songbirdChainID) == 0 {
 		return blockTime.Cmp(songbirdStateConnectorActivationTime) >= 0
+	} else if chainID.Cmp(flareChainID) == 0 {
+		return blockTime.Cmp(flareStateConnectorActivationTime) >= 0
 	}
 	return false
 }
 
 func GetStateConnectorContract(chainID *big.Int, blockTime *big.Int) common.Address {
 	switch {
+	case GetStateConnectorActivated(chainID, blockTime) && chainID.Cmp(costonChainID) == 0:
+		return common.HexToAddress("0x1000000000000000000000000000000000000001")
 	case GetStateConnectorActivated(chainID, blockTime) && chainID.Cmp(songbirdChainID) == 0:
 		return common.HexToAddress("0x6b5DEa84F71052c1302b5fe652e17FD442D126a9")
+	case GetStateConnectorActivated(chainID, blockTime) && chainID.Cmp(flareChainID) == 0:
+		return common.HexToAddress("0x1000000000000000000000000000000000000001")
 	default:
 		return common.HexToAddress("0x1000000000000000000000000000000000000001")
 	}

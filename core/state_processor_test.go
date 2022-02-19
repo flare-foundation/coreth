@@ -88,14 +88,15 @@ func TestStateProcessorErrors(t *testing.T) {
 		var (
 			db    = rawdb.NewMemoryDatabase()
 			gspec = &Genesis{
-				Config: config,
+				Config:   config,
+				Coinbase: common.HexToAddress("0x0100000000000000000000000000000000000000"),
 				Alloc: GenesisAlloc{
 					common.HexToAddress("0x71562b71999873DB5b286dF957af199Ec94617F7"): GenesisAccount{
-						Balance: big.NewInt(2000000000000000000), // 2 ether
+						Balance: big.NewInt(7500000000000000000), // 7.5 ether
 						Nonce:   0,
 					},
 				},
-				GasLimit: params.ApricotPhase1GasLimit,
+				GasLimit: params.ApricotPhase5GasLimit,
 			}
 			genesis       = gspec.MustCommit(db)
 			blockchain, _ = NewBlockChain(db, DefaultCacheConfig, gspec.Config, dummy.NewFaker(), vm.Config{}, common.Hash{})
@@ -123,21 +124,21 @@ func TestStateProcessorErrors(t *testing.T) {
 			},
 			{ // ErrGasLimitReached
 				txs: []*types.Transaction{
-					makeTx(0, common.Address{}, big.NewInt(0), 8000001, big.NewInt(225000000000), nil),
+					makeTx(0, common.Address{}, big.NewInt(0), 30000001, big.NewInt(225000000000), nil),
 				},
-				want: "could not apply tx 0 [0xfbe38b817aaa760c2766b56c019fcdba506560a28fd41c69ae96bdaa4569e317]: gas limit reached",
+				want: "could not apply tx 0 [0xaefafea21085dd11c9c6619cb4ee39ebed206401b1147225960437e3e82f5aab]: gas limit reached",
 			},
 			{ // ErrInsufficientFundsForTransfer
 				txs: []*types.Transaction{
-					makeTx(0, common.Address{}, big.NewInt(2000000000000000000), params.TxGas, big.NewInt(225000000000), nil),
+					makeTx(0, common.Address{}, big.NewInt(7500000000000000000), params.TxGas, big.NewInt(225000000000), nil),
 				},
-				want: "could not apply tx 0 [0xae1601ef55b676ebb824ee7e16a0d14af725b7f9cf5ec79e21f14833c26b5b35]: insufficient funds for gas * price + value: address 0x71562b71999873DB5b286dF957af199Ec94617F7 have 2000000000000000000 want 2004725000000000000",
+				want: "could not apply tx 0 [0x5c2b66e37fdd76336300dc9f5b0ad850e7d36609b88ab39349aa63ba6b797d3a]: insufficient funds for gas * price + value: address 0x71562b71999873DB5b286dF957af199Ec94617F7 have 7500000000000000000 want 7504725000000000000",
 			},
 			{ // ErrInsufficientFunds
 				txs: []*types.Transaction{
-					makeTx(0, common.Address{}, big.NewInt(0), params.TxGas, big.NewInt(900000000000000000), nil),
+					makeTx(0, common.Address{}, big.NewInt(0), params.TxGas, big.NewInt(3600000000000000000), nil),
 				},
-				want: "could not apply tx 0 [0x4a69690c4b0cd85e64d0d9ea06302455b01e10a83db964d60281739752003440]: insufficient funds for gas * price + value: address 0x71562b71999873DB5b286dF957af199Ec94617F7 have 2000000000000000000 want 18900000000000000000000",
+				want: "could not apply tx 0 [0xc2d5c20d6d68af2548985180f840107b3d8b4216e8e864a73d3f6c2778f4ca3c]: insufficient funds for gas * price + value: address 0x71562b71999873DB5b286dF957af199Ec94617F7 have 7500000000000000000 want 75600000000000000000000",
 			},
 			// ErrGasUintOverflow
 			// One missing 'core' error is ErrGasUintOverflow: "gas uint64 overflow",
@@ -151,9 +152,9 @@ func TestStateProcessorErrors(t *testing.T) {
 			},
 			{ // ErrGasLimitReached
 				txs: []*types.Transaction{
-					makeTx(0, common.Address{}, big.NewInt(0), params.TxGas*381, big.NewInt(225000000000), nil),
+					makeTx(0, common.Address{}, big.NewInt(0), params.TxGas*1429, big.NewInt(225000000000), nil),
 				},
-				want: "could not apply tx 0 [0x9ee548e001369418ae53aaa11b5d823f081cc7fa9c9a7ee71a978ae17a2aece0]: gas limit reached",
+				want: "could not apply tx 0 [0xe6ca3fb4eab145a47f6ddaaaee75e5385bf083e1e4c873807ad39c3ee99f7180]: gas limit reached",
 			},
 			{ // ErrFeeCapTooLow
 				txs: []*types.Transaction{
@@ -186,15 +187,15 @@ func TestStateProcessorErrors(t *testing.T) {
 				// This test is designed to have the effective cost be covered by the balance, but
 				// the extended requirement on FeeCap*gas < balance to fail
 				txs: []*types.Transaction{
-					mkDynamicTx(0, common.Address{}, params.TxGas, big.NewInt(1), big.NewInt(100000000000000)),
+					mkDynamicTx(0, common.Address{}, params.TxGas, big.NewInt(1), big.NewInt(375000000000000)),
 				},
-				want: "could not apply tx 0 [0x3388378ed60640e75d2edf728d5528a305f599997abc4f23ec46b351b6197499]: insufficient funds for gas * price + value: address 0x71562b71999873DB5b286dF957af199Ec94617F7 have 2000000000000000000 want 2100000000000000000",
+				want: "could not apply tx 0 [0xeb32604ebba50325cfaf00c633d945c189a3ebc196e23a253f2bc8d5064393d3]: insufficient funds for gas * price + value: address 0x71562b71999873DB5b286dF957af199Ec94617F7 have 7500000000000000000 want 7875000000000000000",
 			},
 			{ // Another ErrInsufficientFunds, this one to ensure that feecap/tip of max u256 is allowed
 				txs: []*types.Transaction{
 					mkDynamicTx(0, common.Address{}, params.TxGas, bigNumber, bigNumber),
 				},
-				want: "could not apply tx 0 [0xd82a0c2519acfeac9a948258c47e784acd20651d9d80f9a1c67b4137651c3a24]: insufficient funds for gas * price + value: address 0x71562b71999873DB5b286dF957af199Ec94617F7 have 2000000000000000000 want 2431633873983640103894990685182446064918669677978451844828609264166175722438635000",
+				want: "could not apply tx 0 [0xd82a0c2519acfeac9a948258c47e784acd20651d9d80f9a1c67b4137651c3a24]: insufficient funds for gas * price + value: address 0x71562b71999873DB5b286dF957af199Ec94617F7 have 7500000000000000000 want 2431633873983640103894990685182446064918669677978451844828609264166175722438635000",
 			},
 		} {
 			block := GenerateBadBlock(genesis, dummy.NewFaker(), tt.txs, gspec.Config)
@@ -228,6 +229,7 @@ func TestStateProcessorErrors(t *testing.T) {
 					ApricotPhase1BlockTimestamp: big.NewInt(0),
 					ApricotPhase2BlockTimestamp: big.NewInt(0),
 				},
+				Coinbase: common.HexToAddress("0x0100000000000000000000000000000000000000"),
 				Alloc: GenesisAlloc{
 					common.HexToAddress("0x71562b71999873DB5b286dF957af199Ec94617F7"): GenesisAccount{
 						Balance: big.NewInt(1000000000000000000), // 1 ether
@@ -267,7 +269,8 @@ func TestStateProcessorErrors(t *testing.T) {
 		var (
 			db    = rawdb.NewMemoryDatabase()
 			gspec = &Genesis{
-				Config: config,
+				Config:   config,
+				Coinbase: common.HexToAddress("0x0100000000000000000000000000000000000000"),
 				Alloc: GenesisAlloc{
 					common.HexToAddress("0x71562b71999873DB5b286dF957af199Ec94617F7"): GenesisAccount{
 						Balance: big.NewInt(1000000000000000000), // 1 ether
@@ -275,7 +278,7 @@ func TestStateProcessorErrors(t *testing.T) {
 						Code:    common.FromHex("0xB0B0FACE"),
 					},
 				},
-				GasLimit: params.ApricotPhase1GasLimit,
+				GasLimit: params.ApricotPhase5GasLimit,
 			}
 			genesis       = gspec.MustCommit(db)
 			blockchain, _ = NewBlockChain(db, DefaultCacheConfig, gspec.Config, dummy.NewFaker(), vm.Config{}, common.Hash{})

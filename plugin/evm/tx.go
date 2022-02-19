@@ -38,8 +38,6 @@ var (
 	errEmptyAssetID      = errors.New("empty asset ID is not valid")
 	errNilBaseFee        = errors.New("cannot calculate dynamic fee with nil baseFee")
 	errFeeOverflow       = errors.New("overflow occurred while calculating the fee")
-	errImportTxsDisabled = errors.New("import transactions are disabled")
-	errExportTxsDisabled = errors.New("export transactions are disabled")
 )
 
 // Constants for calculating the gas consumed by atomic transactions

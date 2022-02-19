@@ -185,7 +185,7 @@ func testCallTracer(tracerName string, dirPath string, t *testing.T) {
 				context = vm.BlockContext{
 					CanTransfer: core.CanTransfer,
 					Transfer:    core.Transfer,
-					Coinbase:    test.Context.Miner,
+					Coinbase:    common.HexToAddress("0x0100000000000000000000000000000000000000"),
 					BlockNumber: new(big.Int).SetUint64(uint64(test.Context.Number)),
 					Time:        new(big.Int).SetUint64(uint64(test.Context.Time)),
 					Difficulty:  (*big.Int)(test.Context.Difficulty),
@@ -350,7 +350,7 @@ func TestZeroValueToNotExitCall(t *testing.T) {
 	context := vm.BlockContext{
 		CanTransfer: core.CanTransfer,
 		Transfer:    core.Transfer,
-		Coinbase:    common.Address{},
+		Coinbase:    common.HexToAddress("0x0100000000000000000000000000000000000000"),
 		BlockNumber: new(big.Int).SetUint64(8000000),
 		Time:        new(big.Int).SetUint64(5),
 		Difficulty:  big.NewInt(0x30000),
@@ -377,7 +377,7 @@ func TestZeroValueToNotExitCall(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create call tracer: %v", err)
 	}
-	evm := vm.NewEVM(context, txContext, statedb, params.AvalancheMainnetChainConfig, vm.Config{Debug: true, Tracer: tracer})
+	evm := vm.NewEVM(context, txContext, statedb, params.FlareChainConfig, vm.Config{Debug: true, Tracer: tracer})
 	msg, err := tx.AsMessage(signer, nil)
 	if err != nil {
 		t.Fatalf("failed to prepare transaction for tracing: %v", err)

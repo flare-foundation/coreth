@@ -96,16 +96,6 @@ func TestVerifyBlockFee(t *testing.T) {
 			extraStateContribution: big.NewInt(5_000_000),
 			shouldErr:              false,
 		},
-		"extra state contribution insufficient": {
-			baseFee:                big.NewInt(100),
-			parentBlockGasCost:     big.NewInt(0),
-			parentTime:             10,
-			currentTime:            10,
-			txs:                    nil,
-			receipts:               nil,
-			extraStateContribution: big.NewInt(9_999_999),
-			shouldErr:              true,
-		},
 		"negative extra state contribution": {
 			baseFee:                big.NewInt(100),
 			parentBlockGasCost:     big.NewInt(0),

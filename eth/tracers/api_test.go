@@ -198,11 +198,13 @@ func TestTraceCall(t *testing.T) {
 
 	// Initialize test accounts
 	accounts := newAccounts(3)
-	genesis := &core.Genesis{Alloc: core.GenesisAlloc{
-		accounts[0].addr: {Balance: big.NewInt(params.Ether)},
-		accounts[1].addr: {Balance: big.NewInt(params.Ether)},
-		accounts[2].addr: {Balance: big.NewInt(params.Ether)},
-	}}
+	genesis := &core.Genesis{
+		Coinbase: common.HexToAddress("0x0100000000000000000000000000000000000000"),
+		Alloc: core.GenesisAlloc{
+			accounts[0].addr: {Balance: big.NewInt(params.Ether)},
+			accounts[1].addr: {Balance: big.NewInt(params.Ether)},
+			accounts[2].addr: {Balance: big.NewInt(params.Ether)},
+		}}
 	genBlocks := 10
 	signer := types.HomesteadSigner{}
 	api := NewAPI(newTestBackend(t, genBlocks, genesis, func(i int, b *core.BlockGen) {

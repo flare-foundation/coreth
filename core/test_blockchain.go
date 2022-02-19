@@ -192,7 +192,7 @@ func TestInsertChainAcceptSingleBlock(t *testing.T, create func(db ethdb.Databas
 	// Ensure that key1 has some funds in the genesis block.
 	genesisBalance := big.NewInt(1000000)
 	gspec := &Genesis{
-		Config: &params.ChainConfig{HomesteadBlock: new(big.Int)},
+		Config: &params.ChainConfig{ChainID: big.NewInt(1), HomesteadBlock: new(big.Int)},
 		Alloc:  GenesisAlloc{addr1: {Balance: genesisBalance}},
 	}
 	genesis := gspec.MustCommit(genDB)
@@ -268,7 +268,7 @@ func TestInsertLongForkedChain(t *testing.T, create func(db ethdb.Database, chai
 	// Ensure that key1 has some funds in the genesis block.
 	genesisBalance := big.NewInt(1000000000)
 	gspec := &Genesis{
-		Config: &params.ChainConfig{HomesteadBlock: new(big.Int)},
+		Config: &params.ChainConfig{ChainID: big.NewInt(1), HomesteadBlock: new(big.Int)},
 		Alloc:  GenesisAlloc{addr1: {Balance: genesisBalance}},
 	}
 	genesis := gspec.MustCommit(genDB)
@@ -436,7 +436,7 @@ func TestAcceptNonCanonicalBlock(t *testing.T, create func(db ethdb.Database, ch
 	// Ensure that key1 has some funds in the genesis block.
 	genesisBalance := big.NewInt(1000000000)
 	gspec := &Genesis{
-		Config: &params.ChainConfig{HomesteadBlock: new(big.Int)},
+		Config: &params.ChainConfig{ChainID: big.NewInt(1), HomesteadBlock: new(big.Int)},
 		Alloc:  GenesisAlloc{addr1: {Balance: genesisBalance}},
 	}
 	genesis := gspec.MustCommit(genDB)
@@ -548,7 +548,7 @@ func TestSetPreferenceRewind(t *testing.T, create func(db ethdb.Database, chainC
 	// Ensure that key1 has some funds in the genesis block.
 	genesisBalance := big.NewInt(1000000000)
 	gspec := &Genesis{
-		Config: &params.ChainConfig{HomesteadBlock: new(big.Int)},
+		Config: &params.ChainConfig{ChainID: big.NewInt(1), HomesteadBlock: new(big.Int)},
 		Alloc:  GenesisAlloc{addr1: {Balance: genesisBalance}},
 	}
 	genesis := gspec.MustCommit(genDB)
@@ -685,7 +685,7 @@ func TestBuildOnVariousStages(t *testing.T, create func(db ethdb.Database, chain
 	// Ensure that key1 has some funds in the genesis block.
 	genesisBalance := big.NewInt(1000000)
 	gspec := &Genesis{
-		Config: &params.ChainConfig{HomesteadBlock: new(big.Int)},
+		Config: &params.ChainConfig{ChainID: big.NewInt(1), HomesteadBlock: new(big.Int)},
 		Alloc: GenesisAlloc{
 			addr1: {Balance: genesisBalance},
 			addr3: {Balance: genesisBalance},
@@ -845,7 +845,7 @@ func TestEmptyBlocks(t *testing.T, create func(db ethdb.Database, chainConfig *p
 
 	// Ensure that key1 has some funds in the genesis block.
 	gspec := &Genesis{
-		Config: &params.ChainConfig{HomesteadBlock: new(big.Int)},
+		Config: &params.ChainConfig{ChainID: big.NewInt(1), HomesteadBlock: new(big.Int)},
 		Alloc:  GenesisAlloc{},
 	}
 	genesis := gspec.MustCommit(genDB)
@@ -897,7 +897,7 @@ func TestReorgReInsert(t *testing.T, create func(db ethdb.Database, chainConfig 
 	// Ensure that key1 has some funds in the genesis block.
 	genesisBalance := big.NewInt(1000000000)
 	gspec := &Genesis{
-		Config: &params.ChainConfig{HomesteadBlock: new(big.Int)},
+		Config: &params.ChainConfig{ChainID: big.NewInt(1), HomesteadBlock: new(big.Int)},
 		Alloc:  GenesisAlloc{addr1: {Balance: genesisBalance}},
 	}
 	genesis := gspec.MustCommit(genDB)
@@ -1000,7 +1000,7 @@ func TestAcceptBlockIdenticalStateRoot(t *testing.T, create func(db ethdb.Databa
 	// Ensure that key1 has some funds in the genesis block.
 	genesisBalance := big.NewInt(1000000000)
 	gspec := &Genesis{
-		Config: &params.ChainConfig{HomesteadBlock: new(big.Int)},
+		Config: &params.ChainConfig{ChainID: big.NewInt(1), HomesteadBlock: new(big.Int)},
 		Alloc:  GenesisAlloc{addr1: {Balance: genesisBalance}},
 	}
 	genesis := gspec.MustCommit(genDB)
@@ -1143,7 +1143,7 @@ func TestReprocessAcceptBlockIdenticalStateRoot(t *testing.T, create func(db eth
 	// Ensure that key1 has some funds in the genesis block.
 	genesisBalance := big.NewInt(1000000000)
 	gspec := &Genesis{
-		Config: &params.ChainConfig{HomesteadBlock: new(big.Int)},
+		Config: &params.ChainConfig{ChainID: big.NewInt(1), HomesteadBlock: new(big.Int)},
 		Alloc:  GenesisAlloc{addr1: {Balance: genesisBalance}},
 	}
 	genesis := gspec.MustCommit(genDB)
@@ -1334,7 +1334,7 @@ func TestGenerateChainInvalidBlockFee(t *testing.T, create func(db ethdb.Databas
 	if err == nil {
 		t.Fatal("should not have been able to build a block because of insufficient block fee")
 	}
-	if !strings.Contains(err.Error(), "insufficient gas (0) to cover the block cost (400000)") {
+	if !strings.Contains(err.Error(), "insufficient gas (0) to cover the block cost (200000)") {
 		t.Fatalf("should have gotten insufficient block fee error but got %v instead", err)
 	}
 }
@@ -1404,7 +1404,7 @@ func TestInsertChainInvalidBlockFee(t *testing.T, create func(db ethdb.Database,
 	if err == nil {
 		t.Fatal("should not have been able to build a block because of insufficient block fee")
 	}
-	if !strings.Contains(err.Error(), "insufficient gas (0) to cover the block cost (400000)") {
+	if !strings.Contains(err.Error(), "insufficient gas (0) to cover the block cost (200000)") {
 		t.Fatalf("should have gotten insufficient block fee error but got %v instead", err)
 	}
 }
