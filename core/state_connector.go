@@ -8,6 +8,7 @@ import (
 	"math/big"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -19,9 +20,9 @@ var (
 	songbirdChainID = new(big.Int).SetUint64(19) // https://github.com/ethereum-lists/chains/blob/master/_data/chains/eip155-19.json
 	flareChainID    = new(big.Int).SetUint64(14) // https://github.com/ethereum-lists/chains/blob/master/_data/chains/eip155-14.json
 
-	costonStateConnectorActivationTime   = new(big.Int).SetUint64(1000000000000)
-	songbirdStateConnectorActivationTime = new(big.Int).SetUint64(1000000000000)
-	flareStateConnectorActivationTime    = new(big.Int).SetUint64(1000000000000)
+	costonActivationTime   = big.NewInt(time.Date(2022, time.February, 25, 17, 0, 0, 0, time.UTC).Unix())
+	songbirdActivationTime = big.NewInt(time.Date(2200, time.January, 1, 0, 0, 0, 0, time.UTC).Unix())
+	flareActivationTime    = big.NewInt(time.Date(2200, time.January, 1, 0, 0, 0, 0, time.UTC).Unix())
 )
 
 type AttestationVotes struct {
@@ -32,29 +33,25 @@ type AttestationVotes struct {
 	abstainedAttestors []common.Address
 }
 
-func GetTestingChain(chainID *big.Int) bool {
-	return chainID.Cmp(costonChainID) != 0 && chainID.Cmp(songbirdChainID) != 0 && chainID.Cmp(flareChainID) != 0
-}
-
 func GetStateConnectorActivated(chainID *big.Int, blockTime *big.Int) bool {
-	if GetTestingChain(chainID) {
+	switch {
+	case chainID.Cmp(costonChainID) == 0:
+		return blockTime.Cmp(costonActivationTime) >= 0
+	case chainID.Cmp(songbirdChainID) == 0:
+		return blockTime.Cmp(songbirdActivationTime) >= 0
+	case chainID.Cmp(flareChainID) == 0:
+		return blockTime.Cmp(flareActivationTime) >= 0
+	default:
 		return true
-	} else if chainID.Cmp(costonChainID) == 0 {
-		return blockTime.Cmp(costonStateConnectorActivationTime) >= 0
-	} else if chainID.Cmp(songbirdChainID) == 0 {
-		return blockTime.Cmp(songbirdStateConnectorActivationTime) >= 0
-	} else if chainID.Cmp(flareChainID) == 0 {
-		return blockTime.Cmp(flareStateConnectorActivationTime) >= 0
 	}
-	return false
 }
 
 func GetStateConnectorContract(chainID *big.Int, blockTime *big.Int) common.Address {
 	switch {
 	case GetStateConnectorActivated(chainID, blockTime) && chainID.Cmp(costonChainID) == 0:
-		return common.HexToAddress("0x1000000000000000000000000000000000000001")
+		return common.HexToAddress("0x947c76694491d3fD67a73688003c4d36C8780A97")
 	case GetStateConnectorActivated(chainID, blockTime) && chainID.Cmp(songbirdChainID) == 0:
-		return common.HexToAddress("0x6b5DEa84F71052c1302b5fe652e17FD442D126a9")
+		return common.HexToAddress("0x3A1b3220527aBA427d1e13e4b4c48c31460B4d91")
 	case GetStateConnectorActivated(chainID, blockTime) && chainID.Cmp(flareChainID) == 0:
 		return common.HexToAddress("0x1000000000000000000000000000000000000001")
 	default:
@@ -106,7 +103,7 @@ func GetFtsoWhitelistedPriceProvidersSelector(chainID *big.Int, blockTime *big.I
 
 // The default attestors are the FTSO price providers
 func (st *StateTransition) GetDefaultAttestors(chainID *big.Int, timestamp *big.Int) ([]common.Address, error) {
-	if os.Getenv("TESTING_ATTESTATION_PROVIDERS") != "" && GetTestingChain(chainID) {
+	if os.Getenv("TESTING_ATTESTATION_PROVIDERS") != "" {
 		return GetEnvAttestationProviders("TESTING"), nil
 	} else {
 		// Get VoterWhitelister contract

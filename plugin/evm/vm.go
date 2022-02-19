@@ -309,16 +309,14 @@ func (vm *VM) Initialize(
 
 	// Set the hard-coded chain config for reference network chain IDs
 	switch {
-	case g.Config.ChainID.Cmp(params.FlareChainID) == 0:
-		g.Config = params.FlareChainConfig
-		phase0BlockValidator.extDataHashes = flareExtDataHashes
 	case g.Config.ChainID.Cmp(params.CostonChainID) == 0:
 		g.Config = params.CostonChainConfig
 	case g.Config.ChainID.Cmp(params.SongbirdChainID) == 0:
 		g.Config = params.SongbirdChainConfig
 		phase0BlockValidator.extDataHashes = songbirdExtDataHashes
-	case g.Config.ChainID.Cmp(params.LocalChainID) == 0:
-		g.Config = params.LocalChainConfig
+	case g.Config.ChainID.Cmp(params.FlareChainID) == 0:
+		g.Config = params.FlareChainConfig
+		phase0BlockValidator.extDataHashes = flareExtDataHashes
 	}
 
 	// Free the memory of the extDataHash map that is not used (i.e. if flare

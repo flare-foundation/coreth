@@ -37,22 +37,20 @@ import (
 
 // Avalanche ChainIDs
 var (
-	// FlareChainID ...
-	FlareChainID = big.NewInt(14)
-	// SongbirdChainID ...
-	SongbirdChainID = big.NewInt(19)
 	// CostonChainID ...
 	CostonChainID = big.NewInt(16)
-	// LocalChainID ...
-	LocalChainID = big.NewInt(4294967295)
+	// SongbirdChainID ...
+	SongbirdChainID = big.NewInt(19)
+	// FlareChainID ...
+	FlareChainID = big.NewInt(14)
 
 	errNonGenesisForkByHeight = errors.New("coreth only supports forking by height at the genesis block")
 )
 
 var (
-	// FlareChainConfig is the configuration for Flare main network.
-	FlareChainConfig = &ChainConfig{
-		ChainID:                     FlareChainID,
+	// CostonChainConfig is the configuration for the Coston test network.
+	CostonChainConfig = &ChainConfig{
+		ChainID:                     CostonChainID,
 		HomesteadBlock:              big.NewInt(0),
 		DAOForkBlock:                big.NewInt(0),
 		DAOForkSupport:              true,
@@ -67,9 +65,9 @@ var (
 		MuirGlacierBlock:            big.NewInt(0),
 		ApricotPhase1BlockTimestamp: big.NewInt(time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()),
 		ApricotPhase2BlockTimestamp: big.NewInt(time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()),
-		ApricotPhase3BlockTimestamp: big.NewInt(time.Date(2022, time.February, 9, 15, 0, 0, 0, time.UTC).Unix()),
-		ApricotPhase4BlockTimestamp: big.NewInt(time.Date(2022, time.February, 10, 15, 0, 0, 0, time.UTC).Unix()),
-		ApricotPhase5BlockTimestamp: big.NewInt(time.Date(2022, time.February, 11, 15, 0, 0, 0, time.UTC).Unix()),
+		ApricotPhase3BlockTimestamp: big.NewInt(time.Date(2022, time.February, 25, 14, 0, 0, 0, time.UTC).Unix()),
+		ApricotPhase4BlockTimestamp: big.NewInt(time.Date(2022, time.February, 25, 15, 0, 0, 0, time.UTC).Unix()),
+		ApricotPhase5BlockTimestamp: big.NewInt(time.Date(2022, time.February, 25, 16, 0, 0, 0, time.UTC).Unix()),
 	}
 
 	// SongbirdChainConfig is the configuration for the Songbird canary network.
@@ -94,31 +92,9 @@ var (
 		ApricotPhase5BlockTimestamp: big.NewInt(time.Date(2022, time.March, 7, 16, 0, 0, 0, time.UTC).Unix()),
 	}
 
-	// CostonChainConfig is the configuration for the Coston test network.
-	CostonChainConfig = &ChainConfig{
-		ChainID:                     CostonChainID,
-		HomesteadBlock:              big.NewInt(0),
-		DAOForkBlock:                big.NewInt(0),
-		DAOForkSupport:              true,
-		EIP150Block:                 big.NewInt(0),
-		EIP150Hash:                  common.HexToHash("0x2086799aeebeae135c246c65021c82b4e15a2c451340993aacfd2751886514f0"),
-		EIP155Block:                 big.NewInt(0),
-		EIP158Block:                 big.NewInt(0),
-		ByzantiumBlock:              big.NewInt(0),
-		ConstantinopleBlock:         big.NewInt(0),
-		PetersburgBlock:             big.NewInt(0),
-		IstanbulBlock:               big.NewInt(0),
-		MuirGlacierBlock:            big.NewInt(0),
-		ApricotPhase1BlockTimestamp: big.NewInt(time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()),
-		ApricotPhase2BlockTimestamp: big.NewInt(time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()),
-		ApricotPhase3BlockTimestamp: big.NewInt(time.Date(2022, time.February, 25, 14, 0, 0, 0, time.UTC).Unix()),
-		ApricotPhase4BlockTimestamp: big.NewInt(time.Date(2022, time.February, 25, 15, 0, 0, 0, time.UTC).Unix()),
-		ApricotPhase5BlockTimestamp: big.NewInt(time.Date(2022, time.February, 25, 16, 0, 0, 0, time.UTC).Unix()),
-	}
-
-	// LocalChainConfig is the configuration for the local network.
-	LocalChainConfig = &ChainConfig{
-		ChainID:                     LocalChainID,
+	// FlareChainConfig is the configuration for Flare main network.
+	FlareChainConfig = &ChainConfig{
+		ChainID:                     FlareChainID,
 		HomesteadBlock:              big.NewInt(0),
 		DAOForkBlock:                big.NewInt(0),
 		DAOForkSupport:              true,
