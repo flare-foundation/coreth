@@ -87,55 +87,6 @@ func FinaliseRoundSelector(chainID *big.Int, blockTime *big.Int) []byte {
 	}
 }
 
-func GetVoterWhitelisterSelector(chainID *big.Int, blockTime *big.Int) []byte {
-	switch {
-	default:
-		return []byte{0x71, 0xe1, 0xfa, 0xd9}
-	}
-}
-
-func GetFtsoWhitelistedPriceProvidersSelector(chainID *big.Int, blockTime *big.Int) []byte {
-	switch {
-	default:
-		return []byte{0x09, 0xfc, 0xb4, 0x00}
-	}
-}
-
-// The default attestors are the FTSO price providers
-func (st *StateTransition) GetDefaultAttestors(chainID *big.Int, timestamp *big.Int) ([]common.Address, error) {
-	if os.Getenv("TESTING_ATTESTATION_PROVIDERS") != "" {
-		return GetEnvAttestationProviders("TESTING"), nil
-	} else {
-		// Get VoterWhitelister contract
-		voterWhitelisterContractBytes, _, err := st.evm.Call(
-			vm.AccountRef(st.msg.From()),
-			common.HexToAddress(GetPrioritisedFTSOContract(timestamp)),
-			GetVoterWhitelisterSelector(chainID, timestamp),
-			GetKeeperGasMultiplier(st.evm.Context.BlockNumber)*st.evm.Context.GasLimit,
-			big.NewInt(0))
-		if err != nil {
-			return []common.Address{}, err
-		}
-		// Get FTSO price providers
-		voterWhitelisterContract := common.BytesToAddress(voterWhitelisterContractBytes)
-		priceProvidersBytes, _, err := st.evm.Call(
-			vm.AccountRef(st.msg.From()),
-			voterWhitelisterContract,
-			GetFtsoWhitelistedPriceProvidersSelector(chainID, timestamp),
-			GetKeeperGasMultiplier(st.evm.Context.BlockNumber)*st.evm.Context.GasLimit,
-			big.NewInt(0))
-		if err != nil {
-			return []common.Address{}, err
-		}
-		NUM_ATTESTORS := len(priceProvidersBytes) / 32
-		var attestors []common.Address
-		for i := 0; i < NUM_ATTESTORS; i++ {
-			attestors = append(attestors, common.BytesToAddress(priceProvidersBytes[i*32:(i+1)*32]))
-		}
-		return attestors, nil
-	}
-}
-
 func GetEnvAttestationProviders(attestorType string) []common.Address {
 	envAttestationProvidersString := os.Getenv(attestorType + "_ATTESTATION_PROVIDERS")
 	if envAttestationProvidersString == "" {
@@ -149,7 +100,6 @@ func GetEnvAttestationProviders(attestorType string) []common.Address {
 	}
 	return attestors
 }
-
 func (st *StateTransition) GetAttestation(attestor common.Address, instructions []byte) (string, error) {
 	merkleRootHash, _, err := st.evm.Call(vm.AccountRef(attestor), st.to(), instructions, 20000, big.NewInt(0))
 	return hex.EncodeToString(merkleRootHash), err
@@ -190,10 +140,7 @@ func (st *StateTransition) CountAttestations(attestors []common.Address, instruc
 func (st *StateTransition) FinalisePreviousRound(chainID *big.Int, timestamp *big.Int, currentRoundNumber []byte) error {
 	getAttestationSelector := GetAttestationSelector(chainID, timestamp)
 	instructions := append(getAttestationSelector[:], currentRoundNumber[:]...)
-	defaultAttestors, err := st.GetDefaultAttestors(chainID, timestamp)
-	if err != nil {
-		return err
-	}
+	defaultAttestors := GetEnvAttestationProviders("DEFAULT")
 	defaultAttestationVotes, err := st.CountAttestations(defaultAttestors, instructions)
 	if err != nil {
 		return err
@@ -205,7 +152,7 @@ func (st *StateTransition) FinalisePreviousRound(chainID *big.Int, timestamp *bi
 		if defaultAttestationVotes.reachedMajority && localAttestationVotes.reachedMajority && defaultAttestationVotes.majorityDecision == localAttestationVotes.majorityDecision {
 			finalityReached = true
 		} else if err != nil || (defaultAttestationVotes.reachedMajority && defaultAttestationVotes.majorityDecision != localAttestationVotes.majorityDecision) {
-			// Make a back-up of the current state database, because this node is about to branch from the default set
+			// Make a back-up of the current state database, because this node is about to fork from the default set
 		}
 	} else if defaultAttestationVotes.reachedMajority {
 		finalityReached = true
@@ -225,13 +172,10 @@ func (st *StateTransition) FinalisePreviousRound(chainID *big.Int, timestamp *bi
 			st.evm.Context.Coinbase = originalCoinbase
 		}()
 		st.evm.Context.Coinbase = coinbaseSignal
-
 		_, _, err = st.evm.Call(vm.AccountRef(coinbaseSignal), st.to(), finalisedData, st.evm.Context.GasLimit, new(big.Int).SetUint64(0))
 		if err != nil {
 			return err
 		}
-
-		// Issue rewards to defaultAttestationVotes.majorityAttestors here:
 	}
 	return nil
 }
