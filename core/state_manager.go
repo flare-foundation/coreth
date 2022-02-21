@@ -31,14 +31,13 @@ import (
 	"math/rand"
 
 	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/flare-foundation/coreth/core/types"
 	"github.com/flare-foundation/coreth/ethdb"
 )
 
 const (
 	commitInterval = 4096
-	tipBufferSize  = 16
+	tipBufferSize  = 128
 )
 
 type TrieWriter interface {

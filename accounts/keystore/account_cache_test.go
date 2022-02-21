@@ -38,9 +38,7 @@ import (
 
 	"github.com/cespare/cp"
 	"github.com/davecgh/go-spew/spew"
-
 	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/flare-foundation/coreth/accounts"
 )
 

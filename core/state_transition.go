@@ -33,10 +33,10 @@ import (
 	"math"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/log"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/flare-foundation/coreth/core/types"
 	"github.com/flare-foundation/coreth/core/vm"
 	"github.com/flare-foundation/coreth/params"
@@ -252,11 +252,17 @@ func (st *StateTransition) preCheck() error {
 		} else if stNonce > msgNonce {
 			return fmt.Errorf("%w: address %v, tx: %d state: %d", ErrNonceTooLow,
 				st.msg.From().Hex(), msgNonce, stNonce)
+		} else if stNonce+1 < stNonce {
+			return fmt.Errorf("%w: address %v, nonce: %d", ErrNonceMax,
+				st.msg.From().Hex(), stNonce)
 		}
 		// Make sure the sender is an EOA
 		if codeHash := st.state.GetCodeHash(st.msg.From()); codeHash != emptyCodeHash && codeHash != (common.Hash{}) {
 			return fmt.Errorf("%w: address %v, codehash: %s", ErrSenderNoEOA,
 				st.msg.From().Hex(), codeHash)
+		}
+		if st.msg.From() == st.evm.Context.Coinbase {
+			return fmt.Errorf("%w: address %v", vm.ErrNoSenderBlackhole, st.msg.From())
 		}
 	}
 	// Make sure that transaction gasFeeCap is greater than the baseFee (post london)
@@ -363,15 +369,17 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 		// Increment the nonce for the next transaction
 		st.state.SetNonce(msg.From(), st.state.GetNonce(sender.Address())+1)
 		ret, st.gas, vmerr = st.evm.Call(sender, st.to(), st.data, st.gas, st.value)
-		if vmerr == nil && *msg.To() == GetStateConnectorContract(chainID, timestamp) && len(st.data) >= 36 && len(ret) == 32 {
-			if GetStateConnectorActivated(chainID, timestamp) &&
-				bytes.Equal(st.data[0:4], SubmitAttestationSelector(chainID, timestamp)) &&
-				binary.BigEndian.Uint64(ret[24:32]) > 0 {
-				err = st.FinalisePreviousRound(chainID, timestamp, st.data[4:36])
-				if err != nil {
-					log.Warn("Error finalising state connector round", "error", err)
-				}
+		if vmerr == nil &&
+			GetStateConnectorActivated(chainID, timestamp) &&
+			*msg.To() == GetStateConnectorContract(chainID, timestamp) &&
+			len(st.data) >= 36 && len(ret) == 32 &&
+			bytes.Equal(st.data[0:4], SubmitAttestationSelector(chainID, timestamp)) &&
+			binary.BigEndian.Uint64(ret[24:32]) > 0 {
+			err = st.FinalisePreviousRound(chainID, timestamp, st.data[4:36])
+			if err != nil {
+				log.Warn("Error finalising state connector round", "error", err)
 			}
+
 		}
 	}
 

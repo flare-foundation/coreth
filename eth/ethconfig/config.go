@@ -30,7 +30,6 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/flare-foundation/coreth/core"
 	"github.com/flare-foundation/coreth/eth/gasprice"
 	"github.com/flare-foundation/coreth/miner"
@@ -52,22 +51,19 @@ var DefaultConfig = NewDefaultConfig()
 
 func NewDefaultConfig() Config {
 	return Config{
-		NetworkId:               1,
-		LightPeers:              100,
-		UltraLightFraction:      75,
-		DatabaseCache:           512,
-		TrieCleanCache:          75,
-		TrieCleanCacheJournal:   "triecache",
-		TrieCleanCacheRejournal: 60 * time.Minute,
-		TrieDirtyCache:          256,
-		TrieTimeout:             60 * time.Minute,
-		SnapshotCache:           128,
-		Miner:                   miner.Config{},
-		TxPool:                  core.DefaultTxPoolConfig,
-		RPCGasCap:               120000000,
-		RPCEVMTimeout:           5 * time.Second,
-		GPO:                     DefaultFullGPOConfig,
-		RPCTxFeeCap:             1, // 1 AVAX
+		NetworkId:          1,
+		LightPeers:         100,
+		UltraLightFraction: 75,
+		DatabaseCache:      512,
+		TrieCleanCache:     75,
+		TrieDirtyCache:     256,
+		SnapshotCache:      128,
+		Miner:              miner.Config{},
+		TxPool:             core.DefaultTxPoolConfig,
+		RPCGasCap:          25000000,
+		RPCEVMTimeout:      5 * time.Second,
+		GPO:                DefaultFullGPOConfig,
+		RPCTxFeeCap:        1, // 1 AVAX
 	}
 }
 
@@ -111,13 +107,10 @@ type Config struct {
 	DatabaseCache      int
 	// DatabaseFreezer    string
 
-	TrieCleanCache          int
-	TrieCleanCacheJournal   string        `toml:",omitempty"` // Disk journal directory for trie cache to survive node restarts
-	TrieCleanCacheRejournal time.Duration `toml:",omitempty"` // Time interval to regenerate the journal for clean cache
-	TrieDirtyCache          int
-	TrieTimeout             time.Duration
-	SnapshotCache           int
-	Preimages               bool
+	TrieCleanCache int
+	TrieDirtyCache int
+	SnapshotCache  int
+	Preimages      bool
 
 	// Mining options
 	Miner miner.Config
@@ -151,4 +144,10 @@ type Config struct {
 	// Unprotected transactions are transactions that are signed without EIP-155
 	// replay protection.
 	AllowUnprotectedTxs bool
+
+	// OfflinePruning enables offline pruning on startup of the node. If a node is started
+	// with this configuration option, it must finish pruning before resuming normal operation.
+	OfflinePruning                bool
+	OfflinePruningBloomFilterSize uint64
+	OfflinePruningDataDirectory   string
 }

@@ -32,10 +32,8 @@ import (
 	"testing"
 
 	"github.com/VictoriaMetrics/fastcache"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-
 	"github.com/flare-foundation/coreth/ethdb/memorydb"
 )
 

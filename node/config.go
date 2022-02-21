@@ -33,7 +33,6 @@ import (
 	"path/filepath"
 
 	"github.com/ethereum/go-ethereum/log"
-
 	"github.com/flare-foundation/coreth/accounts"
 	"github.com/flare-foundation/coreth/accounts/external"
 	"github.com/flare-foundation/coreth/accounts/keystore"

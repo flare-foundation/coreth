@@ -11,18 +11,32 @@ import (
 	"math/big"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/flare-foundation/coreth/core/vm"
 )
 
-var (
-	flareChainID    = new(big.Int).SetUint64(14) // https://github.com/ethereum-lists/chains/blob/master/_data/chains/eip155-14.json
-	songbirdChainID = new(big.Int).SetUint64(19) // https://github.com/ethereum-lists/chains/blob/master/_data/chains/eip155-19.json
+const (
+	defaultAttestorEnv = "DEFAULT_ATTESTATORS"
+	localAttestorEnv   = "LOCAL_ATTESTATORS"
+)
 
-	flareStateConnectorActivationTime    = new(big.Int).SetUint64(1000000000000)
-	songbirdStateConnectorActivationTime = new(big.Int).SetUint64(1000000000000)
+var (
+	costonChainID   = new(big.Int).SetUint64(16) // https://github.com/ethereum-lists/chains/blob/master/_data/chains/eip155-16.json
+	songbirdChainID = new(big.Int).SetUint64(19) // https://github.com/ethereum-lists/chains/blob/master/_data/chains/eip155-19.json
+	flareChainID    = new(big.Int).SetUint64(14) // https://github.com/ethereum-lists/chains/blob/master/_data/chains/eip155-14.json
+
+	costonActivationTime   = big.NewInt(time.Date(2022, time.February, 25, 17, 0, 0, 0, time.UTC).Unix())
+	songbirdActivationTime = big.NewInt(time.Date(2200, time.January, 1, 0, 0, 0, 0, time.UTC).Unix())
+	flareActivationTime    = big.NewInt(time.Date(2200, time.January, 1, 0, 0, 0, 0, time.UTC).Unix())
+
+	costonDefaultAttestors = []common.Address{
+		common.HexToAddress("0x3a6e101103ec3d9267d08f484a6b70e1440a8255"),
+	}
+	songbirdDefaultAttestors = []common.Address{}
+	flareDefaultAttestors    = []common.Address{}
 )
 
 type AttestationVotes struct {
@@ -33,25 +47,27 @@ type AttestationVotes struct {
 	abstainedAttestors []common.Address
 }
 
-func GetTestingChain(chainID *big.Int) bool {
-	return chainID.Cmp(flareChainID) != 0 && chainID.Cmp(songbirdChainID) != 0
-}
-
 func GetStateConnectorActivated(chainID *big.Int, blockTime *big.Int) bool {
-	if GetTestingChain(chainID) {
+	switch {
+	case chainID.Cmp(costonChainID) == 0:
+		return blockTime.Cmp(costonActivationTime) >= 0
+	case chainID.Cmp(songbirdChainID) == 0:
+		return blockTime.Cmp(songbirdActivationTime) >= 0
+	case chainID.Cmp(flareChainID) == 0:
+		return blockTime.Cmp(flareActivationTime) >= 0
+	default:
 		return true
-	} else if chainID.Cmp(flareChainID) == 0 {
-		return blockTime.Cmp(flareStateConnectorActivationTime) >= 0
-	} else if chainID.Cmp(songbirdChainID) == 0 {
-		return blockTime.Cmp(songbirdStateConnectorActivationTime) >= 0
 	}
-	return false
 }
 
 func GetStateConnectorContract(chainID *big.Int, blockTime *big.Int) common.Address {
 	switch {
-	case GetStateConnectorActivated(chainID, blockTime) && chainID.Cmp(songbirdChainID) == 0:
-		return common.HexToAddress("0x6b5DEa84F71052c1302b5fe652e17FD442D126a9")
+	case chainID.Cmp(costonChainID) == 0:
+		return common.HexToAddress("0x947c76694491d3fD67a73688003c4d36C8780A97")
+	case chainID.Cmp(songbirdChainID) == 0:
+		return common.HexToAddress("0x3A1b3220527aBA427d1e13e4b4c48c31460B4d91")
+	case chainID.Cmp(flareChainID) == 0:
+		return common.HexToAddress("0x1000000000000000000000000000000000000001")
 	default:
 		return common.HexToAddress("0x1000000000000000000000000000000000000001")
 	}
@@ -85,74 +101,38 @@ func FinaliseRoundSelector(chainID *big.Int, blockTime *big.Int) []byte {
 	}
 }
 
-func GetVoterWhitelisterSelector(chainID *big.Int, blockTime *big.Int) []byte {
+func GetDefaultAttestors(chainID *big.Int) []common.Address {
+	defaultAttestorList := os.Getenv(defaultAttestorEnv)
+	if defaultAttestorList != "" {
+		defaultAttestorEntries := strings.Split(defaultAttestorList, ",")
+		defaultAttestors := make([]common.Address, 0, len(defaultAttestorEntries))
+		for _, defaultAttestorEntry := range defaultAttestorEntries {
+			defaultAttestors = append(defaultAttestors, common.HexToAddress(defaultAttestorEntry))
+		}
+		return defaultAttestors
+	}
 	switch {
+	case chainID.Cmp(costonChainID) == 0:
+		return costonDefaultAttestors
+	case chainID.Cmp(songbirdChainID) == 0:
+		return songbirdDefaultAttestors
+	case chainID.Cmp(flareChainID) == 0:
+		return flareDefaultAttestors
 	default:
-		return []byte{0x71, 0xe1, 0xfa, 0xd9}
+		return nil
 	}
 }
 
-func GetFtsoWhitelistedPriceProvidersSelector(chainID *big.Int, blockTime *big.Int) []byte {
-	switch {
-	default:
-		return []byte{0x09, 0xfc, 0xb4, 0x00}
-	}
-}
-
-// The default attestors are the FTSO price providers
-func (st *StateTransition) GetDefaultAttestors(chainID *big.Int, timestamp *big.Int) ([]common.Address, error) {
-	log.Info("GetDefaultAttestors called...")
-	if os.Getenv("TESTING_ATTESTATION_PROVIDERS") != "" && GetTestingChain(chainID) {
-		log.Info("GetDefaultAttestors called...1")
-		return GetEnvAttestationProviders("TESTING"), nil
-	} else {
-		log.Info("GetDefaultAttestors called...2")
-		// Get VoterWhitelister contract
-		voterWhitelisterContractBytes, _, err := st.evm.Call(
-			vm.AccountRef(st.msg.From()),
-			common.HexToAddress(GetPrioritisedFTSOContract(timestamp)),
-			GetVoterWhitelisterSelector(chainID, timestamp),
-			GetKeeperGasMultiplier(st.evm.Context.BlockNumber)*st.evm.Context.GasLimit,
-			big.NewInt(0))
-		g := GetKeeperGasMultiplier(st.evm.Context.BlockNumber) * st.evm.Context.GasLimit
-		log.Info("Gas in evm call: ", "gas", g)
-		log.Info("Gas in evm call: ", "GetKeeperGasMultiplier", GetKeeperGasMultiplier(st.evm.Context.BlockNumber))
-		log.Info("Gas in evm call: ", "GasLimit", st.evm.Context.GasLimit)
-		if err != nil {
-			return []common.Address{}, err
+func GetLocalAttestors() []common.Address {
+	localAttestorList := os.Getenv(localAttestorEnv)
+	if localAttestorList != "" {
+		localAttestorEntries := strings.Split(localAttestorList, ",")
+		localAttestors := make([]common.Address, 0, len(localAttestorEntries))
+		for _, localAttestorEntry := range localAttestorEntries {
+			localAttestors = append(localAttestors, common.HexToAddress(localAttestorEntry))
 		}
-		// Get FTSO prive providers
-		voterWhitelisterContract := common.BytesToAddress(voterWhitelisterContractBytes)
-		priceProvidersBytes, _, err := st.evm.Call(
-			vm.AccountRef(st.msg.From()),
-			voterWhitelisterContract,
-			GetFtsoWhitelistedPriceProvidersSelector(chainID, timestamp),
-			GetKeeperGasMultiplier(st.evm.Context.BlockNumber)*st.evm.Context.GasLimit,
-			big.NewInt(0))
-		if err != nil {
-			return []common.Address{}, err
-		}
-		NUM_ATTESTORS := len(priceProvidersBytes) / 32
-		var attestors []common.Address
-		for i := 0; i < NUM_ATTESTORS; i++ {
-			attestors = append(attestors, common.BytesToAddress(priceProvidersBytes[i*32:(i+1)*32]))
-		}
-		return attestors, nil
 	}
-}
-
-func GetEnvAttestationProviders(attestorType string) []common.Address {
-	envAttestationProvidersString := os.Getenv(attestorType + "_ATTESTATION_PROVIDERS")
-	if envAttestationProvidersString == "" {
-		return []common.Address{}
-	}
-	envAttestationProviders := strings.Split(envAttestationProvidersString, ",")
-	NUM_ATTESTORS := len(envAttestationProviders)
-	var attestors []common.Address
-	for i := 0; i < NUM_ATTESTORS; i++ {
-		attestors = append(attestors, common.HexToAddress(envAttestationProviders[i]))
-	}
-	return attestors
+	return nil
 }
 
 func (st *StateTransition) GetAttestation(attestor common.Address, instructions []byte) (string, error) {
@@ -195,22 +175,19 @@ func (st *StateTransition) CountAttestations(attestors []common.Address, instruc
 func (st *StateTransition) FinalisePreviousRound(chainID *big.Int, timestamp *big.Int, currentRoundNumber []byte) error {
 	getAttestationSelector := GetAttestationSelector(chainID, timestamp)
 	instructions := append(getAttestationSelector[:], currentRoundNumber[:]...)
-	defaultAttestors, err := st.GetDefaultAttestors(chainID, timestamp)
-	if err != nil {
-		return err
-	}
+	defaultAttestors := GetDefaultAttestors(chainID)
 	defaultAttestationVotes, err := st.CountAttestations(defaultAttestors, instructions)
 	if err != nil {
 		return err
 	}
-	localAttestors := GetEnvAttestationProviders("LOCAL")
+	localAttestors := GetLocalAttestors()
 	var finalityReached bool
 	if len(localAttestors) > 0 {
 		localAttestationVotes, err := st.CountAttestations(localAttestors, instructions)
 		if defaultAttestationVotes.reachedMajority && localAttestationVotes.reachedMajority && defaultAttestationVotes.majorityDecision == localAttestationVotes.majorityDecision {
 			finalityReached = true
 		} else if err != nil || (defaultAttestationVotes.reachedMajority && defaultAttestationVotes.majorityDecision != localAttestationVotes.majorityDecision) {
-			// Make a back-up of the current state database, because this node is about to branch from the default set
+			// Make a back-up of the current state database, because this node is about to fork from the default set
 		}
 	} else if defaultAttestationVotes.reachedMajority {
 		finalityReached = true
@@ -230,13 +207,10 @@ func (st *StateTransition) FinalisePreviousRound(chainID *big.Int, timestamp *bi
 			st.evm.Context.Coinbase = originalCoinbase
 		}()
 		st.evm.Context.Coinbase = coinbaseSignal
-
 		_, _, err = st.evm.Call(vm.AccountRef(coinbaseSignal), st.to(), finalisedData, st.evm.Context.GasLimit, new(big.Int).SetUint64(0))
 		if err != nil {
 			return err
 		}
-
-		// Issue rewards to defaultAttestationVotes.majorityAttestors here:
 	}
 	return nil
 }

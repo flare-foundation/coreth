@@ -36,13 +36,13 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
-
 	"github.com/flare-foundation/coreth/accounts"
 	"github.com/flare-foundation/coreth/consensus"
 	"github.com/flare-foundation/coreth/consensus/dummy"
 	"github.com/flare-foundation/coreth/core"
 	"github.com/flare-foundation/coreth/core/bloombits"
 	"github.com/flare-foundation/coreth/core/rawdb"
+	"github.com/flare-foundation/coreth/core/state/pruner"
 	"github.com/flare-foundation/coreth/core/types"
 	"github.com/flare-foundation/coreth/core/vm"
 	"github.com/flare-foundation/coreth/eth/ethconfig"
@@ -51,6 +51,7 @@ import (
 	"github.com/flare-foundation/coreth/eth/tracers"
 	"github.com/flare-foundation/coreth/ethdb"
 	"github.com/flare-foundation/coreth/internal/ethapi"
+	"github.com/flare-foundation/coreth/internal/shutdowncheck"
 	"github.com/flare-foundation/coreth/miner"
 	"github.com/flare-foundation/coreth/node"
 	"github.com/flare-foundation/coreth/params"
@@ -99,12 +100,18 @@ type Ethereum struct {
 
 	lock sync.RWMutex // Protects the variadic fields (e.g. gas price and etherbase)
 
+	shutdownTracker *shutdowncheck.ShutdownTracker // Tracks if and when the node has shutdown ungracefully
+
+	stackRPCs []rpc.API
+
 	settings Settings // Settings for Ethereum API
 }
 
 // New creates a new Ethereum object (including the
 // initialisation of the common Ethereum object)
-func New(stack *node.Node, config *Config,
+func New(
+	stack *node.Node,
+	config *Config,
 	cb *dummy.ConsensusCallbacks,
 	chainDb ethdb.Database,
 	settings Settings,
@@ -134,14 +141,19 @@ func New(stack *node.Node, config *Config,
 	}
 	log.Info("Initialised chain configuration", "config", chainConfig)
 
-	// FIXME RecoverPruning once that package is migrated over
-	// if err := pruner.RecoverPruning(stack.ResolvePath(""), chainDb, stack.ResolvePath(config.TrieCleanCacheJournal)); err != nil {
-	//             log.Error("Failed to recover state", "error", err)
-	// }
+	// Note: RecoverPruning must be called to handle the case that we are midway through offline pruning.
+	// If the data directory is changed in between runs preventing RecoverPruning from performing its job correctly,
+	// it may cause DB corruption.
+	// Since RecoverPruning will only continue a pruning run that already began, we do not need to ensure that
+	// reprocessState has already been called and completed successfully. To ensure this, we must maintain
+	// that Prune is only run after reprocessState has finished successfully.
+	if err := pruner.RecoverPruning(config.OfflinePruningDataDirectory, chainDb); err != nil {
+		log.Error("Failed to recover state", "error", err)
+	}
 	eth := &Ethereum{
 		config:            config,
 		chainDb:           chainDb,
-		eventMux:          stack.EventMux(),
+		eventMux:          new(event.TypeMux),
 		accountManager:    stack.AccountManager(),
 		engine:            dummy.NewDummyEngine(cb),
 		closeBloomHandler: make(chan struct{}),
@@ -150,6 +162,7 @@ func New(stack *node.Node, config *Config,
 		bloomRequests:     make(chan chan *bloombits.Retrieval),
 		bloomIndexer:      core.NewBloomIndexer(chainDb, params.BloomBitsBlocks, params.BloomConfirms),
 		settings:          settings,
+		shutdownTracker:   shutdowncheck.NewShutdownTracker(chainDb),
 	}
 
 	bcVersion := rawdb.ReadDatabaseVersion(chainDb)
@@ -187,12 +200,13 @@ func New(stack *node.Node, config *Config,
 	if err != nil {
 		return nil, err
 	}
+
+	if err := eth.handleOfflinePruning(cacheConfig, chainConfig, vmConfig, lastAcceptedHash); err != nil {
+		return nil, err
+	}
+
 	eth.bloomIndexer.Start(eth.blockchain)
 
-	// Original code (requires disk):
-	// if config.TxPool.Journal != "" {
-	// 	config.TxPool.Journal = stack.ResolvePath(config.TxPool.Journal)
-	// }
 	config.TxPool.Journal = ""
 	eth.txPool = core.NewTxPool(config.TxPool, chainConfig, eth.blockchain)
 
@@ -216,8 +230,10 @@ func New(stack *node.Node, config *Config,
 	// Start the RPC service
 	eth.netRPCService = ethapi.NewPublicNetAPI(eth.NetVersion())
 
-	// Register the backend on the node
-	stack.RegisterAPIs(eth.APIs())
+	eth.stackRPCs = stack.APIs()
+
+	// Successful startup; push a marker and check previous unclean shutdowns.
+	eth.shutdownTracker.MarkStartup()
 
 	return eth, nil
 }
@@ -230,6 +246,9 @@ func (s *Ethereum) APIs() []rpc.API {
 	// Append tracing APIs
 	apis = append(apis, tracers.APIs(s.APIBackend)...)
 
+	// Add the APIs from the node
+	apis = append(apis, s.stackRPCs...)
+
 	// Append all the local APIs and return
 	return append(apis, []rpc.API{
 		{
@@ -237,29 +256,35 @@ func (s *Ethereum) APIs() []rpc.API {
 			Version:   "1.0",
 			Service:   NewPublicEthereumAPI(s),
 			Public:    true,
+			Name:      "public-eth",
 		}, {
 			Namespace: "eth",
 			Version:   "1.0",
 			Service:   filters.NewPublicFilterAPI(s.APIBackend, false, 5*time.Minute),
 			Public:    true,
+			Name:      "public-eth-filter",
 		}, {
 			Namespace: "admin",
 			Version:   "1.0",
 			Service:   NewPrivateAdminAPI(s),
+			Name:      "private-admin",
 		}, {
 			Namespace: "debug",
 			Version:   "1.0",
 			Service:   NewPublicDebugAPI(s),
 			Public:    true,
+			Name:      "public-debug",
 		}, {
 			Namespace: "debug",
 			Version:   "1.0",
 			Service:   NewPrivateDebugAPI(s),
+			Name:      "private-debug",
 		}, {
 			Namespace: "net",
 			Version:   "1.0",
 			Service:   s.netRPCService,
 			Public:    true,
+			Name:      "net",
 		},
 	}...)
 }
@@ -314,6 +339,9 @@ func (s *Ethereum) BloomIndexer() *core.ChainIndexer { return s.bloomIndexer }
 func (s *Ethereum) Start() {
 	// Start the bloom bits servicing goroutines
 	s.startBloomHandlers(params.BloomBitsBlocks)
+
+	// Regularly update shutdown marker
+	s.shutdownTracker.Start()
 }
 
 // Stop implements node.Lifecycle, terminating all internal goroutines used by the
@@ -325,6 +353,10 @@ func (s *Ethereum) Stop() error {
 	s.txPool.Stop()
 	s.blockchain.Stop()
 	s.engine.Close()
+
+	// Clean shutdown marker as the last thing before closing db
+	s.shutdownTracker.Stop()
+
 	s.chainDb.Close()
 	s.eventMux.Stop()
 	return nil
@@ -332,4 +364,47 @@ func (s *Ethereum) Stop() error {
 
 func (s *Ethereum) LastAcceptedBlock() *types.Block {
 	return s.blockchain.LastAcceptedBlock()
+}
+
+func (s *Ethereum) handleOfflinePruning(cacheConfig *core.CacheConfig, chainConfig *params.ChainConfig, vmConfig vm.Config, lastAcceptedHash common.Hash) error {
+	if !s.config.OfflinePruning {
+		// Delete the offline pruning marker to indicate that the node started with offline pruning disabled.
+		if err := rawdb.DeleteOfflinePruning(s.chainDb); err != nil {
+			return fmt.Errorf("failed to write offline pruning disabled marker: %w", err)
+		}
+		return nil
+	}
+
+	// Perform offline pruning after NewBlockChain has been called to ensure that we have rolled back the chain
+	// to the last accepted block before pruning begins.
+	// If offline pruning marker is on disk, then we force the node to be started with offline pruning disabled
+	// before allowing another run of offline pruning.
+	if _, err := rawdb.ReadOfflinePruning(s.chainDb); err == nil {
+		log.Error("Offline pruning is not meant to be left enabled permanently. Please disable offline pruning and allow your node to start successfully before running offline pruning again.")
+		return errors.New("cannot start chain with offline pruning enabled on consecutive starts")
+	}
+
+	// Clean up middle roots
+	if err := s.blockchain.CleanBlockRootsAboveLastAccepted(); err != nil {
+		return err
+	}
+	targetRoot := s.blockchain.LastAcceptedBlock().Root()
+
+	// Allow the blockchain to be garbage collected immediately, since we will shut down the chain after offline pruning completes.
+	s.blockchain.Stop()
+	s.blockchain = nil
+	log.Info("Starting offline pruning", "dataDir", s.config.OfflinePruningDataDirectory, "bloomFilterSize", s.config.OfflinePruningBloomFilterSize)
+	pruner, err := pruner.NewPruner(s.chainDb, s.config.OfflinePruningDataDirectory, s.config.OfflinePruningBloomFilterSize)
+	if err != nil {
+		return fmt.Errorf("failed to create new pruner with data directory: %s, size: %d, due to: %w", s.config.OfflinePruningDataDirectory, s.config.OfflinePruningBloomFilterSize, err)
+	}
+	if err := pruner.Prune(targetRoot); err != nil {
+		return fmt.Errorf("failed to prune blockchain with target root: %s due to: %w", targetRoot, err)
+	}
+	s.blockchain, err = core.NewBlockChain(s.chainDb, cacheConfig, chainConfig, s.engine, vmConfig, lastAcceptedHash)
+	if err != nil {
+		return fmt.Errorf("failed to re-initialize blockchain after offline pruning: %w", err)
+	}
+
+	return nil
 }

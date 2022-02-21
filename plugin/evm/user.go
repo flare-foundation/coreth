@@ -8,7 +8,6 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/flare-foundation/flare/database/encdb"
 	"github.com/flare-foundation/flare/ids"
 	"github.com/flare-foundation/flare/utils/crypto"
