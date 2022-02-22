@@ -244,7 +244,8 @@ func (oracle *Oracle) SuggestPrice(ctx context.Context) (*big.Int, error) {
 	// yet activated, and we should use the minimum fee before the hard forks
 	// as the gas price.
 	if baseFee.Cmp(common.Big0) == 0 {
-		return big.NewInt(params.ApricotPhase1MinGasPrice), nil
+		minGasPrice := big.NewInt(params.ApricotPhase1MinGasPrice)
+		return new(big.Int).Add(minGasPrice, tip), nil
 	}
 
 	return new(big.Int).Add(tip, baseFee), nil
