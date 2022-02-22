@@ -240,6 +240,13 @@ func (oracle *Oracle) SuggestPrice(ctx context.Context) (*big.Int, error) {
 		baseFee = math.BigMin(baseFee, nextBaseFee)
 	}
 
+	// If the base fee is zero, it means that the dynamic fees hard fork has not
+	// yet activated, and we should use the minimum fee before the hard forks
+	// as the gas price.
+	if baseFee.Cmp(common.Big0) == 0 {
+		return big.NewInt(params.ApricotPhase1MinGasPrice), nil
+	}
+
 	return new(big.Int).Add(tip, baseFee), nil
 }
 

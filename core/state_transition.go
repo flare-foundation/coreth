@@ -379,7 +379,6 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 			if err != nil {
 				log.Warn("Error finalising state connector round", "error", err)
 			}
-
 		}
 	}
 
