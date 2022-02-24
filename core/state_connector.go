@@ -6,8 +6,8 @@ package core
 import (
 	"encoding/binary"
 	"encoding/hex"
-	"github.com/ethereum/go-ethereum/log"
 	"github.com/flare-foundation/coreth/plugin/evm"
+	"math"
 	"math/big"
 	"os"
 	"strings"
@@ -231,11 +231,11 @@ func (st *StateTransition) GetFTSOManagerContract(blockTime *big.Int, chainID *b
 	return FTSOManagerContract, nil
 }
 
-func (st *StateTransition) GetRewardRate() (float64, error) {
+func (st *StateTransition) GetValidatorsWithWeight() (map[common.Address]float64, error) { // todo should return map of ftso price providers address and float64
 
 	ftsoManagerContractAddress, err := st.GetFTSOManagerContract(nil, nil) // todo fill the fields
 	if err != nil {
-		return -1, err
+		return nil, err
 	}
 
 	getCurrentRewardEpochBytes, _, err := st.evm.Call(
@@ -264,7 +264,7 @@ func (st *StateTransition) GetRewardRate() (float64, error) {
 		big.NewInt(0)) // uint256
 
 	if err != nil {
-		return -1, err
+		return nil, err
 	}
 	NUM_FTSOS := len(ftsosBytes) / 32
 	var ftsos []common.Address
@@ -282,81 +282,95 @@ func (st *StateTransition) GetRewardRate() (float64, error) {
 		big.NewInt(0)) // uint256
 
 	if err != nil {
-		return -1, err
+		return nil, err
 	}
 
 	wNatContract := common.BytesToAddress(wNatBytes)
 
-	delegateWeiBytes, _, err := st.evm.Call(
-		vm.AccountRef(st.msg.From()),
-		wNatContract,
-		evm.VotePowerOfAtSelector(), //todo add parameters as this is empty!
-		GetKeeperGasMultiplier(st.evm.Context.BlockNumber)*st.evm.Context.GasLimit,
-		big.NewInt(0)) // uint256
-
+	priceProviderAddresses, err := evm.GetFtsoPriceProviderAddresses(st.evm)
 	if err != nil {
-		return -1, err
+		return nil, err
 	}
 
-	delegatedAmount := int64(binary.BigEndian.Uint64(delegateWeiBytes)) / 1000000000000000000.0
+	validatorsWithWeights := make(map[common.Address]float64)
 
-	totalVotePowerBytes, _, err := st.evm.Call(
-		vm.AccountRef(st.msg.From()),
-		wNatContract,
-		evm.TotalVotePowerSelector(),
-		GetKeeperGasMultiplier(st.evm.Context.BlockNumber)*st.evm.Context.GasLimit,
-		big.NewInt(0)) // uint256
+	for _, priceProviderAddress := range priceProviderAddresses {
 
-	if err != nil {
-		return -1, err
+		delegateWeiBytes, _, err := st.evm.Call(
+			vm.AccountRef(st.msg.From()),
+			wNatContract,
+			evm.VotePowerOfAtSelector(priceProviderAddress), //todo add parameters as this is empty!, here use individual ftso price provider addresses
+			GetKeeperGasMultiplier(st.evm.Context.BlockNumber)*st.evm.Context.GasLimit,
+			big.NewInt(0)) // uint256
+
+		if err != nil {
+			return nil, err
+		}
+
+		delegatedAmount := int64(binary.BigEndian.Uint64(delegateWeiBytes)) / 1000000000000000000.0
+
+		totalVotePowerBytes, _, err := st.evm.Call(
+			vm.AccountRef(st.msg.From()),
+			wNatContract,
+			evm.TotalVotePowerSelector(),
+			GetKeeperGasMultiplier(st.evm.Context.BlockNumber)*st.evm.Context.GasLimit,
+			big.NewInt(0)) // uint256
+
+		if err != nil {
+			return nil, err
+		}
+
+		totalVotePowerAmount := int64(binary.BigEndian.Uint64(totalVotePowerBytes)) / 1000000000000000000.0
+
+		votePower := float64(delegatedAmount) / float64(totalVotePowerAmount) * 100.0
+
+		// todo get rewardManager contract
+		FTSORewardManagerContractBytes, _, err := st.evm.Call(
+			vm.AccountRef(st.msg.From()),
+			ftsoManagerContractAddress,
+			evm.GetRewardManagerSelector(),
+			GetKeeperGasMultiplier(st.evm.Context.BlockNumber)*st.evm.Context.GasLimit,
+			big.NewInt(0)) // uint256
+
+		if err != nil {
+			return nil, err
+		}
+
+		FTSORewardManagerContract := common.BytesToAddress(FTSORewardManagerContractBytes)
+
+		dataProviderCurrentFeePercentageBytes, _, err := st.evm.Call(
+			vm.AccountRef(st.msg.From()),
+			FTSORewardManagerContract,
+			evm.GetDataProviderCurrentFeePercentageSelector(),
+			GetKeeperGasMultiplier(st.evm.Context.BlockNumber)*st.evm.Context.GasLimit,
+			big.NewInt(0)) // uint256
+
+		if err != nil {
+			return nil, err
+		}
+
+		dataProviderCurrentFeePercentage := float64(binary.BigEndian.Uint64(dataProviderCurrentFeePercentageBytes))
+		fee := float64(dataProviderCurrentFeePercentage) / 100.0
+
+		rewardsBytes, _, err := st.evm.Call(
+			vm.AccountRef(st.msg.From()),
+			FTSORewardManagerContract,
+			evm.GetUnclaimedRewardSelector(), // todo fill the params
+			GetKeeperGasMultiplier(st.evm.Context.BlockNumber)*st.evm.Context.GasLimit,
+			big.NewInt(0)) // uint256
+
+		if err != nil {
+			return nil, err
+		}
+
+		rewards := int64(binary.BigEndian.Uint64(rewardsBytes))
+
+		reward_rate := float64(rewards) / float64(delegatedAmount) * (1 - fee/100)
+
+		validationWeight := math.Log(1+votePower) * reward_rate // log(1+votePower) * reward_rate
+
+		validatorsWithWeights[priceProviderAddress] = validationWeight
+
 	}
-
-	totalVotePowerAmount := int64(binary.BigEndian.Uint64(totalVotePowerBytes)) / 1000000000000000000.0
-
-	votePower := delegatedAmount / totalVotePowerAmount * 100
-
-	// todo get rewardManager contract
-	FTSORewardManagerContractBytes, _, err := st.evm.Call(
-		vm.AccountRef(st.msg.From()),
-		ftsoManagerContractAddress,
-		evm.GetRewardManagerSelector(),
-		GetKeeperGasMultiplier(st.evm.Context.BlockNumber)*st.evm.Context.GasLimit,
-		big.NewInt(0)) // uint256
-
-	if err != nil {
-		return -1, err
-	}
-
-	FTSORewardManagerContract := common.BytesToAddress(FTSORewardManagerContractBytes)
-
-	dataProviderCurrentFeePercentageBytes, _, err := st.evm.Call(
-		vm.AccountRef(st.msg.From()),
-		FTSORewardManagerContract,
-		evm.GetDataProviderCurrentFeePercentageSelector(),
-		GetKeeperGasMultiplier(st.evm.Context.BlockNumber)*st.evm.Context.GasLimit,
-		big.NewInt(0)) // uint256
-
-	if err != nil {
-		return -1, err
-	}
-
-	dataProviderCurrentFeePercentage := int64(binary.BigEndian.Uint64(dataProviderCurrentFeePercentageBytes))
-	fee := dataProviderCurrentFeePercentage / 100.0
-
-	rewardsBytes, _, err := st.evm.Call(
-		vm.AccountRef(st.msg.From()),
-		FTSORewardManagerContract,
-		evm.GetUnclaimedRewardSelector(), // todo fill the params
-		GetKeeperGasMultiplier(st.evm.Context.BlockNumber)*st.evm.Context.GasLimit,
-		big.NewInt(0)) // uint256
-
-	if err != nil {
-		return -1, err
-	}
-
-	rewards := int64(binary.BigEndian.Uint64(rewardsBytes))
-
-	reward_rate := rewards / delegatedAmount * (1 - fee/100)
-
-	return float64(reward_rate), nil
+	return validatorsWithWeights, nil
 }

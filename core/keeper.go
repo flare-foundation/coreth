@@ -65,7 +65,7 @@ func GetSystemTriggerSelector(blockNumber *big.Int) []byte {
 	}
 }
 
-func GetPrioritisedFTSOContract(blockTime *big.Int) string { //PriceSubmitter
+func GetPrioritisedFTSOContract() string { //PriceSubmitter
 	switch {
 	default:
 		return "0x1000000000000000000000000000000000000003"

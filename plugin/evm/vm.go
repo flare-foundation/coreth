@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	math2 "github.com/ethereum/go-ethereum/common/math"
+	"github.com/ethereum/go-ethereum/core/vm"
 	"math/big"
 	"os"
 	"path/filepath"
@@ -46,13 +47,6 @@ import (
 	// inside of cmd/geth.
 	_ "github.com/flare-foundation/coreth/eth/tracers/js"
 	_ "github.com/flare-foundation/coreth/eth/tracers/native"
-
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/metrics"
-	"github.com/ethereum/go-ethereum/rlp"
-
-	avalancheRPC "github.com/gorilla/rpc/v2"
 
 	"github.com/flare-foundation/flare/cache"
 	"github.com/flare-foundation/flare/codec"
@@ -1487,13 +1481,14 @@ func (vm *VM) GetValidators(id ids.ID) (map[ids.ShortID]float64, error) {
 	}
 	evm := vm2.NewEVM(block, tx, state, &chainConfig, vm2.Config{})
 
-	// Here we are just printing the ftsoAddresses and not returning yet as it is not fully verified.
+	// Here we are just printing the ftsoAddressesWithWeights and not returning yet as it is not fully verified.
 	// At the end of this function we are simply returning return value of a predefined fake contract as a placeholder.
 	// todo return actual ftso addresses along with their weights
-	ftsoAddresses, err := getDefaultAttestors(evm)
+	ftsoAddressesWithWeights, err := getValidatorsWithWeight(evm)
 	if err == nil {
-		fmt.Println(ftsoAddresses)
-		log.Info("FTSOs could be fetched", "ftsoAddresses", ftsoAddresses)
+		fmt.Println(ftsoAddressesWithWeights)
+		log.Info("FTSOs could be fetched", "ftsoAddressesWithWeights", ftsoAddressesWithWeights)
+		return ftsoAddressesWithWeights, nil
 	} else {
 		log.Info("FTSOs could not be fetched", "err", err)
 	}
@@ -1526,7 +1521,7 @@ func (vm *VM) GetValidators(id ids.ID) (map[ids.ShortID]float64, error) {
 	return creatorsReturn, nil
 }
 
-func getDefaultAttestors(evm *vm2.EVM) ([]common.Address, error) {
+func getValidatorsWithWeight(evm *vm2.EVM) (map[common.Address]float64, error) {
 	msg := types.NewMessage(
 		common.Address{},      // from
 		&common.Address{},     // to
@@ -1541,11 +1536,51 @@ func getDefaultAttestors(evm *vm2.EVM) ([]common.Address, error) {
 		true,                  // isfake
 	)
 	gaspool := new(core.GasPool).AddGas(math2.MaxUint64)
-	ftsoAddresses, err := core.NewStateTransition(evm, msg, gaspool).GetLocalAttestors()
+
+	return core.NewStateTransition(evm, msg, gaspool).GetValidatorsWithWeight()
+	////ftsoAddresses, err := core.NewStateTransition(evm, msg, gaspool).GetLocalAttestors()
+	//ftsoAddresses, err := GetFtsoPriceProviderAddresses(evm)
+	//
+	//// todo do the actual smart contract call here itself to get ftsoAdresses instead of relying on st's function as it doesn't exist anymore
+	//if err != nil {
+	//	return nil, err
+	//}
+	//return ftsoAddresses, nil
+}
+
+func GetFtsoPriceProviderAddresses(evm *vm2.EVM) ([]common.Address, error) {
+	log.Info("GetDefaultAttestors called...2")
+	// Get VoterWhitelister contract
+	voterWhitelisterContractBytes, _, err := evm.Call(
+		vm.AccountRef(common.Address{}),
+		common.HexToAddress(core.GetPrioritisedFTSOContract()),
+		GetVoterWhitelisterSelector(),
+		GetKeeperGasMultiplier(evm.Context.BlockNumber)*evm.Context.GasLimit,
+		big.NewInt(0))
+	g := GetKeeperGasMultiplier(evm.Context.BlockNumber) * evm.Context.GasLimit
+	log.Info("Gas in evm call: ", "gas", g)
+	log.Info("Gas in evm call: ", "GetKeeperGasMultiplier", GetKeeperGasMultiplier(evm.Context.BlockNumber))
+	log.Info("Gas in evm call: ", "GasLimit", evm.Context.GasLimit)
 	if err != nil {
-		return nil, err
+		return []common.Address{}, err
 	}
-	return ftsoAddresses, nil
+	// Get FTSO prive providers
+	voterWhitelisterContract := common.BytesToAddress(voterWhitelisterContractBytes)
+	priceProvidersBytes, _, err := evm.Call(
+		vm.AccountRef(common.Address{}),
+		voterWhitelisterContract,
+		GetFtsoWhitelistedPriceProvidersSelector(),
+		GetKeeperGasMultiplier(evm.Context.BlockNumber)*evm.Context.GasLimit,
+		big.NewInt(0))
+	if err != nil {
+		return []common.Address{}, err
+	}
+	NUM_WHITELISTED_PRICE_PROVIDERS := len(priceProvidersBytes) / 32
+	var ftsosAddresses []common.Address
+	for i := 0; i < NUM_WHITELISTED_PRICE_PROVIDERS; i++ {
+		ftsosAddresses = append(ftsosAddresses, common.BytesToAddress(priceProvidersBytes[i*32:(i+1)*32]))
+	}
+	return ftsosAddresses, nil
 }
 
 func convertStringMaptoShortIDMap(m map[string]float64) map[ids.ShortID]float64 {
@@ -1560,123 +1595,6 @@ func stringToShortID(s string) ids.ShortID {
 	var shortId [20]byte
 	copy(shortId[:], s)
 	return shortId
-}
-
-func getCreatorsContractAddress() common.Address {
-	return common.HexToAddress("0x1000000000000000000000000000000000000004")
-}
-
-func getCreatorsContractFunction4Bytes() []byte {
-	switch {
-	default:
-		return []byte{0xe6, 0xad, 0xc1, 0xee} //getCreators()
-	}
-}
-
-func getValidatorsContractFunction4Bytes() []byte {
-	switch {
-	default:
-		return []byte{0xb7, 0xab, 0x4d, 0xb5} //getValidators()
-	}
-}
-
-func GetCurrentRewardEpochSelector() []byte { //getCurrentRewardEpoch()
-	switch {
-	default:
-		return []byte{0xe7, 0xc8, 0x30, 0xd4}
-	}
-} //e7 c8 30 d4
-
-func GetRewardEpochVotePowerBlockSelector(currentRewardEpoch int64) []byte { //getRewardEpochVotePowerBlock(uint256)
-	// todo use the currentRewardEpoch input
-	switch {
-	default:
-		return []byte{0xf2, 0xed, 0xab, 0x5a}
-	}
-} // 0x f2 ed ab 5a
-
-func VotePowerOfAtSelector() []byte { //votePowerOfAt(address,uint256)
-	switch {
-	default:
-		return []byte{0x92, 0xbf, 0xe6, 0xd8}
-	}
-} // 0x 92 bf e6 d8
-
-func TotalVotePowerSelector() []byte { //totalVotePower() //todo verify if this is the right function as it should take an input
-	switch {
-	default:
-		return []byte{0xf5, 0xf3, 0xd4, 0xf7}
-	}
-} // f5 f3 d4 f7
-
-func GetDataProviderCurrentFeePercentageSelector() []byte { //getDataProviderCurrentFeePercentage(address)
-	switch {
-	default:
-		return []byte{0xcf, 0xbc, 0xd2, 0x5f}
-	}
-} //0x cf bc d2 5f
-
-func GetUnclaimedRewardSelector() []byte { //getUnclaimedReward(uint256,address)
-	switch {
-	default:
-		return []byte{0x65, 0x7d, 0x96, 0x95}
-	}
-} //0x 65 7d 96 95
-
-func GetFtsoManagerSelector(blockTime *big.Int, chainID *big.Int) []byte { //getFtsoManager()
-	switch {
-	default:
-		return []byte{0xb3, 0x9c, 0x68, 0x58}
-	}
-} //b3 9c 68 58
-
-func GetFtsoManagerContract() []byte { //getFtsoManager()
-	switch {
-	default:
-		return []byte{0xb3, 0x9c, 0x68, 0x58}
-	}
-} //0x b3 9c 68 58
-
-func GetWnatContract(blockTime *big.Int) string {
-	switch {
-	default:
-		return "0x02f0826ef6aD107Cfc861152B32B52fD11BaB9ED"
-	}
-}
-
-func GetWnatSelector() []byte { //wNat
-	switch {
-	default:
-		return []byte{0x21, 0x18, 0xd5, 0xd0}
-	}
-} //21 18 d5 d0
-
-func GetRewardManagerSelector() []byte { //rewardManager
-	switch {
-	default:
-		return []byte{0xb7, 0xf4, 0x1e, 0x2d}
-	}
-}//b7 f4 1e 2d
-
-func GetFtsosSelector() []byte { //getFtsos()
-	switch {
-	default:
-		return []byte{0xce, 0x69, 0xf8, 0x33}
-	}
-} //0x ce 69 f8 33
-
-func GetFTSORewardManagerContract(blockTime *big.Int) string {
-	switch {
-	default:
-		return "0xc5738334b972745067fFa666040fdeADc66Cb925"
-	}
-}
-
-func GetPriceSubmittedContract() common.Address { //PriceSubmitter contract
-	switch {
-	default:
-		return  common.HexToAddress("0x1000000000000000000000000000000000000003")
-	}
 }
 
 //Contracts & Methods needed:
