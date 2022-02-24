@@ -14,7 +14,6 @@ import (
 	"math/big"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -1484,41 +1483,22 @@ func (vm *VM) GetValidators(id ids.ID) (map[ids.ShortID]float64, error) {
 	// Here we are just printing the ftsoAddressesWithWeights and not returning yet as it is not fully verified.
 	// At the end of this function we are simply returning return value of a predefined fake contract as a placeholder.
 	// todo return actual ftso addresses along with their weights
+	ftsoAddressesShortIDsWithWeights := make(map[ids.ShortID]float64)
 	ftsoAddressesWithWeights, err := getValidatorsWithWeight(evm)
 	if err == nil {
 		fmt.Println(ftsoAddressesWithWeights)
 		log.Info("FTSOs could be fetched", "ftsoAddressesWithWeights", ftsoAddressesWithWeights)
-		return ftsoAddressesWithWeights, nil
+		for address, f := range ftsoAddressesWithWeights {
+			shortID, err := ids.ToShortID(address.Bytes())
+			if err == nil {
+				ftsoAddressesShortIDsWithWeights[shortID] = f
+			}
+		}
+		return ftsoAddressesShortIDsWithWeights, nil
 	} else {
 		log.Info("FTSOs could not be fetched", "err", err)
+		return nil, err
 	}
-
-	// Now we are getting the creators/validators from the fake contract which is a place holder
-	evmCallValue := big.NewInt(0)
-	caller := vm2.AccountRef(getCreatorsContractAddress())
-	log.Info("GetValidators of evm called 7", id, id)
-	creatorsByte, _, err := evm.Call(caller, getCreatorsContractAddress(), getValidatorsContractFunction4Bytes(), 100000, evmCallValue)
-	//caller ContractRef, addr common.Address, input []byte, gas uint64, value *big.Int
-	if err != nil {
-		log.Info("Error in evm.Call")
-		log.Error(err.Error())
-		return nil, fmt.Errorf("could not get block creators from contract: %w", err)
-	}
-	log.Info("result: ", "result: ", fmt.Sprintf("%x", creatorsByte))
-	var creators [3]uint32
-
-	log.Info("creatorsByte..: ", "len(creatorsByte)", creatorsByte, len(creatorsByte))
-	creatorsByteString := fmt.Sprintf("%x", creatorsByte)
-
-	aa, _ := strconv.Atoi(creatorsByteString[:64])
-	creators[0] = uint32(aa)
-	aa2, _ := strconv.Atoi(creatorsByteString[64:128])
-	creators[1] = uint32(aa2)
-	creatorsStringMap := make(map[string]float64)
-	creatorsStringMap[string(aa)] = float64(aa)
-	creatorsStringMap[string(aa2)] = float64(aa2)
-	creatorsReturn := convertStringMaptoShortIDMap(creatorsStringMap)
-	return creatorsReturn, nil
 }
 
 func getValidatorsWithWeight(evm *vm2.EVM) (map[common.Address]float64, error) {
