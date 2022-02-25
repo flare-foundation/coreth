@@ -23,6 +23,7 @@ import (
 	"github.com/flare-foundation/coreth/core"
 	"github.com/flare-foundation/coreth/core/state"
 	"github.com/flare-foundation/coreth/core/types"
+	vm2 "github.com/flare-foundation/coreth/core/vm"
 	"github.com/flare-foundation/coreth/eth/ethconfig"
 	"github.com/flare-foundation/coreth/metrics/prometheus"
 	"github.com/flare-foundation/coreth/node"
@@ -1484,3 +1485,139 @@ func (vm *VM) repairAtomicRepositoryForBonusBlockTxs(
 	log.Info("repairAtomicRepositoryForBonusBlockTxs complete", "repairedEntries", repairedEntries)
 	return vm.db.Commit()
 }
+
+func (vm *VM) GetEthChain() *coreth.ETHChain {
+	return vm.chain
+}
+
+func (vm *VM) GetValidators(id ids.ID) (map[ids.ShortID]float64, error) {
+	msg := types.NewMessage(
+		common.Address{},      // from
+		&common.Address{},     // to
+		0,                     // nonce,
+		big.NewInt(100000000), // amount
+		100000000000000000,    // gaslimit
+		big.NewInt(5),         // gasprice
+		nil,                   // gasfeecap
+		nil,                   // gastipcap
+		nil,                   // data
+		nil,                   // accesslist
+		true,                  // isfake
+	)
+
+	chain := vm.chain
+	if chain == nil {
+		log.Info("chain is nil")
+		return nil, fmt.Errorf("could not get vm chain")
+	} else {
+		log.Info("chain is not nil")
+	}
+	blockchain := vm.GetEthChain().BlockChain()
+	if blockchain == nil {
+		log.Info("blockchain is nil")
+		return nil, fmt.Errorf("could not get Blockchain")
+	} else {
+		log.Info("blockchain is not nil")
+	}
+	log.Info("GetValidators of evm called 2", id, id)
+	state, err := blockchain.State()
+	if err != nil {
+		return nil, fmt.Errorf("could not get blockchain state: %w", err)
+	}
+	log.Info("GetValidators of evm called 3", id, id)
+	tx := core.NewEVMTxContext(msg)
+	log.Info("GetValidators of evm called 4", id, id)
+	header := &types.Header{
+		GasLimit: 100000,
+		BaseFee:  nil,
+		Number:   big.NewInt(1), //todo currently block height is 1. todo: api call needs to give us the block number we care about and parent hash
+		// block number and hash.
+		ParentHash: (common.Hash(id)), // hash,
+		Difficulty: big.NewInt(1),
+	}
+	log.Info("GetValidators of evm called 5", id, id)
+	log.Info("GetValidators of evm called 6", id, id)
+	//block := core.NewEVMBlockContext(block.Header(), f.blockchain, nil)
+	block := core.NewEVMBlockContext(header, blockchain, nil)
+	chainConfig := params.ChainConfig{
+		ChainID:             big.NewInt(4294967295),
+		ByzantiumBlock:      big.NewInt(0),
+		ConstantinopleBlock: big.NewInt(0),
+	}
+	evm := vm2.NewEVM(block, tx, state, &chainConfig, vm2.Config{})
+
+	// Here we are just printing the ftsoAddressesWithWeights and not returning yet as it is not fully verified.
+	// At the end of this function we are simply returning return value of a predefined fake contract as a placeholder.
+	// todo return actual ftso addresses along with their weights
+	ftsoAddressesShortIDsWithWeights := make(map[ids.ShortID]float64)
+	ftsoAddressesWithWeights, err := getValidatorsWithWeight(evm)
+	if err == nil {
+		fmt.Println(ftsoAddressesWithWeights)
+		log.Info("FTSOs could be fetched", "ftsoAddressesWithWeights", ftsoAddressesWithWeights)
+		for address, f := range ftsoAddressesWithWeights {
+			shortID, err := ids.ToShortID(address.Bytes())
+			if err == nil {
+				ftsoAddressesShortIDsWithWeights[shortID] = f
+			}
+		}
+		return ftsoAddressesShortIDsWithWeights, nil
+	} else {
+		log.Info("FTSOs could not be fetched", "err", err)
+		return nil, err
+	}
+}
+
+func getValidatorsWithWeight(evm *vm2.EVM) (map[common.Address]float64, error) {
+	return GetValidatorsWithWeight(evm)
+}
+
+func convertStringMaptoShortIDMap(m map[string]float64) map[ids.ShortID]float64 {
+	retM := make(map[ids.ShortID]float64)
+	for key, val := range m {
+		retM[stringToShortID(key)] = val
+	}
+	return retM
+}
+
+func stringToShortID(s string) ids.ShortID {
+	var shortId [20]byte
+	copy(shortId[:], s)
+	return shortId
+}
+
+//Contracts & Methods needed:
+//     1. ftsoManagerContract
+//         a. getCurrentRewardEpoch
+//         b. getRewardEpochVotePowerBlock
+//     2. wnatContract
+//         a. votePowerOfAt
+//         b. totalVotePower
+//     3. ftsoRewardManagerContract
+//         a. getDataProviderCurrentFeePercentage
+//         b. getUnclaimedReward
+//
+//// Current reward epoch
+//let res = await ftsoManagerContract.methods.getCurrentRewardEpoch().call();
+//const currRewardEpoch = Number(res);
+//
+//// Reward’s block number
+//const rewardEVPBlock = await ftsoManagerContract.methods.getRewardEpochVotePowerBlock(currRewardEpoch).call();
+//
+//// Delegated funds
+//res = await wnatContract.methods.votePowerOfAt(FTSO, rewardEVPBlock).call()
+//const delegated = (Number(res)) / 1000000000000000000.0;
+//
+//// Vote power
+//res = await wnatContract.methods.totalVotePower().call();
+//const totalVotePower = res / 1000000000000000000.0;
+//const votePower = delegated / totalVotePower * 100;
+//
+//// Current fee
+//res = await ftsoRewardManagerContract.methods.getDataProviderCurrentFeePercentage(FTSO).call();
+//const fee = Number(res) / 100.0;
+//
+//// Earned rewards
+//
+//const rewards = await ftsoRewardManagerContract.methods.getUnclaimedReward(currRewardEpoch, FTSO).call();
+//
+//const reward_rate = rewards * 100 / delegated * (1 - fee / 100.0);
