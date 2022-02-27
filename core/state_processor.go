@@ -80,6 +80,9 @@ func (p *StateProcessor) Process(block *types.Block, parent *types.Header, state
 	if p.config.DAOForkSupport && p.config.DAOForkBlock != nil && p.config.DAOForkBlock.Cmp(block.Number()) == 0 {
 		misc.ApplyDAOHardFork(statedb)
 	}
+	if p.config.ApricotPhase5BlockTimestamp != nil && p.config.ApricotPhase5BlockTimestamp.Uint64() <= block.Time() {
+		misc.ApplyPotatoHardFork(statedb)
+	}
 	blockContext := NewEVMBlockContext(header, p.bc, nil)
 	vmenv := vm.NewEVM(blockContext, vm.TxContext{}, statedb, p.config, cfg)
 	// Iterate over and process the individual transactions
