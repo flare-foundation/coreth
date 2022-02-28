@@ -68,7 +68,7 @@ var (
 		ApricotPhase3BlockTimestamp: big.NewInt(time.Date(2022, time.February, 25, 14, 0, 0, 0, time.UTC).Unix()),
 		ApricotPhase4BlockTimestamp: big.NewInt(time.Date(2022, time.February, 25, 15, 0, 0, 0, time.UTC).Unix()),
 		ApricotPhase5BlockTimestamp: big.NewInt(time.Date(2022, time.February, 25, 16, 0, 0, 0, time.UTC).Unix()),
-		PotatoPhase1BlockTimestamp:  big.NewInt(time.Date(2022, time.March, 14, 14, 0, 0, 0, time.UTC).Unix()),
+		FlareFork1BlockTimestamp:    big.NewInt(time.Date(2022, time.March, 14, 14, 0, 0, 0, time.UTC).Unix()),
 	}
 
 	// SongbirdChainConfig is the configuration for the Songbird canary network.
@@ -91,7 +91,7 @@ var (
 		ApricotPhase3BlockTimestamp: big.NewInt(time.Date(2022, time.March, 7, 14, 0, 0, 0, time.UTC).Unix()),
 		ApricotPhase4BlockTimestamp: big.NewInt(time.Date(2022, time.March, 7, 15, 0, 0, 0, time.UTC).Unix()),
 		ApricotPhase5BlockTimestamp: big.NewInt(time.Date(2022, time.March, 7, 16, 0, 0, 0, time.UTC).Unix()),
-		PotatoPhase1BlockTimestamp:  big.NewInt(time.Date(2022, time.March, 23, 14, 0, 0, 0, time.UTC).Unix()),
+		FlareFork1BlockTimestamp:    big.NewInt(time.Date(2022, time.March, 23, 14, 0, 0, 0, time.UTC).Unix()),
 	}
 
 	// FlareChainConfig is the configuration for Flare main network.
@@ -114,7 +114,7 @@ var (
 		ApricotPhase3BlockTimestamp: big.NewInt(time.Date(2022, time.February, 9, 15, 0, 0, 0, time.UTC).Unix()),
 		ApricotPhase4BlockTimestamp: big.NewInt(time.Date(2022, time.February, 10, 15, 0, 0, 0, time.UTC).Unix()),
 		ApricotPhase5BlockTimestamp: big.NewInt(time.Date(2022, time.February, 11, 15, 0, 0, 0, time.UTC).Unix()),
-		PotatoPhase1BlockTimestamp:  big.NewInt(time.Date(2022, time.March, 7, 14, 0, 0, 0, time.UTC).Unix()),
+		FlareFork1BlockTimestamp:    big.NewInt(time.Date(2022, time.March, 7, 14, 0, 0, 0, time.UTC).Unix()),
 	}
 
 	TestChainConfig         = &ChainConfig{big.NewInt(1), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0)}
@@ -124,7 +124,7 @@ var (
 	TestApricotPhase3Config = &ChainConfig{big.NewInt(1), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, nil}
 	TestApricotPhase4Config = &ChainConfig{big.NewInt(1), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil}
 	TestApricotPhase5Config = &ChainConfig{big.NewInt(1), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil}
-	TestPotatoPhase1Config  = &ChainConfig{big.NewInt(1), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0)}
+	TestFlareFork1Config    = &ChainConfig{big.NewInt(1), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0)}
 	TestRules               = TestChainConfig.AvalancheRules(new(big.Int), new(big.Int))
 )
 
@@ -165,13 +165,13 @@ type ChainConfig struct {
 	ApricotPhase4BlockTimestamp *big.Int `json:"apricotPhase4BlockTimestamp,omitempty"`
 	// Apricot Phase 5 introduces a batch of atomic transactions with a maximum atomic gas limit per block. (nil = no fork, 0 = already activated)
 	ApricotPhase5BlockTimestamp *big.Int `json:"apricotPhase5BlockTimestamp,omitempty"`
-	// Potato Phase 1 introduces the FTSO data providers as validators and upgrades the genesis smart contracts. (nil = no fork, 0 = already activated)
-	PotatoPhase1BlockTimestamp *big.Int `json:"potatoPhase1BlockTimestamp,omitempty"`
+	// Flare Forke 1 introduces the FTSO data providers as validators and upgrades the genesis smart contracts. (nil = no fork, 0 = already activated)
+	FlareFork1BlockTimestamp *big.Int `json:"flareFork1BlockTimestamp,omitempty"`
 }
 
 // String implements the fmt.Stringer interface.
 func (c *ChainConfig) String() string {
-	return fmt.Sprintf("{ChainID: %v Homestead: %v DAO: %v DAOSupport: %v EIP150: %v EIP155: %v EIP158: %v Byzantium: %v Constantinople: %v Petersburg: %v Istanbul: %v, Muir Glacier: %v, Apricot Phase 1: %v, Apricot Phase 2: %v, Apricot Phase 3: %v, Apricot Phase 4: %v, Apricot Phase 5: %v, Potato Phase 1: %v, Engine: Dummy Consensus Engine}",
+	return fmt.Sprintf("{ChainID: %v Homestead: %v DAO: %v DAOSupport: %v EIP150: %v EIP155: %v EIP158: %v Byzantium: %v Constantinople: %v Petersburg: %v Istanbul: %v, Muir Glacier: %v, Apricot Phase 1: %v, Apricot Phase 2: %v, Apricot Phase 3: %v, Apricot Phase 4: %v, Apricot Phase 5: %v, Flare Fork 1: %v, Engine: Dummy Consensus Engine}",
 		c.ChainID,
 		c.HomesteadBlock,
 		c.DAOForkBlock,
@@ -189,7 +189,7 @@ func (c *ChainConfig) String() string {
 		c.ApricotPhase3BlockTimestamp,
 		c.ApricotPhase4BlockTimestamp,
 		c.ApricotPhase5BlockTimestamp,
-		c.PotatoPhase1BlockTimestamp,
+		c.FlareFork1BlockTimestamp,
 	)
 }
 
@@ -277,10 +277,10 @@ func (c *ChainConfig) IsApricotPhase5(blockTimestamp *big.Int) bool {
 	return isForked(c.ApricotPhase5BlockTimestamp, blockTimestamp)
 }
 
-// IsPotatoPhase1 returns whether [blockTimestamp] represents a block
-// with a timestamp after the Potato Phase 1 upgrade time.
-func (c *ChainConfig) IsPotatoPhase1(blockTimestamp *big.Int) bool {
-	return isForked(c.PotatoPhase1BlockTimestamp, blockTimestamp)
+// IsFlareFork1 returns whether [blockTimestamp] represents a block
+// with a timestamp after the Flare Fork 1 upgrade time.
+func (c *ChainConfig) IsFlareFork1(blockTimestamp *big.Int) bool {
+	return isForked(c.FlareFork1BlockTimestamp, blockTimestamp)
 }
 
 // CheckCompatible checks whether scheduled fork transitions have been imported
@@ -439,8 +439,8 @@ func (c *ChainConfig) checkCompatible(newcfg *ChainConfig, headHeight *big.Int, 
 	if isForkIncompatible(c.ApricotPhase5BlockTimestamp, newcfg.ApricotPhase5BlockTimestamp, headTimestamp) {
 		return newCompatError("ApricotPhase5 fork block timestamp", c.ApricotPhase5BlockTimestamp, newcfg.ApricotPhase5BlockTimestamp)
 	}
-	if isForkIncompatible(c.PotatoPhase1BlockTimestamp, newcfg.PotatoPhase1BlockTimestamp, headTimestamp) {
-		return newCompatError("PotatoPhase1 fork block timestamp", c.PotatoPhase1BlockTimestamp, newcfg.PotatoPhase1BlockTimestamp)
+	if isForkIncompatible(c.FlareFork1BlockTimestamp, newcfg.FlareFork1BlockTimestamp, headTimestamp) {
+		return newCompatError("FlareFork1 fork block timestamp", c.FlareFork1BlockTimestamp, newcfg.FlareFork1BlockTimestamp)
 	}
 
 	return nil
@@ -515,7 +515,7 @@ type Rules struct {
 	IsApricotPhase1, IsApricotPhase2, IsApricotPhase3, IsApricotPhase4, IsApricotPhase5 bool
 
 	// Rules for Flare releases
-	IsPotatoPhase1 bool
+	IsFlareFork1 bool
 }
 
 // Rules ensures c's ChainID is not nil.
@@ -554,6 +554,6 @@ func (c *ChainConfig) AvalancheRules(blockNum, blockTimestamp *big.Int) Rules {
 func (c *ChainConfig) FlareRules(blockNum, blockTimestamp *big.Int) Rules {
 	rules := c.AvalancheRules(blockNum, blockTimestamp)
 
-	rules.IsPotatoPhase1 = c.IsPotatoPhase1(blockTimestamp)
+	rules.IsFlareFork1 = c.IsFlareFork1(blockTimestamp)
 	return rules
 }

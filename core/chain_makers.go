@@ -232,8 +232,8 @@ func GenerateChain(config *params.ChainConfig, parent *types.Block, engine conse
 		if config.DAOForkSupport && config.DAOForkBlock != nil && config.DAOForkBlock.Cmp(b.header.Number) == 0 {
 			misc.ApplyDAOHardFork(statedb)
 		}
-		if config.PotatoPhase1BlockTimestamp != nil && config.PotatoPhase1BlockTimestamp.Uint64() <= b.header.Time {
-			misc.ApplyPotatoHardFork(statedb)
+		if config.FlareFork1BlockTimestamp != nil && config.FlareFork1BlockTimestamp.Uint64() <= b.header.Time {
+			misc.UpdateFlareContracts(statedb)
 		}
 		// Execute any user modifications to the block
 		if gen != nil {

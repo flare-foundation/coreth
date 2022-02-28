@@ -161,8 +161,8 @@ func (w *worker) commitNewWork() (*types.Block, error) {
 	if w.chainConfig.DAOForkSupport && w.chainConfig.DAOForkBlock != nil && w.chainConfig.DAOForkBlock.Cmp(header.Number) == 0 {
 		misc.ApplyDAOHardFork(env.state)
 	}
-	if w.chainConfig.PotatoPhase1BlockTimestamp.Uint64() <= header.Time {
-		misc.ApplyPotatoHardFork(env.state)
+	if w.chainConfig.FlareFork1BlockTimestamp != nil && w.chainConfig.FlareFork1BlockTimestamp.Uint64() <= header.Time {
+		misc.UpdateFlareContracts(env.state)
 	}
 
 	// Fill the block with all available pending transactions.

@@ -80,8 +80,8 @@ func (p *StateProcessor) Process(block *types.Block, parent *types.Header, state
 	if p.config.DAOForkSupport && p.config.DAOForkBlock != nil && p.config.DAOForkBlock.Cmp(block.Number()) == 0 {
 		misc.ApplyDAOHardFork(statedb)
 	}
-	if p.config.ApricotPhase5BlockTimestamp != nil && p.config.ApricotPhase5BlockTimestamp.Uint64() <= block.Time() {
-		misc.ApplyPotatoHardFork(statedb)
+	if p.config.FlareFork1BlockTimestamp != nil && p.config.FlareFork1BlockTimestamp.Uint64() <= block.Time() {
+		misc.UpdateFlareContracts(statedb)
 	}
 	blockContext := NewEVMBlockContext(header, p.bc, nil)
 	vmenv := vm.NewEVM(blockContext, vm.TxContext{}, statedb, p.config, cfg)
