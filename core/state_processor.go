@@ -81,7 +81,7 @@ func (p *StateProcessor) Process(block *types.Block, parent *types.Header, state
 		misc.ApplyDAOHardFork(statedb)
 	}
 	if p.config.FlareFork1BlockTimestamp != nil && p.config.FlareFork1BlockTimestamp.Uint64() <= block.Time() {
-		misc.UpdateFlareContracts(statedb)
+		misc.ApplyFlareFork1Upgrades(statedb)
 	}
 	blockContext := NewEVMBlockContext(header, p.bc, nil)
 	vmenv := vm.NewEVM(blockContext, vm.TxContext{}, statedb, p.config, cfg)

@@ -162,7 +162,7 @@ func (w *worker) commitNewWork() (*types.Block, error) {
 		misc.ApplyDAOHardFork(env.state)
 	}
 	if w.chainConfig.FlareFork1BlockTimestamp != nil && w.chainConfig.FlareFork1BlockTimestamp.Uint64() <= header.Time {
-		misc.UpdateFlareContracts(env.state)
+		misc.ApplyFlareFork1Upgrades(env.state)
 	}
 
 	// Fill the block with all available pending transactions.

@@ -9,15 +9,16 @@ import (
 	"github.com/flare-foundation/coreth/params"
 )
 
-// UpdateFlareContracts updates the Flare genesis smart contracts with updated
+// ApplyFlareFork1Upgrades updates the Flare genesis smart contracts with updated
 // versions when triggered at a given block with the given state DB. We make sure
 // that the old byte code at each given address corresponds to what we expect
 // before replacing it with the new byte code.
-func UpdateFlareContracts(statedb *state.StateDB) {
+func ApplyFlareFork1Upgrades(statedb *state.StateDB) {
 	for _, update := range params.FlareContractUpdates {
 		byteCode := statedb.GetCode(update.Address)
 		if !bytes.Equal(byteCode, update.OldByteCode) {
 			continue
 		}
+		statedb.SetCode(update.Address, update.NewByteCode)
 	}
 }

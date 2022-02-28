@@ -233,7 +233,7 @@ func GenerateChain(config *params.ChainConfig, parent *types.Block, engine conse
 			misc.ApplyDAOHardFork(statedb)
 		}
 		if config.FlareFork1BlockTimestamp != nil && config.FlareFork1BlockTimestamp.Uint64() <= b.header.Time {
-			misc.UpdateFlareContracts(statedb)
+			misc.ApplyFlareFork1Upgrades(statedb)
 		}
 		// Execute any user modifications to the block
 		if gen != nil {
