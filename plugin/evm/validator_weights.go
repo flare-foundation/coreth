@@ -2,7 +2,6 @@ package evm
 
 import (
 	"encoding/binary"
-	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/flare-foundation/coreth/core/vm"
@@ -26,9 +25,9 @@ func GetFTSOManagerContract(evm *vm.EVM, blockTime *big.Int, chainID *big.Int) (
 	return FTSOManagerContract, nil
 }
 
-func GetValidatorsWithWeight(evm *vm.EVM) (map[common.Address]float64, error) { // todo should return map of ftso price providers address and float64
+func GetValidatorsWithWeight(evm *vm.EVM) (map[common.Address]float64, error) { //  return map of ftso price providers address and float64
 
-	ftsoManagerContractAddress, err := GetFTSOManagerContract(evm, nil, nil) // todo fill the fields
+	ftsoManagerContractAddress, err := GetFTSOManagerContract(evm, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -40,17 +39,19 @@ func GetValidatorsWithWeight(evm *vm.EVM) (map[common.Address]float64, error) { 
 		GetKeeperGasMultiplier(evm.Context.BlockNumber)*evm.Context.GasLimit,
 		big.NewInt(0)) // uint256
 
-	currentRewardEpoch := int64(binary.BigEndian.Uint64(getCurrentRewardEpochBytes))
+	//currentRewardEpoch := int64(binary.BigEndian.Uint64(getCurrentRewardEpochBytes))
 
+	//instructions := append(getAttestationSelector[:], currentRoundNumber[:]...)
+	input := append(GetRewardEpochVotePowerBlockSelector(), getCurrentRewardEpochBytes...)
 	getRewardEpochVotePowerBlockBytes, _, err := evm.Call(
 		vm.AccountRef(common.Address{}),
 		ftsoManagerContractAddress,
-		GetRewardEpochVotePowerBlockSelector(currentRewardEpoch), // todo fill the field with currentRewardEpoch
+		input,
 		GetKeeperGasMultiplier(evm.Context.BlockNumber)*evm.Context.GasLimit,
 		big.NewInt(0)) // uint256
 
-	rewardEpochVotePowerBlock := int64(binary.BigEndian.Uint64(getRewardEpochVotePowerBlockBytes)) // todo use it
-	fmt.Println(rewardEpochVotePowerBlock)
+	//rewardEpochVotePowerBlock := int64(binary.BigEndian.Uint64(getRewardEpochVotePowerBlockBytes))
+	//fmt.Println(rewardEpochVotePowerBlock)
 	ftsosBytes, _, err := evm.Call(
 		vm.AccountRef(common.Address{}),
 		ftsoManagerContractAddress,
@@ -91,10 +92,13 @@ func GetValidatorsWithWeight(evm *vm.EVM) (map[common.Address]float64, error) { 
 
 	for _, priceProviderAddress := range priceProviderAddresses {
 
+		inputDelegate := append(VotePowerOfAtSelector(), priceProviderAddress[:]...)
+		inputDelegate = append(inputDelegate, getRewardEpochVotePowerBlockBytes...)
+
 		delegateWeiBytes, _, err := evm.Call(
 			vm.AccountRef(common.Address{}),
 			wNatContract,
-			VotePowerOfAtSelector(), //todo add priceProviderAddress parameters as this is empty!, here use individual ftso price provider addresses
+			inputDelegate,
 			GetKeeperGasMultiplier(evm.Context.BlockNumber)*evm.Context.GasLimit,
 			big.NewInt(0)) // uint256
 
@@ -119,7 +123,7 @@ func GetValidatorsWithWeight(evm *vm.EVM) (map[common.Address]float64, error) { 
 
 		votePower := float64(delegatedAmount) / float64(totalVotePowerAmount) * 100.0
 
-		// todo get rewardManager contract
+		// get rewardManager contract
 		FTSORewardManagerContractBytes, _, err := evm.Call(
 			vm.AccountRef(common.Address{}),
 			ftsoManagerContractAddress,
@@ -147,10 +151,13 @@ func GetValidatorsWithWeight(evm *vm.EVM) (map[common.Address]float64, error) { 
 		dataProviderCurrentFeePercentage := float64(binary.BigEndian.Uint64(dataProviderCurrentFeePercentageBytes))
 		fee := float64(dataProviderCurrentFeePercentage) / 100.0
 
+		inputUnclaimedReward := append(GetUnclaimedRewardSelector(), getCurrentRewardEpochBytes...)
+		inputUnclaimedReward = append(inputUnclaimedReward, priceProviderAddress[:]...) //getUnclaimedReward(currRewardEpoch, FTSO)
+
 		rewardsBytes, _, err := evm.Call(
 			vm.AccountRef(common.Address{}),
 			FTSORewardManagerContract,
-			GetUnclaimedRewardSelector(), // todo fill the params
+			inputUnclaimedReward,
 			GetKeeperGasMultiplier(evm.Context.BlockNumber)*evm.Context.GasLimit,
 			big.NewInt(0)) // uint256
 

@@ -33,7 +33,7 @@ func GetCurrentRewardEpochSelector() []byte { //getCurrentRewardEpoch()
 	}
 } //e7 c8 30 d4
 
-func GetRewardEpochVotePowerBlockSelector(currentRewardEpoch int64) []byte { //getRewardEpochVotePowerBlock(uint256)
+func GetRewardEpochVotePowerBlockSelector() []byte { //getRewardEpochVotePowerBlock(uint256)
 	// todo use the currentRewardEpoch input
 	switch {
 	default:
