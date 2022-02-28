@@ -4,10 +4,10 @@ import (
 	"encoding/binary"
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/flare-foundation/coreth/core/vm"
 	"math"
 	"math/big"
-	"github.com/ethereum/go-ethereum/log"
 )
 
 func GetFTSOManagerContract(evm *vm.EVM, blockTime *big.Int, chainID *big.Int) (common.Address, error) { //"0xbfA12e4E1411B62EdA8B035d71735667422A6A9e"
