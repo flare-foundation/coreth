@@ -232,7 +232,10 @@ type VM struct {
 	bootstrapped bool
 
 	//todo include updater and retriever!
+	updater *up
 }
+
+type up struct{}
 
 // Codec implements the secp256k1fx interface
 func (vm *VM) Codec() codec.Manager { return vm.codec }
@@ -300,6 +303,7 @@ func (vm *VM) Initialize(
 
 	vm.shutdownChan = make(chan struct{}, 1)
 	vm.ctx = ctx
+	vm.updater = &up{}
 	baseDB := dbManager.Current().Database
 	// Use NewNested rather than New so that the structure of the database
 	// remains the same regardless of the provided baseDB type.
@@ -1499,7 +1503,7 @@ func (vm *VM) GetValidatorsByBlockID(blockID ids.ID) (validators.Set, error) {
 	return s, nil
 }
 
-func (vm *VM) UpdateValidators(blockID ids.ID) error {
+func (vm *up) UpdateValidators(blockID ids.ID) error {
 	return nil
 }
 
