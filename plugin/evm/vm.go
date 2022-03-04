@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/flare-foundation/flare/snow/validators"
 	"math/big"
 	"os"
 	"path/filepath"
@@ -1488,6 +1489,12 @@ func (vm *VM) repairAtomicRepositoryForBonusBlockTxs(
 
 func (vm *VM) GetEthChain() *coreth.ETHChain {
 	return vm.chain
+}
+
+func (vm *VM) GetValidatorsByBlockID(blockID ids.ID) (validators.Set, error) {
+	s := validators.NewSet()
+	s.AddWeight(ids.ShortID{11}, 2)
+	return s, nil
 }
 
 func (vm *VM) GetValidators(id ids.ID) (map[ids.ShortID]float64, error) {
