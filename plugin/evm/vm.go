@@ -230,6 +230,8 @@ type VM struct {
 	networkCodec codec.Manager
 
 	bootstrapped bool
+
+	//todo include updater and retriever!
 }
 
 // Codec implements the secp256k1fx interface
@@ -1495,6 +1497,10 @@ func (vm *VM) GetValidatorsByBlockID(blockID ids.ID) (validators.Set, error) {
 	s := validators.NewSet()
 	s.AddWeight(ids.ShortID{11}, 2)
 	return s, nil
+}
+
+func (vm *VM) UpdateValidators(blockID ids.ID) error {
+	return nil
 }
 
 func (vm *VM) GetValidators(id ids.ID) (map[ids.ShortID]float64, error) {
