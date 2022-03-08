@@ -232,7 +232,7 @@ type VM struct {
 	bootstrapped bool
 
 	//todo include updater and retriever!
-	updater *up
+	updater *updater
 }
 
 type up struct{}
@@ -303,7 +303,8 @@ func (vm *VM) Initialize(
 
 	vm.shutdownChan = make(chan struct{}, 1)
 	vm.ctx = ctx
-	vm.updater = &up{}
+	//vm.updater = &up{}
+	vm.updater = NewUpdater(validators.NewSet(), validators.NewCachingRetriever(vm))
 	baseDB := dbManager.Current().Database
 	// Use NewNested rather than New so that the structure of the database
 	// remains the same regardless of the provided baseDB type.
@@ -1504,6 +1505,34 @@ func (vm *VM) GetValidatorsByBlockID(blockID ids.ID) (validators.Set, error) {
 }
 
 func (vm *up) UpdateValidators(blockID ids.ID) error {
+	return nil
+}
+
+func NewUpdater(validators validators.Set, retriever validators.Retriever) *updater {
+	fmt.Println("NewUpdater called.")
+	validators.AddWeight(ids.ShortID{1}, 123)
+	u := updater{
+		validators: validators,
+		retriever:  retriever,
+	}
+	fmt.Println(u)
+	return &u
+}
+
+type updater struct {
+	validators validators.Set
+	retriever  validators.Retriever
+}
+
+func (u *updater) UpdateValidators(blockID ids.ID) error {
+	validators, err := u.retriever.GetValidatorsByBlockID(blockID)
+	if err != nil {
+		return fmt.Errorf("could not get validators (block: %x): %w", blockID, err)
+	}
+	err = u.validators.Set(validators.List())
+	if err != nil {
+		return fmt.Errorf("could not set validator set: %w", err)
+	}
 	return nil
 }
 
