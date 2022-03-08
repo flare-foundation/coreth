@@ -165,8 +165,8 @@ github.com/flare-foundation/flare v0.5.1-0.20220219122715-d2993195fa0a/go.mod h1
 github.com/flare-foundation/flare v0.5.1-0.20220219193849-77148a5607bd/go.mod h1:9YWA/n6TVkmRE4DrjXpumNcQJ8dp0miSbAYKw4sJ26Q=
 github.com/flare-foundation/flare v0.5.1/go.mod h1:To8+n/K90jEda3xHPn9NnGwHWIPFu+aKFJ1c+CEPVIU=
 github.com/flare-foundation/flare v0.5.3-0.20220224180542-fe1de5b7bcca/go.mod h1:ia8R2h8r3CUiWveBkWJwsf+DJ1aNaOufyFiqJTwMq34=
-github.com/flare-foundation/flare v0.5.4-0.20220303105959-eb95799e7bb7 h1:bhPIz1Y2Lcz15AuO6uDjZ7ZoEWq2fmfuO7A40QeyGUM=
-github.com/flare-foundation/flare v0.5.4-0.20220303105959-eb95799e7bb7/go.mod h1:L6ZmVV6Eep4qbKzD2asasLglkS5kPli7TUv6RjexXFs=
+github.com/flare-foundation/flare v0.5.4-0.20220308125608-6dc0133935ad h1:IyCoCaDFidAlCl9ZgzIvyZt8zpJwcYvwrIWHWL342kU=
+github.com/flare-foundation/flare v0.5.4-0.20220308125608-6dc0133935ad/go.mod h1:Neq6pJroEKLo00uSEG0ITk6b5SJ4/ZAkI2SU3fQD9Ao=
 github.com/fogleman/gg v1.2.1-0.20190220221249-0403632d5b90/go.mod h1:R/bRT+9gY/C5z7JzPU0zXsXHKM4/ayA+zqcVNZzPa1k=
 github.com/fogleman/gg v1.3.0/go.mod h1:R/bRT+9gY/C5z7JzPU0zXsXHKM4/ayA+zqcVNZzPa1k=
 github.com/fortytw2/leaktest v1.3.0/go.mod h1:jDsjWgpAGjm2CA7WthBh/CdZYEPF31XHquHwclZch5g=
