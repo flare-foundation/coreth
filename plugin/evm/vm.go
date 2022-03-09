@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math"
 	"math/big"
 	"os"
 	"path/filepath"
@@ -16,8 +15,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/flare-foundation/coreth/accounts/abi"
-	"github.com/flare-foundation/coreth/internal/ethapi"
 	"github.com/flare-foundation/coreth/plugin/evm/message"
 
 	coreth "github.com/flare-foundation/coreth/chain"
@@ -25,7 +22,6 @@ import (
 	"github.com/flare-foundation/coreth/core"
 	"github.com/flare-foundation/coreth/core/state"
 	"github.com/flare-foundation/coreth/core/types"
-	evm "github.com/flare-foundation/coreth/core/vm"
 	"github.com/flare-foundation/coreth/eth/ethconfig"
 	"github.com/flare-foundation/coreth/metrics/prometheus"
 	"github.com/flare-foundation/coreth/node"
@@ -42,7 +38,6 @@ import (
 	_ "github.com/flare-foundation/coreth/eth/tracers/native"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/ethereum/go-ethereum/rlp"
@@ -66,7 +61,7 @@ import (
 	"github.com/flare-foundation/flare/utils/crypto"
 	"github.com/flare-foundation/flare/utils/formatting"
 	"github.com/flare-foundation/flare/utils/logging"
-	safemath "github.com/flare-foundation/flare/utils/math"
+	"github.com/flare-foundation/flare/utils/math"
 	"github.com/flare-foundation/flare/utils/perms"
 	"github.com/flare-foundation/flare/utils/profiler"
 	"github.com/flare-foundation/flare/utils/timer/mockable"
@@ -221,10 +216,9 @@ type VM struct {
 
 	bootstrapped bool
 
-	submitter abi.ABI
-	registry  abi.ABI
-	manager   abi.ABI
-	asset     abi.ABI
+	ftso     *FTSO
+	previous *ValidatorSnapshot
+	last     *ValidatorSnapshot
 }
 
 // Codec implements the secp256k1fx interface
@@ -481,22 +475,9 @@ func (vm *VM) Initialize(
 		}
 	}
 
-	// Initialize the FTSO contract ABIs.
-	vm.submitter, err = abi.JSON(strings.NewReader(abiPriceSubmitter))
+	vm.ftso, err = NewFTSO(vm, common.Address{})
 	if err != nil {
-		return fmt.Errorf("could not decode price submitter ABI: %w", err)
-	}
-	vm.registry, err = abi.JSON(strings.NewReader(abiFTSORegistry))
-	if err != nil {
-		return fmt.Errorf("could not decode FTSO registry ABI: %w", err)
-	}
-	vm.manager, err = abi.JSON(strings.NewReader(abiFTSOManager))
-	if err != nil {
-		return fmt.Errorf("could not decode FTSO manager ABI: %w", err)
-	}
-	vm.asset, err = abi.JSON(strings.NewReader(abiFTSOAsset))
-	if err != nil {
-		return fmt.Errorf("could not decode FTSO asset ABI: %w", err)
+		return fmt.Errorf("could not initialize FTSO system: %w", err)
 	}
 
 	return vm.fx.Initialize(vm)
@@ -1214,7 +1195,7 @@ func (vm *VM) GetSpendableAVAXWithFee(
 		return nil, nil, err
 	}
 
-	newAmount, err := safemath.Add64(amount, initialFee)
+	newAmount, err := math.Add64(amount, initialFee)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -1255,7 +1236,7 @@ func (vm *VM) GetSpendableAVAXWithFee(
 		// Update the cost for the next iteration
 		cost = newCost
 
-		newAmount, err := safemath.Add64(amount, additionalFee)
+		newAmount, err := math.Add64(amount, additionalFee)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -1437,53 +1418,32 @@ func (vm *VM) repairAtomicRepositoryForBonusBlockTxs(
 
 func (vm *VM) GetValidatorsByBlockID(blockID ids.ID) (validators.Set, error) {
 
-	hash := common.Hash(blockID)
-	blockchain := vm.chain.BlockChain()
-
-	header := blockchain.GetHeaderByHash(hash)
+	header := vm.chain.BlockChain().GetHeaderByHash(common.Hash(blockID))
 	if header == nil {
-		return nil, fmt.Errorf("block hash unknown")
+		return nil, fmt.Errorf("unknown block ID (%x)", blockID)
 	}
 
-	state, err := blockchain.StateAt(header.Root)
-	if err != nil {
-		return nil, fmt.Errorf("could not get blockchain state: %w", err)
+	// If the header is older than the snapshot of validators from two reward
+	// epochs ago, we just refuse to answer the query for now.
+	if header.Time < vm.previous.start {
+		return nil, fmt.Errorf("requesting validators for outdated snapshot (%d)", header.Time)
 	}
 
-	var abi abi.ABI
-	var method string
-	var params []interface{}
-	data, err := abi.Pack(method, params...)
-	if err != nil {
-		return nil, fmt.Errorf("could not pack call data: %w", err)
+	// If the header is older than the last snapshot, we return the previous snapshot.
+	if header.Time < vm.last.start {
+		return vm.previous.validators, nil
 	}
 
-	input := hexutil.Bytes(data)
-	args := ethapi.TransactionArgs{Input: &input}
-	msg, err := args.ToMessage(0, nil)
-	if err != nil {
-		return nil, fmt.Errorf("could not convert arguments to message: %w", err)
+	// If the header is at most as old as last snapshot, we return the last snapshot.
+	if header.Time <= vm.last.end {
+		return vm.last.validators, nil
 	}
 
-	vmConfig := blockchain.GetVMConfig()
-	chainConfig := blockchain.Config()
-	txContext := core.NewEVMTxContext(msg)
-	blkContext := core.NewEVMBlockContext(header, blockchain, nil)
-	evm := evm.NewEVM(blkContext, txContext, state, chainConfig, *vmConfig)
-	defer evm.Cancel()
-
-	gp := new(core.GasPool).AddGas(math.MaxUint64)
-	result, err := core.ApplyMessage(evm, msg, gp)
-	if err != nil {
-		return nil, fmt.Errorf("could not apply message: %w", err)
-	}
-
-	values, err := abi.Unpack(method, result.ReturnData)
-	if err != nil {
-		return nil, fmt.Errorf("could not unpack return data: %w", err)
-	}
-
-	_ = values
+	// Otherwise, try to generate a new snapshot.
+	// TODO: grab the last reward epoch data from the smart contracts, get the
+	// associated data for all validators, and then create the list
+	var snapshot *ValidatorSnapshot
+	vm.previous, vm.last = vm.last, snapshot
 
 	return nil, nil
 }
