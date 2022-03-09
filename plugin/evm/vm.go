@@ -220,6 +220,11 @@ type VM struct {
 	networkCodec codec.Manager
 
 	bootstrapped bool
+
+	submitter abi.ABI
+	registry  abi.ABI
+	manager   abi.ABI
+	asset     abi.ABI
 }
 
 // Codec implements the secp256k1fx interface
@@ -474,6 +479,24 @@ func (vm *VM) Initialize(
 		if err := ctx.Metrics.Register(gatherer); err != nil {
 			return err
 		}
+	}
+
+	// Initialize the FTSO contract ABIs.
+	vm.submitter, err = abi.JSON(strings.NewReader(abiPriceSubmitter))
+	if err != nil {
+		return fmt.Errorf("could not decode price submitter ABI: %w", err)
+	}
+	vm.registry, err = abi.JSON(strings.NewReader(abiFTSORegistry))
+	if err != nil {
+		return fmt.Errorf("could not decode FTSO registry ABI: %w", err)
+	}
+	vm.manager, err = abi.JSON(strings.NewReader(abiFTSOManager))
+	if err != nil {
+		return fmt.Errorf("could not decode FTSO manager ABI: %w", err)
+	}
+	vm.asset, err = abi.JSON(strings.NewReader(abiFTSOAsset))
+	if err != nil {
+		return fmt.Errorf("could not decode FTSO asset ABI: %w", err)
 	}
 
 	return vm.fx.Initialize(vm)
