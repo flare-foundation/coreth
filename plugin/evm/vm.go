@@ -216,7 +216,7 @@ type VM struct {
 
 	bootstrapped bool
 
-	ftso *FTSO
+	vdrMgr *ValidatorManager
 }
 
 // Codec implements the secp256k1fx interface
@@ -473,10 +473,17 @@ func (vm *VM) Initialize(
 		}
 	}
 
-	vm.ftso, err = NewFTSO(vm, common.Address{})
+	// TODO: use price submitter address to bootstrap
+	ftso, err := NewFTSO(vm, common.Address{})
 	if err != nil {
 		return fmt.Errorf("could not initialize FTSO system: %w", err)
 	}
+	vdrMgr, err := NewValidatorManager(ftso)
+	if err != nil {
+		return fmt.Errorf("could not initialize validator manager: %w", err)
+	}
+
+	vm.vdrMgr = vdrMgr
 
 	return vm.fx.Initialize(vm)
 }
@@ -1421,26 +1428,9 @@ func (vm *VM) GetValidators(blockID ids.ID) (validators.Set, error) {
 		return nil, fmt.Errorf("unknown block ID (%x)", blockID)
 	}
 
-	epoch, err := vm.ftso.Epoch(header.Time)
+	set, err := vm.vdrMgr.ValidatorSet(header.Time)
 	if err != nil {
-		return nil, fmt.Errorf("could not get epoch for header timestamp: %w", err)
-	}
-
-	validatorIDs, err := vm.ftso.Validators(epoch)
-	if err != nil {
-		return nil, fmt.Errorf("could not get validators (epoch: %d): %w", epoch, err)
-	}
-
-	set := validators.NewSet()
-	for _, validatorID := range validatorIDs {
-		weight, err := vm.ftso.Rewards(validatorID, epoch)
-		if err != nil {
-			return nil, fmt.Errorf("could not get validator weight (validator: %x): %w", validatorID, err)
-		}
-		err = set.AddWeight(validatorID, weight)
-		if err != nil {
-			return nil, fmt.Errorf("could not add weight for validator: %w", err)
-		}
+		return nil, fmt.Errorf("could not get validator set (timestamp: %d): %w", header.Time, err)
 	}
 
 	return set, nil
