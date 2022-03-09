@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"math/big"
 	"os"
 	"path/filepath"
@@ -15,6 +16,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/flare-foundation/coreth/accounts/abi"
+	"github.com/flare-foundation/coreth/internal/ethapi"
 	"github.com/flare-foundation/coreth/plugin/evm/message"
 
 	coreth "github.com/flare-foundation/coreth/chain"
@@ -22,6 +25,7 @@ import (
 	"github.com/flare-foundation/coreth/core"
 	"github.com/flare-foundation/coreth/core/state"
 	"github.com/flare-foundation/coreth/core/types"
+	evm "github.com/flare-foundation/coreth/core/vm"
 	"github.com/flare-foundation/coreth/eth/ethconfig"
 	"github.com/flare-foundation/coreth/metrics/prometheus"
 	"github.com/flare-foundation/coreth/node"
@@ -38,6 +42,7 @@ import (
 	_ "github.com/flare-foundation/coreth/eth/tracers/native"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/ethereum/go-ethereum/rlp"
@@ -61,7 +66,7 @@ import (
 	"github.com/flare-foundation/flare/utils/crypto"
 	"github.com/flare-foundation/flare/utils/formatting"
 	"github.com/flare-foundation/flare/utils/logging"
-	"github.com/flare-foundation/flare/utils/math"
+	safemath "github.com/flare-foundation/flare/utils/math"
 	"github.com/flare-foundation/flare/utils/perms"
 	"github.com/flare-foundation/flare/utils/profiler"
 	"github.com/flare-foundation/flare/utils/timer/mockable"
@@ -1186,7 +1191,7 @@ func (vm *VM) GetSpendableAVAXWithFee(
 		return nil, nil, err
 	}
 
-	newAmount, err := math.Add64(amount, initialFee)
+	newAmount, err := safemath.Add64(amount, initialFee)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -1227,7 +1232,7 @@ func (vm *VM) GetSpendableAVAXWithFee(
 		// Update the cost for the next iteration
 		cost = newCost
 
-		newAmount, err := math.Add64(amount, additionalFee)
+		newAmount, err := safemath.Add64(amount, additionalFee)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -1408,6 +1413,54 @@ func (vm *VM) repairAtomicRepositoryForBonusBlockTxs(
 }
 
 func (vm *VM) GetValidatorsByBlockID(blockID ids.ID) (validators.Set, error) {
-	// FIXME
+
+	hash := common.Hash(blockID)
+	blockchain := vm.chain.BlockChain()
+
+	header := blockchain.GetHeaderByHash(hash)
+	if header == nil {
+		return nil, fmt.Errorf("block hash unknown")
+	}
+
+	state, err := blockchain.StateAt(header.Root)
+	if err != nil {
+		return nil, fmt.Errorf("could not get blockchain state: %w", err)
+	}
+
+	var abi abi.ABI
+	var method string
+	var params []interface{}
+	data, err := abi.Pack(method, params...)
+	if err != nil {
+		return nil, fmt.Errorf("could not pack call data: %w", err)
+	}
+
+	input := hexutil.Bytes(data)
+	args := ethapi.TransactionArgs{Input: &input}
+	msg, err := args.ToMessage(0, nil)
+	if err != nil {
+		return nil, fmt.Errorf("could not convert arguments to message: %w", err)
+	}
+
+	vmConfig := blockchain.GetVMConfig()
+	chainConfig := blockchain.Config()
+	txContext := core.NewEVMTxContext(msg)
+	blkContext := core.NewEVMBlockContext(header, blockchain, nil)
+	evm := evm.NewEVM(blkContext, txContext, state, chainConfig, *vmConfig)
+	defer evm.Cancel()
+
+	gp := new(core.GasPool).AddGas(math.MaxUint64)
+	result, err := core.ApplyMessage(evm, msg, gp)
+	if err != nil {
+		return nil, fmt.Errorf("could not apply message: %w", err)
+	}
+
+	values, err := abi.Unpack(method, result.ReturnData)
+	if err != nil {
+		return nil, fmt.Errorf("could not unpack return data: %w", err)
+	}
+
+	_ = values
+
 	return nil, nil
 }
