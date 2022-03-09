@@ -14,6 +14,7 @@ import (
 	"github.com/flare-foundation/coreth/core"
 	evm "github.com/flare-foundation/coreth/core/vm"
 	"github.com/flare-foundation/coreth/internal/ethapi"
+	"github.com/flare-foundation/flare/ids"
 	"github.com/flare-foundation/flare/snow/validators"
 )
 
@@ -66,6 +67,18 @@ func NewFTSO(vm *VM, address common.Address) (*FTSO, error) {
 	}
 
 	return &f, nil
+}
+
+func (f *FTSO) Epoch(time uint64) (uint64, error) {
+	return 0, nil
+}
+
+func (f *FTSO) Validators(epoch uint64) ([]ids.ShortID, error) {
+	return nil, nil
+}
+
+func (f *FTSO) Rewards(validatorID ids.ShortID, epoch uint64) (uint64, error) {
+	return 0, nil
 }
 
 func (f *FTSO) call(hash common.Hash, abi abi.ABI, method string, params ...interface{}) ([]interface{}, error) {

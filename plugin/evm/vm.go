@@ -216,9 +216,7 @@ type VM struct {
 
 	bootstrapped bool
 
-	ftso     *FTSO
-	previous *ValidatorSnapshot
-	last     *ValidatorSnapshot
+	ftso *FTSO
 }
 
 // Codec implements the secp256k1fx interface
@@ -1416,34 +1414,34 @@ func (vm *VM) repairAtomicRepositoryForBonusBlockTxs(
 	return vm.db.Commit()
 }
 
-func (vm *VM) GetValidatorsByBlockID(blockID ids.ID) (validators.Set, error) {
+func (vm *VM) GetValidators(blockID ids.ID) (validators.Set, error) {
 
 	header := vm.chain.BlockChain().GetHeaderByHash(common.Hash(blockID))
 	if header == nil {
 		return nil, fmt.Errorf("unknown block ID (%x)", blockID)
 	}
 
-	// If the header is older than the snapshot of validators from two reward
-	// epochs ago, we just refuse to answer the query for now.
-	if header.Time < vm.previous.start {
-		return nil, fmt.Errorf("requesting validators for outdated snapshot (%d)", header.Time)
+	epoch, err := vm.ftso.Epoch(header.Time)
+	if err != nil {
+		return nil, fmt.Errorf("could not get epoch for header timestamp: %w", err)
 	}
 
-	// If the header is older than the last snapshot, we return the previous snapshot.
-	if header.Time < vm.last.start {
-		return vm.previous.validators, nil
+	validatorIDs, err := vm.ftso.Validators(epoch)
+	if err != nil {
+		return nil, fmt.Errorf("could not get validators (epoch: %d): %w", epoch, err)
 	}
 
-	// If the header is at most as old as last snapshot, we return the last snapshot.
-	if header.Time <= vm.last.end {
-		return vm.last.validators, nil
+	set := validators.NewSet()
+	for _, validatorID := range validatorIDs {
+		weight, err := vm.ftso.Rewards(validatorID, epoch)
+		if err != nil {
+			return nil, fmt.Errorf("could not get validator weight (validator: %x): %w", validatorID, err)
+		}
+		err = set.AddWeight(validatorID, weight)
+		if err != nil {
+			return nil, fmt.Errorf("could not add weight for validator: %w", err)
+		}
 	}
 
-	// Otherwise, try to generate a new snapshot.
-	// TODO: grab the last reward epoch data from the smart contracts, get the
-	// associated data for all validators, and then create the list
-	var snapshot *ValidatorSnapshot
-	vm.previous, vm.last = vm.last, snapshot
-
-	return nil, nil
+	return set, nil
 }
