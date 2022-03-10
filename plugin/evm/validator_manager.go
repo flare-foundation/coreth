@@ -51,9 +51,8 @@ func (v *ValidatorManager) ValidatorSet(header *types.Header) (validators.Set, e
 		return nil, fmt.Errorf("could not get validators (epoch: %d): %w", epoch, err)
 	}
 
-	var totalVotepower float64
-	votepowers := make(map[ids.ShortID]float64, len(providers))
-	rewards := make(map[ids.ShortID]float64, len(providers))
+	var total float64
+	weights := make(map[ids.ShortID]float64, len(providers))
 	for _, provider := range providers {
 
 		validator, err := v.ftso.ValidatorForProviderAtEpoch(epoch, provider)
@@ -65,31 +64,21 @@ func (v *ValidatorManager) ValidatorSet(header *types.Header) (validators.Set, e
 		if err != nil {
 			return nil, fmt.Errorf("could not get votepower (epoch: %d, provider: %x): %w", epoch, provider, err)
 		}
-		totalVotepower += votepower
-		votepowers[validator] = votepower
 
 		reward, err := v.ftso.RewardForProviderAtEpoch(epoch, provider)
 		if err != nil {
 			return nil, fmt.Errorf("could not get rewards (epoch: %d, provider: %x): %w", epoch, provider, err)
 		}
-		rewards[validator] = reward
-	}
 
-	var totalAbsolute float64
-	absolutes := make(map[ids.ShortID]float64)
-	for validator, votepower := range votepowers {
-		reward := rewards[validator]
-		votepower /= totalVotepower
-		absolute := math.Log(votepower) * reward
-		absolutes[validator] = absolute
-		totalAbsolute += absolute
+		weight := math.Pow(votepower, 0.25) * (reward / votepower)
+		weights[validator] = weight
+		total += weight
 	}
 
 	set := validators.NewSet()
-	ratio := float64(math.MaxUint64) / totalAbsolute
-	for validator, absolute := range absolutes {
-		relative := uint64(absolute * ratio)
-		err := set.AddWeight(validator, relative)
+	normalizer := float64(math.MaxUint64) / total
+	for validator, weight := range weights {
+		err := set.AddWeight(validator, uint64(weight*normalizer))
 		if err != nil {
 			return nil, fmt.Errorf("could not add validator weight: %w", err)
 		}
