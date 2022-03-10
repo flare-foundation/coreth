@@ -32,6 +32,7 @@ type FTSO struct {
 	registry    common.Address
 	whitelister common.Address
 	votepower   common.Address
+	rewards     common.Address
 }
 
 func NewFTSO(blockchain *core.BlockChain) (*FTSO, error) {
@@ -92,13 +93,13 @@ func (f *FTSO) EpochForTimestamp(timestamp uint64) (uint64, error) {
 			return 0, fmt.Errorf("could not get reward epochs info: %w", err)
 		}
 
-		if timestamp > info.end {
-			epoch++
+		if timestamp < info.startTime {
+			epoch--
 			continue
 		}
 
-		if timestamp < info.start {
-			epoch--
+		if timestamp >= info.endTime {
+			epoch++
 			continue
 		}
 
@@ -115,9 +116,9 @@ func (f *FTSO) ProvidersForEpoch(epoch uint64) ([]common.Address, error) {
 		return nil, fmt.Errorf("could not get rewards epoch: %w", err)
 	}
 
-	header := f.blockchain.GetHeaderByNumber(info.block)
+	header := f.blockchain.GetHeaderByNumber(info.powerBlock)
 	if header == nil {
-		return nil, fmt.Errorf("unknown header (number: %d)", info.block)
+		return nil, fmt.Errorf("unknown header (number: %d)", info.powerBlock)
 	}
 
 	hash := header.Hash()
@@ -153,9 +154,9 @@ func (f *FTSO) ValidatorForProviderAtEpoch(epoch uint64, provider common.Address
 		return ids.ShortEmpty, fmt.Errorf("could not get rewards epoch: %w", err)
 	}
 
-	header := f.blockchain.GetHeaderByNumber(info.block)
+	header := f.blockchain.GetHeaderByNumber(info.powerBlock)
 	if header == nil {
-		return ids.ShortEmpty, fmt.Errorf("unknown header (number: %d)", info.block)
+		return ids.ShortEmpty, fmt.Errorf("unknown header (number: %d)", info.powerBlock)
 	}
 
 	hash := header.Hash()
@@ -174,9 +175,9 @@ func (f *FTSO) VotepowerForProviderAtEpoch(epoch uint64, provider common.Address
 		return 0, fmt.Errorf("could not get rewards epoch: %w", err)
 	}
 
-	header := f.blockchain.GetHeaderByNumber(info.block)
+	header := f.blockchain.GetHeaderByNumber(info.powerBlock)
 	if header == nil {
-		return 0, fmt.Errorf("unknown header (number: %d)", info.block)
+		return 0, fmt.Errorf("unknown header (number: %d)", info.powerBlock)
 	}
 
 	hash := header.Hash()
@@ -189,7 +190,24 @@ func (f *FTSO) VotepowerForProviderAtEpoch(epoch uint64, provider common.Address
 }
 
 func (f *FTSO) RewardForProviderAtEpoch(epoch uint64, provider common.Address) (float64, error) {
-	return 0, nil
+
+	info, err := f.RewardEpochs(epoch)
+	if err != nil {
+		return 0, fmt.Errorf("could not get rewards epoch: %w", err)
+	}
+
+	header := f.blockchain.GetHeaderByNumber(info.startBlock)
+	if header == nil {
+		return 0, fmt.Errorf("unknown header (number: %d)", info.startBlock)
+	}
+
+	hash := header.Hash()
+	reward, err := f.GetUnclaimedReward(hash, epoch, provider)
+	if err != nil {
+		return 0, fmt.Errorf("could not get unclaimed reward: %w", err)
+	}
+
+	return reward, nil
 }
 
 func (f *FTSO) FTSOManager() (common.Address, error) {
@@ -226,9 +244,10 @@ func (f *FTSO) RewardEpochDurationSeconds() (uint64, error) {
 }
 
 type rewardEpochs struct {
-	block uint64
-	start uint64
-	end   uint64
+	powerBlock uint64
+	startBlock uint64
+	startTime  uint64
+	endTime    uint64
 }
 
 func (f *FTSO) RewardEpochs(epoch uint64) (rewardEpochs, error) {
@@ -248,13 +267,15 @@ func (f *FTSO) RewardEpochs(epoch uint64) (rewardEpochs, error) {
 		return rewardEpochs{}, fmt.Errorf("wrong number of return values (have: %d, want: %d)", len(values), 3)
 	}
 
-	block := values[0].(*big.Int).Uint64()
-	start := values[2].(*big.Int).Uint64()
+	powerBlock := values[0].(*big.Int).Uint64()
+	startBlock := values[0].(*big.Int).Uint64()
+	startTime := values[2].(*big.Int).Uint64()
 
 	info := rewardEpochs{
-		block: block,
-		start: start,
-		end:   start + f.seconds,
+		powerBlock: powerBlock,
+		startBlock: startBlock,
+		startTime:  startTime,
+		endTime:    startTime + f.seconds,
 	}
 
 	f.epochs.Add(epoch, info)
@@ -321,6 +342,22 @@ func (f *FTSO) VotePowerOf(hash common.Hash, provider common.Address) (float64, 
 	votepower, _ := big.NewFloat(0).SetInt(value).Float64()
 
 	return votepower, nil
+}
+
+func (f *FTSO) GetUnclaimedReward(hash common.Hash, epoch uint64, provider common.Address) (float64, error) {
+
+	values, err := f.call(hash, f.rewards, ftsoRewardManagerABI, "getUnclaimedRewad", big.NewInt(0).SetUint64(epoch), provider)
+	if err != nil {
+		return 0, fmt.Errorf("could not get unclaimed rewards: %w", err)
+	}
+	if len(values) != 2 {
+		return 0, fmt.Errorf("wrong number of return values (have %d, want: %d)", len(values), 2)
+	}
+
+	value := values[0].(*big.Int)
+	reward, _ := big.NewFloat(0).SetInt(value).Float64()
+
+	return reward, nil
 }
 
 func (f *FTSO) call(hash common.Hash, to common.Address, abi abi.ABI, method string, params ...interface{}) ([]interface{}, error) {

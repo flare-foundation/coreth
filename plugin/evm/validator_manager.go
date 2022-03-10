@@ -46,7 +46,7 @@ func (v *ValidatorManager) ValidatorSet(header *types.Header) (validators.Set, e
 		return entry.(validators.Set), nil
 	}
 
-	providers, err := v.ftso.ProvidersForEpoch(epoch)
+	providers, err := v.ftso.ProvidersForEpoch(epoch - 1)
 	if err != nil {
 		return nil, fmt.Errorf("could not get validators (epoch: %d): %w", epoch, err)
 	}
@@ -55,17 +55,17 @@ func (v *ValidatorManager) ValidatorSet(header *types.Header) (validators.Set, e
 	weights := make(map[ids.ShortID]float64, len(providers))
 	for _, provider := range providers {
 
-		validator, err := v.ftso.ValidatorForProviderAtEpoch(epoch, provider)
+		validator, err := v.ftso.ValidatorForProviderAtEpoch(epoch-1, provider)
 		if err != nil {
 			return nil, fmt.Errorf("could not get validator (epoch: %d, provider: %x): %w", epoch, provider, err)
 		}
 
-		votepower, err := v.ftso.VotepowerForProviderAtEpoch(epoch, provider)
+		votepower, err := v.ftso.VotepowerForProviderAtEpoch(epoch-1, provider)
 		if err != nil {
 			return nil, fmt.Errorf("could not get votepower (epoch: %d, provider: %x): %w", epoch, provider, err)
 		}
 
-		reward, err := v.ftso.RewardForProviderAtEpoch(epoch, provider)
+		reward, err := v.ftso.RewardForProviderAtEpoch(epoch-1, provider)
 		if err != nil {
 			return nil, fmt.Errorf("could not get rewards (epoch: %d, provider: %x): %w", epoch, provider, err)
 		}
