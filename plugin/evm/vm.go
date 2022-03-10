@@ -474,7 +474,7 @@ func (vm *VM) Initialize(
 	}
 
 	// TODO: use price submitter address to bootstrap
-	ftso, err := NewFTSO(vm, common.Address{})
+	ftso, err := NewFTSO(vm.chain.BlockChain())
 	if err != nil {
 		return fmt.Errorf("could not initialize FTSO system: %w", err)
 	}
@@ -1428,7 +1428,7 @@ func (vm *VM) GetValidators(blockID ids.ID) (validators.Set, error) {
 		return nil, fmt.Errorf("unknown block ID (%x)", blockID)
 	}
 
-	set, err := vm.vdrMgr.ValidatorSet(header.Time)
+	set, err := vm.vdrMgr.ValidatorSet(header)
 	if err != nil {
 		return nil, fmt.Errorf("could not get validator set (timestamp: %d): %w", header.Time, err)
 	}
