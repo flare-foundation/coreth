@@ -84,11 +84,11 @@ func (f *FTSO) ValidatorForProviderAtEpoch(epoch uint64, provider common.Address
 	return ids.ShortID{}, nil
 }
 
-func (f *FTSO) VotepowerForProviderAtEpoch(epoch uint64, provider common.Address) (uint64, error) {
+func (f *FTSO) VotepowerForProviderAtEpoch(epoch uint64, provider common.Address) (float64, error) {
 	return 0, nil
 }
 
-func (f *FTSO) RewardsForProviderAtEpoch(epoch uint64, provider common.Address) (uint64, error) {
+func (f *FTSO) RewardForProviderAtEpoch(epoch uint64, provider common.Address) (float64, error) {
 	return 0, nil
 }
 

@@ -10,6 +10,7 @@ import (
 	lru "github.com/hashicorp/golang-lru"
 
 	"github.com/flare-foundation/coreth/core/types"
+	"github.com/flare-foundation/flare/ids"
 	"github.com/flare-foundation/flare/snow/validators"
 )
 
@@ -50,7 +51,9 @@ func (v *ValidatorManager) ValidatorSet(header *types.Header) (validators.Set, e
 		return nil, fmt.Errorf("could not get validators (epoch: %d): %w", epoch, err)
 	}
 
-	set := validators.NewSet()
+	var totalVotepower float64
+	votepowers := make(map[ids.ShortID]float64, len(providers))
+	rewards := make(map[ids.ShortID]float64, len(providers))
 	for _, provider := range providers {
 
 		validator, err := v.ftso.ValidatorForProviderAtEpoch(epoch, provider)
@@ -62,16 +65,33 @@ func (v *ValidatorManager) ValidatorSet(header *types.Header) (validators.Set, e
 		if err != nil {
 			return nil, fmt.Errorf("could not get votepower (epoch: %d, provider: %x): %w", epoch, provider, err)
 		}
+		totalVotepower += votepower
+		votepowers[validator] = votepower
 
-		rewards, err := v.ftso.RewardsForProviderAtEpoch(epoch, provider)
+		reward, err := v.ftso.RewardForProviderAtEpoch(epoch, provider)
 		if err != nil {
 			return nil, fmt.Errorf("could not get rewards (epoch: %d, provider: %x): %w", epoch, provider, err)
 		}
+		rewards[validator] = reward
+	}
 
-		weight := uint64(math.Log(float64(votepower)) * float64(rewards))
-		err = set.AddWeight(validator, weight)
+	var totalAbsolute float64
+	absolutes := make(map[ids.ShortID]float64)
+	for validator, votepower := range votepowers {
+		reward := rewards[validator]
+		votepower /= totalVotepower
+		absolute := math.Log(votepower) * reward
+		absolutes[validator] = absolute
+		totalAbsolute += absolute
+	}
+
+	set := validators.NewSet()
+	ratio := float64(math.MaxUint64) / totalAbsolute
+	for validator, absolute := range absolutes {
+		relative := uint64(absolute * ratio)
+		err := set.AddWeight(validator, relative)
 		if err != nil {
-			return nil, fmt.Errorf("could not add weight: %w", err)
+			return nil, fmt.Errorf("could not add validator weight: %w", err)
 		}
 	}
 
