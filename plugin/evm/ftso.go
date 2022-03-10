@@ -31,6 +31,7 @@ type FTSO struct {
 	manager     common.Address
 	registry    common.Address
 	whitelister common.Address
+	votepower   common.Address
 }
 
 func NewFTSO(blockchain *core.BlockChain) (*FTSO, error) {
@@ -63,6 +64,13 @@ func NewFTSO(blockchain *core.BlockChain) (*FTSO, error) {
 	}
 
 	f.whitelister = whitelister
+
+	votepower, err := f.ReadVotePowerContract()
+	if err != nil {
+		return nil, fmt.Errorf("could not get read vote power contract address: %w", err)
+	}
+
+	f.votepower = votepower
 
 	seconds, err := f.RewardEpochDurationSeconds()
 	if err != nil {
@@ -138,11 +146,46 @@ func (f *FTSO) ProvidersForEpoch(epoch uint64) ([]common.Address, error) {
 }
 
 func (f *FTSO) ValidatorForProviderAtEpoch(epoch uint64, provider common.Address) (ids.ShortID, error) {
-	return ids.ShortID{}, nil
+
+	// TODO: call get vote power block function directly
+	info, err := f.RewardEpochs(epoch)
+	if err != nil {
+		return ids.ShortEmpty, fmt.Errorf("could not get rewards epoch: %w", err)
+	}
+
+	header := f.blockchain.GetHeaderByNumber(info.block)
+	if header == nil {
+		return ids.ShortEmpty, fmt.Errorf("unknown header (number: %d)", info.block)
+	}
+
+	hash := header.Hash()
+	validator, err := f.GetNodIDForDataProvider(hash, provider)
+	if err != nil {
+		return ids.ShortEmpty, fmt.Errorf("could not get validator for provider: %w", err)
+	}
+
+	return validator, nil
 }
 
 func (f *FTSO) VotepowerForProviderAtEpoch(epoch uint64, provider common.Address) (float64, error) {
-	return 0, nil
+
+	info, err := f.RewardEpochs(epoch)
+	if err != nil {
+		return 0, fmt.Errorf("could not get rewards epoch: %w", err)
+	}
+
+	header := f.blockchain.GetHeaderByNumber(info.block)
+	if header == nil {
+		return 0, fmt.Errorf("unknown header (number: %d)", info.block)
+	}
+
+	hash := header.Hash()
+	votepower, err := f.VotePowerOf(hash, provider)
+	if err != nil {
+		return 0, fmt.Errorf("could not get vote power for provider: %w", err)
+	}
+
+	return votepower, nil
 }
 
 func (f *FTSO) RewardForProviderAtEpoch(epoch uint64, provider common.Address) (float64, error) {
@@ -158,6 +201,10 @@ func (f *FTSO) FTSORegistry() (common.Address, error) {
 }
 
 func (f *FTSO) VoterWhitelister() (common.Address, error) {
+	return common.Address{}, nil
+}
+
+func (f *FTSO) ReadVotePowerContract() (common.Address, error) {
 	return common.Address{}, nil
 }
 
@@ -243,6 +290,37 @@ func (f *FTSO) GetFTSOWhitelistedPriceProviders(hash common.Hash, index *big.Int
 	addresses := values[0].([]common.Address)
 
 	return addresses, nil
+}
+
+func (f *FTSO) GetNodIDForDataProvider(hash common.Hash, provider common.Address) (ids.ShortID, error) {
+
+	values, err := f.call(hash, validatorRegistryAddress, validatorRegistryABI, "getNodeIdForDataProvider", provider)
+	if err != nil {
+		return ids.ShortEmpty, fmt.Errorf("could not get node ID for data provider: %w", err)
+	}
+	if len(values) != 1 {
+		return ids.ShortEmpty, fmt.Errorf("wrong number of return values (have %d, want: %d)", len(values), 1)
+	}
+
+	id := values[0].([20]byte)
+
+	return ids.ShortID(id), nil
+}
+
+func (f *FTSO) VotePowerOf(hash common.Hash, provider common.Address) (float64, error) {
+
+	values, err := f.call(hash, f.votepower, readVotePowerContractABI, "votePowerOf", provider)
+	if err != nil {
+		return 0, fmt.Errorf("could not get node ID for data provider: %w", err)
+	}
+	if len(values) != 1 {
+		return 0, fmt.Errorf("wrong number of return values (have %d, want: %d)", len(values), 1)
+	}
+
+	value := values[0].(*big.Int)
+	votepower, _ := big.NewFloat(0).SetInt(value).Float64()
+
+	return votepower, nil
 }
 
 func (f *FTSO) call(hash common.Hash, to common.Address, abi abi.ABI, method string, params ...interface{}) ([]interface{}, error) {
