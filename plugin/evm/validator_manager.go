@@ -15,17 +15,17 @@ import (
 )
 
 const (
-	validatorSetsCacheSize = 2
+	validatorSetsCacheSize = 4
 )
 
 type ValidatorManager struct {
 	ftso *FTSO
-	sets *lru.ARCCache
+	sets *lru.Cache
 }
 
 func NewValidatorManager(ftso *FTSO) (*ValidatorManager, error) {
 
-	sets, _ := lru.NewARC(validatorSetsCacheSize)
+	sets, _ := lru.New(validatorSetsCacheSize)
 	v := ValidatorManager{
 		ftso: ftso,
 		sets: sets,

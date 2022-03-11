@@ -8,15 +8,17 @@ import (
 	"math"
 	"math/big"
 
+	lru "github.com/hashicorp/golang-lru"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	lru "github.com/hashicorp/golang-lru"
+
+	"github.com/flare-foundation/flare/ids"
 
 	"github.com/flare-foundation/coreth/accounts/abi"
 	"github.com/flare-foundation/coreth/core"
 	"github.com/flare-foundation/coreth/core/vm"
 	"github.com/flare-foundation/coreth/internal/ethapi"
-	"github.com/flare-foundation/flare/ids"
 )
 
 const (
@@ -27,7 +29,7 @@ type FTSO struct {
 	blockchain  *core.BlockChain
 	last        uint64
 	seconds     uint64
-	epochs      *lru.ARCCache
+	epochs      *lru.Cache
 	manager     common.Address
 	registry    common.Address
 	whitelister common.Address
@@ -37,7 +39,7 @@ type FTSO struct {
 
 func NewFTSO(blockchain *core.BlockChain) (*FTSO, error) {
 
-	epochs, _ := lru.NewARC(epochsCacheSize)
+	epochs, _ := lru.New(epochsCacheSize)
 	f := FTSO{
 		blockchain: blockchain,
 		seconds:    0,
@@ -98,7 +100,7 @@ func (f *FTSO) EpochForTimestamp(timestamp uint64) (uint64, error) {
 			continue
 		}
 
-		if timestamp >= info.endTime {
+		if timestamp > info.endTime {
 			epoch++
 			continue
 		}
@@ -116,9 +118,9 @@ func (f *FTSO) ProvidersForEpoch(epoch uint64) ([]common.Address, error) {
 		return nil, fmt.Errorf("could not get rewards epoch: %w", err)
 	}
 
-	header := f.blockchain.GetHeaderByNumber(info.powerBlock)
+	header := f.blockchain.GetHeaderByNumber(info.startBlock)
 	if header == nil {
-		return nil, fmt.Errorf("unknown header (number: %d)", info.powerBlock)
+		return nil, fmt.Errorf("unknown header (number: %d)", info.startBlock)
 	}
 
 	hash := header.Hash()
@@ -148,19 +150,18 @@ func (f *FTSO) ProvidersForEpoch(epoch uint64) ([]common.Address, error) {
 
 func (f *FTSO) ValidatorForProviderAtEpoch(epoch uint64, provider common.Address) (ids.ShortID, error) {
 
-	// TODO: call get vote power block function directly
 	info, err := f.RewardEpochs(epoch)
 	if err != nil {
 		return ids.ShortEmpty, fmt.Errorf("could not get rewards epoch: %w", err)
 	}
 
-	header := f.blockchain.GetHeaderByNumber(info.powerBlock)
+	header := f.blockchain.GetHeaderByNumber(info.startBlock)
 	if header == nil {
-		return ids.ShortEmpty, fmt.Errorf("unknown header (number: %d)", info.powerBlock)
+		return ids.ShortEmpty, fmt.Errorf("unknown header (number: %d)", info.startBlock)
 	}
 
 	hash := header.Hash()
-	validator, err := f.GetNodIDForDataProvider(hash, provider)
+	validator, err := f.GetNodeIDForDataProvider(hash, provider)
 	if err != nil {
 		return ids.ShortEmpty, fmt.Errorf("could not get validator for provider: %w", err)
 	}
@@ -313,7 +314,7 @@ func (f *FTSO) GetFTSOWhitelistedPriceProviders(hash common.Hash, index *big.Int
 	return addresses, nil
 }
 
-func (f *FTSO) GetNodIDForDataProvider(hash common.Hash, provider common.Address) (ids.ShortID, error) {
+func (f *FTSO) GetNodeIDForDataProvider(hash common.Hash, provider common.Address) (ids.ShortID, error) {
 
 	values, err := f.call(hash, validatorRegistryAddress, validatorRegistryABI, "getNodeIdForDataProvider", provider)
 	if err != nil {
@@ -346,7 +347,7 @@ func (f *FTSO) VotePowerOf(hash common.Hash, provider common.Address) (float64, 
 
 func (f *FTSO) GetUnclaimedReward(hash common.Hash, epoch uint64, provider common.Address) (float64, error) {
 
-	values, err := f.call(hash, f.rewards, ftsoRewardManagerABI, "getUnclaimedRewad", big.NewInt(0).SetUint64(epoch), provider)
+	values, err := f.call(hash, f.rewards, ftsoRewardManagerABI, "getUnclaimedReward", big.NewInt(0).SetUint64(epoch), provider)
 	if err != nil {
 		return 0, fmt.Errorf("could not get unclaimed rewards: %w", err)
 	}
@@ -362,11 +363,6 @@ func (f *FTSO) GetUnclaimedReward(hash common.Hash, epoch uint64, provider commo
 
 func (f *FTSO) call(hash common.Hash, to common.Address, abi abi.ABI, method string, params ...interface{}) ([]interface{}, error) {
 
-	data, err := abi.Pack(method, params...)
-	if err != nil {
-		return nil, fmt.Errorf("could not pack call data: %w", err)
-	}
-
 	header := f.blockchain.GetHeaderByHash(hash)
 	if header == nil {
 		return nil, fmt.Errorf("block hash unknown")
@@ -375,6 +371,11 @@ func (f *FTSO) call(hash common.Hash, to common.Address, abi abi.ABI, method str
 	state, err := f.blockchain.StateAt(header.Root)
 	if err != nil {
 		return nil, fmt.Errorf("could not get blockchain state: %w", err)
+	}
+
+	data, err := abi.Pack(method, params...)
+	if err != nil {
+		return nil, fmt.Errorf("could not pack call data: %w", err)
 	}
 
 	input := hexutil.Bytes(data)
