@@ -380,7 +380,7 @@ func (f *FTSO) call(hash common.Hash, to common.Address, abi abi.ABI, method str
 
 	input := hexutil.Bytes(data)
 	args := ethapi.TransactionArgs{To: &to, Input: &input}
-	msg, err := args.ToMessage(0, nil)
+	msg, err := args.ToMessage(26000000000, nil)
 	if err != nil {
 		return nil, fmt.Errorf("could not convert arguments to message: %w", err)
 	}
