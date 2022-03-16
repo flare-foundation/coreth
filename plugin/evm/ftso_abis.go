@@ -7,14 +7,15 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/flare-foundation/coreth/accounts/abi"
 )
 
-var (
-	priceSubmitterAddress    = common.HexToAddress("")
-	validatorRegistryAddress = common.HexToAddress("")
-)
+var DefaultFTSOABIs = FTSOABIs{}
+
+type FTSOABIs struct {
+	Submitter abi.ABI
+	Manager   abi.ABI
+}
 
 var (
 	priceSubmitterABI        abi.ABI

@@ -8,8 +8,6 @@ import (
 	"math"
 	"math/big"
 
-	lru "github.com/hashicorp/golang-lru"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 
@@ -17,126 +15,72 @@ import (
 
 	"github.com/flare-foundation/coreth/accounts/abi"
 	"github.com/flare-foundation/coreth/core"
+	"github.com/flare-foundation/coreth/core/state"
 	"github.com/flare-foundation/coreth/core/vm"
 	"github.com/flare-foundation/coreth/internal/ethapi"
 )
 
-const (
-	epochsCacheSize = 16
-)
-
-type FTSOSystem struct {
-	blockchain  *core.BlockChain
-	last        uint64
-	seconds     uint64
-	epochs      *lru.Cache
-	manager     common.Address
-	registry    common.Address
-	whitelister common.Address
-	votepower   common.Address
-	rewards     common.Address
+type FTSOWrapper struct {
+	state     *state.StateDB
+	addresses FTSOAddresses
+	abis      FTSOABIs
+	methods   FTSOMethods
 }
 
-func NewFTSOSystem(blockchain *core.BlockChain) (*FTSOSystem, error) {
+func NewFTSOWrapper(state *state.StateDB) *FTSOWrapper {
 
-	epochs, _ := lru.New(epochsCacheSize)
-	f := FTSOSystem{
-		blockchain: blockchain,
-		seconds:    0,
-		last:       0,
-		epochs:     epochs,
+	f := FTSOWrapper{
+		state:     state,
+		addresses: DefaultFTSOAddresses,
+		abis:      DefaultFTSOABIs,
+		methods:   DefaultFTSOMethods,
 	}
 
-	manager, err := f.FTSOManager()
+	return &f
+}
+
+func (f *FTSOWrapper) EpochInfo(epoch uint64) (EpochInfo, error) {
+
+	seconds, err := f.rewardSeconds()
 	if err != nil {
-		return nil, fmt.Errorf("could not get FTSOSystem manager address: %w", err)
+		return EpochInfo{}, fmt.Errorf("could not get reward seconds: %w", err)
 	}
 
-	f.manager = manager
+}
 
-	registry, err := f.FTSORegistry()
+func (f *FTSOWrapper) Indices() ([]uint64, error) {
+}
+
+func (f *FTSOWrapper) Providers(index uint64) ([]common.Address, error) {
+}
+
+func (f *FTSOWrapper) Votepower(provider common.Address) (float64, error) {
+}
+
+func (f *FTSOWrapper) Rewards(provider common.Address) (float64, error) {
+}
+
+func (f *FTSOWrapper) manager() (common.Address, error) {
+
+	var address common.Address
+	err := f.call.OnContract(f.contracts.PriceSubmitter).Execute(f.methods.ManagerAddress).Decode(&address)
 	if err != nil {
-		return nil, fmt.Errorf("could not get FTSOSystem registry: %w", err)
+		return common.Address{}, fmt.Errorf("could not execute manager address call: %w", err)
 	}
 
-	f.registry = registry
+	return address, nil
+}
 
-	whitelister, err := f.VoterWhitelister()
+func (f *FTSOWrapper) rewardSeconds() (uint64, error) {
+
+	manager, err := f.manager()
 	if err != nil {
-		return nil, fmt.Errorf("could not get voter whitelister: %w", err)
+		return 0, fmt.Errorf("could not get manager address: %w", err)
 	}
 
-	f.whitelister = whitelister
-
-	votepower, err := f.ReadVotePowerContract()
+	values, err := f.call(manager, f.abis.Manager, f.methods.EpochSeconds)
 	if err != nil {
-		return nil, fmt.Errorf("could not get read vote power contract address: %w", err)
-	}
-
-	f.votepower = votepower
-
-	seconds, err := f.RewardEpochDurationSeconds()
-	if err != nil {
-		return nil, fmt.Errorf("could not bootstrap reward epoch duration seconds: %w", err)
-	}
-
-	f.seconds = seconds
-
-	return &f, nil
-}
-
-func (f *FTSOSystem) EpochForTimestamp(timestamp uint64) (uint64, error) {
-
-	epoch := f.last
-	for {
-
-		info, err := f.RewardEpochs(epoch)
-		if err != nil {
-			return 0, fmt.Errorf("could not get reward epochs info: %w", err)
-		}
-
-		if timestamp < info.startTime {
-			epoch--
-			continue
-		}
-
-		if timestamp > info.endTime {
-			epoch++
-			continue
-		}
-
-		f.last = epoch
-
-		return epoch, nil
-	}
-}
-
-func (f *FTSOSystem) FTSOManager() (common.Address, error) {
-	return common.Address{}, nil
-}
-
-func (f *FTSOSystem) FTSORegistry() (common.Address, error) {
-	return common.Address{}, nil
-}
-
-func (f *FTSOSystem) VoterWhitelister() (common.Address, error) {
-	return common.Address{}, nil
-}
-
-func (f *FTSOSystem) ReadVotePowerContract() (common.Address, error) {
-	return common.Address{}, nil
-}
-
-func (f *FTSOSystem) RewardEpochDurationSeconds() (uint64, error) {
-
-	hash := f.blockchain.CurrentHeader().Hash()
-
-	values, err := f.call(hash, f.manager, ftsoManagerABI, "rewardEpochDurationSeconds")
-	if err != nil {
-		return 0, fmt.Errorf("could not get reward epoch duration seconds: %w", err)
-	}
-	if len(values) != 1 {
-		return 0, fmt.Errorf("wrong number of return values (have: %d, want: %d)", len(values), 1)
+		return 0, fmt.Errorf("could not get reward seconds: %w", err)
 	}
 
 	seconds := values[0].(*big.Int).Uint64()
@@ -144,14 +88,7 @@ func (f *FTSOSystem) RewardEpochDurationSeconds() (uint64, error) {
 	return seconds, nil
 }
 
-type rewardEpochs struct {
-	powerBlock uint64
-	startBlock uint64
-	startTime  uint64
-	endTime    uint64
-}
-
-func (f *FTSOSystem) RewardEpochs(epoch uint64) (rewardEpochs, error) {
+func (f *FTSOWrapper) RewardEpochs(epoch uint64) (rewardEpochs, error) {
 
 	entry, ok := f.epochs.Get(epoch)
 	if ok {
@@ -184,11 +121,11 @@ func (f *FTSOSystem) RewardEpochs(epoch uint64) (rewardEpochs, error) {
 	return info, nil
 }
 
-func (f *FTSOSystem) GetSupportedIndices(hash common.Hash) ([]*big.Int, error) {
+func (f *FTSOWrapper) GetSupportedIndices(hash common.Hash) ([]*big.Int, error) {
 
 	values, err := f.call(hash, f.registry, ftsoRegistryABI, "getSupportedIndices")
 	if err != nil {
-		return nil, fmt.Errorf("could not get FTSOSystem indices: %w", err)
+		return nil, fmt.Errorf("could not get FTSOWrapper indices: %w", err)
 	}
 	if len(values) != 1 {
 		return nil, fmt.Errorf("wrong number of return values (have %d, want: %d)", len(values), 1)
@@ -199,7 +136,7 @@ func (f *FTSOSystem) GetSupportedIndices(hash common.Hash) ([]*big.Int, error) {
 	return indices, nil
 }
 
-func (f *FTSOSystem) GetFTSOWhitelistedPriceProviders(hash common.Hash, index *big.Int) ([]common.Address, error) {
+func (f *FTSOWrapper) GetFTSOWhitelistedPriceProviders(hash common.Hash, index *big.Int) ([]common.Address, error) {
 
 	values, err := f.call(hash, f.whitelister, voterWhitelisterABI, "getFtsoWhitelistedPriceProviders", index)
 	if err != nil {
@@ -214,7 +151,7 @@ func (f *FTSOSystem) GetFTSOWhitelistedPriceProviders(hash common.Hash, index *b
 	return addresses, nil
 }
 
-func (f *FTSOSystem) GetNodeIDForDataProvider(hash common.Hash, provider common.Address) (ids.ShortID, error) {
+func (f *FTSOWrapper) GetNodeIDForDataProvider(hash common.Hash, provider common.Address) (ids.ShortID, error) {
 
 	values, err := f.call(hash, validatorRegistryAddress, validatorRegistryABI, "getNodeIdForDataProvider", provider)
 	if err != nil {
@@ -229,7 +166,7 @@ func (f *FTSOSystem) GetNodeIDForDataProvider(hash common.Hash, provider common.
 	return ids.ShortID(id), nil
 }
 
-func (f *FTSOSystem) VotePowerOf(hash common.Hash, provider common.Address) (float64, error) {
+func (f *FTSOWrapper) VotePowerOf(hash common.Hash, provider common.Address) (float64, error) {
 
 	values, err := f.call(hash, f.votepower, readVotePowerContractABI, "votePowerOf", provider)
 	if err != nil {
@@ -245,7 +182,7 @@ func (f *FTSOSystem) VotePowerOf(hash common.Hash, provider common.Address) (flo
 	return votepower, nil
 }
 
-func (f *FTSOSystem) GetUnclaimedReward(hash common.Hash, epoch uint64, provider common.Address) (float64, error) {
+func (f *FTSOWrapper) GetUnclaimedReward(hash common.Hash, epoch uint64, provider common.Address) (float64, error) {
 
 	values, err := f.call(hash, f.rewards, ftsoRewardManagerABI, "getUnclaimedReward", big.NewInt(0).SetUint64(epoch), provider)
 	if err != nil {
@@ -261,17 +198,7 @@ func (f *FTSOSystem) GetUnclaimedReward(hash common.Hash, epoch uint64, provider
 	return reward, nil
 }
 
-func (f *FTSOSystem) call(hash common.Hash, to common.Address, abi abi.ABI, method string, params ...interface{}) ([]interface{}, error) {
-
-	header := f.blockchain.GetHeaderByHash(hash)
-	if header == nil {
-		return nil, fmt.Errorf("block hash unknown")
-	}
-
-	state, err := f.blockchain.StateAt(header.Root)
-	if err != nil {
-		return nil, fmt.Errorf("could not get blockchain state: %w", err)
-	}
+func (f *FTSOWrapper) call(to common.Address, abi abi.ABI) FTSOCall {
 
 	data, err := abi.Pack(method, params...)
 	if err != nil {
@@ -290,7 +217,7 @@ func (f *FTSOSystem) call(hash common.Hash, to common.Address, abi abi.ABI, meth
 	chainConfig := f.blockchain.Config()
 	txContext := core.NewEVMTxContext(msg)
 	blkContext := core.NewEVMBlockContext(header, f.blockchain, nil)
-	evm := vm.NewEVM(blkContext, txContext, state, chainConfig, vmConfig)
+	evm := vm.NewEVM(blkContext, txContext, f.state, chainConfig, vm.Config{NoBaseFee: true})
 	defer evm.Cancel()
 
 	gp := new(core.GasPool).AddGas(math.MaxUint64)
@@ -305,6 +232,10 @@ func (f *FTSOSystem) call(hash common.Hash, to common.Address, abi abi.ABI, meth
 	values, err := abi.Unpack(method, result.ReturnData)
 	if err != nil {
 		return nil, fmt.Errorf("could not unpack return data: %w", err)
+	}
+
+	if len(values) != num {
+		return nil, fmt.Errorf("wrong number of return values (want: %d, have: %d)", num, len(values))
 	}
 
 	return values, nil

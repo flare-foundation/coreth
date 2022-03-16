@@ -25,10 +25,6 @@ func WithCacheSize(size uint) EpochsOption {
 	}
 }
 
-type FTSOCaller interface {
-	EpochInfo(epoch uint64) (EpochInfo, error)
-}
-
 type EpochInfo struct {
 	StartHeight uint64
 	StartTime   uint64
