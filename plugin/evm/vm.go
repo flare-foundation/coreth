@@ -216,7 +216,7 @@ type VM struct {
 
 	bootstrapped bool
 
-	vdrMgr *ValidatorManager
+	validators *ValidatorsManager
 }
 
 // Codec implements the secp256k1fx interface
@@ -473,17 +473,17 @@ func (vm *VM) Initialize(
 		}
 	}
 
-	// TODO: use price submitter address to bootstrap
-	ftso, err := NewFTSO(vm.chain.BlockChain())
-	if err != nil {
-		return fmt.Errorf("could not initialize FTSO system: %w", err)
-	}
-	vdrMgr, err := NewValidatorManager(ftso)
-	if err != nil {
-		return fmt.Errorf("could not initialize validator manager: %w", err)
-	}
-
-	vm.vdrMgr = vdrMgr
+	// Initialize the FTSO validator set retrieval.
+	var validators []ids.ShortID
+	var epochs EpochHandler
+	var shift StateShifter
+	var mapper EpochMapper
+	retrieve := NewValidatorsFTSO(vm.chain.BlockChain(), epochs, shift,
+		WithRootDegree(4),
+	)
+	cache := NewValidatorsCache(retrieve)
+	transition := NewValidatorsTransitioner(validators, cache)
+	vm.validators = NewValidatorsManager(vm.chain.BlockChain(), mapper, transition)
 
 	return vm.fx.Initialize(vm)
 }
@@ -1422,16 +1422,5 @@ func (vm *VM) repairAtomicRepositoryForBonusBlockTxs(
 }
 
 func (vm *VM) GetValidators(blockID ids.ID) (validators.Set, error) {
-
-	header := vm.chain.BlockChain().GetHeaderByHash(common.Hash(blockID))
-	if header == nil {
-		return nil, fmt.Errorf("unknown block ID (%x)", blockID)
-	}
-
-	set, err := vm.vdrMgr.ValidatorSet(header)
-	if err != nil {
-		return nil, fmt.Errorf("could not get validator set (timestamp: %d): %w", header.Time, err)
-	}
-
-	return set, nil
+	return vm.validators.ByBlock(common.Hash(blockID))
 }
