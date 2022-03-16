@@ -57,6 +57,7 @@ import (
 	"github.com/flare-foundation/flare/snow/choices"
 	"github.com/flare-foundation/flare/snow/consensus/snowman"
 	"github.com/flare-foundation/flare/snow/engine/snowman/block"
+	"github.com/flare-foundation/flare/snow/validators"
 	"github.com/flare-foundation/flare/utils/constants"
 	"github.com/flare-foundation/flare/utils/crypto"
 	"github.com/flare-foundation/flare/utils/formatting"
@@ -1483,4 +1484,9 @@ func (vm *VM) repairAtomicRepositoryForBonusBlockTxs(
 	}
 	log.Info("repairAtomicRepositoryForBonusBlockTxs complete", "repairedEntries", repairedEntries)
 	return vm.db.Commit()
+}
+
+func (vm *VM) GetValidators(blockID ids.ID) (validators.Set, error) {
+	set := validators.NewDefaultSet(constants.CostonID)
+	return set, nil
 }
