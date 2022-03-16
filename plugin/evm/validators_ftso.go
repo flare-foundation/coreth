@@ -30,6 +30,8 @@ func WithRootDegree(degree uint) FTSOOption {
 
 type EpochHandler interface {
 	StartHeight(epoch uint64) (uint64, error)
+	StartTime(epoch uint64) (uint64, error)
+	EndTime(epoch uint64) (uint64, error)
 }
 
 type StateShifter interface {

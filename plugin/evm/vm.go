@@ -475,9 +475,10 @@ func (vm *VM) Initialize(
 
 	// Initialize the FTSO validator set retrieval.
 	var validators []ids.ShortID
-	var epochs EpochHandler
+	var call FTSOCaller
 	var shift StateShifter
-	var mapper EpochMapper
+	epochs := NewFTSOEpochs(call)
+	mapper := NewFTSOMapper(epochs)
 	retrieve := NewValidatorsFTSO(vm.chain.BlockChain(), epochs, shift,
 		WithRootDegree(4),
 	)
