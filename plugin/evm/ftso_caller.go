@@ -38,29 +38,18 @@ type FTSOCaller struct {
 	hash       common.Hash
 }
 
-func NewFTSOCaller(blockchain *core.BlockChain) *FTSOCaller {
+func NewFTSOCaller(blockchain *core.BlockChain, hash common.Hash) *FTSOCaller {
 
 	f := FTSOCaller{
 		blockchain: blockchain,
+		hash:       hash,
 	}
 
 	return &f
 }
 
-func (f *FTSOCaller) AtBlock(hash common.Hash) *FTSOCaller {
-	f.hash = hash
-	return f
-}
-
 func (f *FTSOCaller) OnContract(contract FTSOContract) FTSOCall {
-
-	hash := f.hash
-	zero := common.Hash{}
-	if f.hash == zero {
-		hash = f.blockchain.CurrentHeader().Hash()
-	}
-
-	return FTSOCall{blockchain: f.blockchain, hash: hash, contract: contract}
+	return FTSOCall{blockchain: f.blockchain, hash: f.hash, contract: contract}
 }
 
 func (f FTSOCall) Execute(method string, params ...interface{}) FTSOReturn {

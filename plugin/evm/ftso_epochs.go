@@ -25,6 +25,10 @@ func WithCacheSize(size uint) EpochsOption {
 	}
 }
 
+type FTSOInfo interface {
+	EpochInfo(epoch uint64) (EpochInfo, error)
+}
+
 type EpochInfo struct {
 	StartHeight uint64
 	StartTime   uint64
@@ -32,17 +36,17 @@ type EpochInfo struct {
 }
 
 type FTSOEpochs struct {
-	call  FTSOCaller
+	info  FTSOInfo
 	cache *lru.Cache
 }
 
-func NewFTSOEpochs(call FTSOCaller, opts ...EpochsOption) *FTSOEpochs {
+func NewFTSOEpochs(info FTSOInfo, opts ...EpochsOption) *FTSOEpochs {
 
 	cfg := DefaultEpochsConfig
 
 	cache, _ := lru.New(int(cfg.CacheSize))
 	f := FTSOEpochs{
-		call:  call,
+		info:  info,
 		cache: cache,
 	}
 
@@ -57,7 +61,7 @@ func (f *FTSOEpochs) StartHeight(epoch uint64) (uint64, error) {
 		return entry.(EpochInfo).StartHeight, nil
 	}
 
-	info, err := f.call.EpochInfo(epoch)
+	info, err := f.info.EpochInfo(epoch)
 	if err != nil {
 		return 0, fmt.Errorf("could not get epoch info: %w", err)
 	}
@@ -74,7 +78,7 @@ func (f *FTSOEpochs) StartTime(epoch uint64) (uint64, error) {
 		return entry.(EpochInfo).StartTime, nil
 	}
 
-	info, err := f.call.EpochInfo(epoch)
+	info, err := f.info.EpochInfo(epoch)
 	if err != nil {
 		return 0, fmt.Errorf("could not get epoch info: %w", err)
 	}
@@ -91,7 +95,7 @@ func (f *FTSOEpochs) EndTime(epoch uint64) (uint64, error) {
 		return entry.(EpochInfo).EndTime, nil
 	}
 
-	info, err := f.call.EpochInfo(epoch)
+	info, err := f.info.EpochInfo(epoch)
 	if err != nil {
 		return 0, fmt.Errorf("could not get epoch info: %w", err)
 	}

@@ -15,6 +15,7 @@ var DefaultFTSOABIs = FTSOABIs{}
 type FTSOABIs struct {
 	Submitter abi.ABI
 	Manager   abi.ABI
+	Registry  abi.ABI
 }
 
 var (
