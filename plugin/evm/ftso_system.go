@@ -21,6 +21,15 @@ type FTSOSystem struct {
 	abis       FTSOABIs
 }
 
+type FTSOABIs struct {
+	Registry  abi.ABI
+	Manager   abi.ABI
+	Rewards   abi.ABI
+	Whitelist abi.ABI
+	WNAT      abi.ABI
+	Votepower abi.ABI
+}
+
 type FTSOContracts struct {
 	Registry   EVMContract
 	Manager    EVMContract
