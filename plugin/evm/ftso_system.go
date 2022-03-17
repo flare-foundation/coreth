@@ -22,14 +22,11 @@ type FTSOSystem struct {
 }
 
 type FTSOContracts struct {
-	Submitter  EVMContract
 	Registry   EVMContract
-	Series     []EVMContract
 	Manager    EVMContract
 	Rewards    EVMContract
 	Whitelist  EVMContract
 	Votepower  EVMContract
-	WNAT       EVMContract
 	Validation EVMContract
 }
 
@@ -43,11 +40,6 @@ func NewFTSOSystem(blockchain *core.BlockChain, addressSubmitter common.Address,
 	abiRegistry, err := abi.JSON(strings.NewReader(jsonRegistry))
 	if err != nil {
 		return nil, fmt.Errorf("could not parse registry ABI: %w", err)
-	}
-
-	abiSeries, err := abi.JSON(strings.NewReader(jsonSeries))
-	if err != nil {
-		return nil, fmt.Errorf("could not parse series ABI: %w", err)
 	}
 
 	abiManager, err := abi.JSON(strings.NewReader(jsonManager))
@@ -91,15 +83,12 @@ func NewFTSOSystem(blockchain *core.BlockChain, addressSubmitter common.Address,
 	}
 
 	abis := FTSOABIs{
-		Submitter:  abiSubmitter,
-		Registry:   abiRegistry,
-		Manager:    abiManager,
-		Series:     abiSeries,
-		Rewards:    abiRewards,
-		WNAT:       abiWNAT,
-		Whitelist:  abiWhitelist,
-		Votepower:  abiVotepower,
-		Validation: abiValidation,
+		Registry:  abiRegistry,
+		Manager:   abiManager,
+		Rewards:   abiRewards,
+		WNAT:      abiWNAT,
+		Whitelist: abiWhitelist,
+		Votepower: abiVotepower,
 	}
 
 	f := FTSOSystem{
@@ -125,21 +114,6 @@ func (f *FTSOSystem) Contracts(hash common.Hash) (FTSOContracts, error) {
 	registry := EVMContract{
 		address: registryAddress,
 		abi:     f.abis.Registry,
-	}
-
-	var addressesSeries []common.Address
-	err = snap.OnContract(registry).Execute(SeriesAddresses).Decode(&addressesSeries)
-	if err != nil {
-		return FTSOContracts{}, fmt.Errorf("could not get series addresses: %w", err)
-	}
-
-	series := make([]EVMContract, 0, len(addressesSeries))
-	for _, addressSeries := range addressesSeries {
-		serie := EVMContract{
-			address: addressSeries,
-			abi:     f.abis.Series,
-		}
-		series = append(series, serie)
 	}
 
 	var managerAddress common.Address
@@ -198,13 +172,10 @@ func (f *FTSOSystem) Contracts(hash common.Hash) (FTSOContracts, error) {
 	}
 
 	contracts := FTSOContracts{
-		Submitter:  f.submitter,
 		Registry:   registry,
-		Series:     series,
 		Manager:    manager,
 		Rewards:    rewards,
 		Whitelist:  whitelist,
-		WNAT:       wnat,
 		Votepower:  votepower,
 		Validation: f.validation,
 	}
@@ -250,17 +221,27 @@ func (f *FTSOSystem) EpochInfo(epoch uint64) (EpochInfo, error) {
 
 func (f *FTSOSystem) Snapshot(epoch uint64) (*FTSOSnapshot, error) {
 
-	info, err := f.EpochInfo(epoch)
+	currentInfo, err := f.EpochInfo(epoch)
 	if err != nil {
-		return nil, fmt.Errorf("could not get epoch info: %w", err)
+		return nil, fmt.Errorf("could not get current epoch info: %w", err)
 	}
 
-	header := f.blockchain.GetHeaderByNumber(info.StartHeight)
-	if header == nil {
-		return nil, fmt.Errorf("unknown block (height: %d)", info.StartHeight)
+	currentHeader := f.blockchain.GetHeaderByNumber(currentInfo.StartHeight)
+	if currentHeader == nil {
+		return nil, fmt.Errorf("unknown current block (height: %d)", currentInfo.StartHeight)
 	}
 
-	hash := header.Hash()
+	nextInfo, err := f.EpochInfo(epoch + 1)
+	if err != nil {
+		return nil, fmt.Errorf("could not get next epoch info: %w", err)
+	}
+
+	nextHeader := f.blockchain.GetHeaderByNumber(nextInfo.StartHeight)
+	if nextHeader == nil {
+		return nil, fmt.Errorf("unknown next block (height: %d)", nextInfo.StartHeight)
+	}
+
+	hash := currentHeader.Hash()
 	contracts, err := f.Contracts(hash)
 	if err != nil {
 		return nil, fmt.Errorf("could not get contracts (hash: %x): %w", hash, err)
@@ -268,7 +249,9 @@ func (f *FTSOSystem) Snapshot(epoch uint64) (*FTSOSnapshot, error) {
 
 	snap := FTSOSnapshot{
 		system:    f,
-		hash:      hash,
+		epoch:     epoch,
+		current:   hash,
+		next:      nextHeader.Hash(),
 		contracts: contracts,
 	}
 

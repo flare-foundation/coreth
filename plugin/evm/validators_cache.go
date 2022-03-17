@@ -6,8 +6,9 @@ package evm
 import (
 	"fmt"
 
-	"github.com/flare-foundation/flare/ids"
 	lru "github.com/hashicorp/golang-lru"
+
+	"github.com/flare-foundation/flare/ids"
 )
 
 var DefaultCacheConfig = CacheConfig{

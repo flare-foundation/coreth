@@ -8,6 +8,7 @@ import (
 	"math"
 
 	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/flare-foundation/coreth/core"
 	"github.com/flare-foundation/flare/ids"
 )

@@ -6,11 +6,13 @@ package evm
 import (
 	"fmt"
 
+	lru "github.com/hashicorp/golang-lru"
+
 	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/flare-foundation/coreth/core"
 	"github.com/flare-foundation/flare/ids"
 	"github.com/flare-foundation/flare/snow/validators"
-	lru "github.com/hashicorp/golang-lru"
 )
 
 type EpochMapper interface {
