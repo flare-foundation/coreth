@@ -17,4 +17,5 @@ const (
 	ProviderNode      = "getNodeIdForDataProvider"
 	ProviderVotepower = "votePowerOf"
 	ProviderRewards   = "getUnclaimedReward"
+	EpochsStart       = "rewardEpochsStartTs"
 )

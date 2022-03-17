@@ -4,6 +4,7 @@
 package evm
 
 import (
+	"errors"
 	"fmt"
 
 	lru "github.com/hashicorp/golang-lru"
@@ -60,7 +61,7 @@ func (v *ValidatorsManager) ByBlock(blockID common.Hash) (validators.Set, error)
 	}
 
 	epoch, err := v.epochs.ByTimestamp(header.Time)
-	if err != nil {
+	if err != nil && !errors.Is(err, errFTSONotDeployed) && !errors.Is(err, errFTSONotActive) {
 		return nil, fmt.Errorf("could not get epoch (timestamp: %d): %w", header.Time, err)
 	}
 

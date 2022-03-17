@@ -13,6 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/flare-foundation/coreth/core/vm"
+	"github.com/flare-foundation/coreth/params"
 )
 
 const (
@@ -21,12 +22,8 @@ const (
 )
 
 var (
-	costonChainID   = new(big.Int).SetUint64(16) // https://github.com/ethereum-lists/chains/blob/master/_data/chains/eip155-16.json
-	songbirdChainID = new(big.Int).SetUint64(19) // https://github.com/ethereum-lists/chains/blob/master/_data/chains/eip155-19.json
-	flareChainID    = new(big.Int).SetUint64(14) // https://github.com/ethereum-lists/chains/blob/master/_data/chains/eip155-14.json
-
 	costonActivationTime   = big.NewInt(time.Date(2022, time.February, 25, 17, 0, 0, 0, time.UTC).Unix())
-	songbirdActivationTime = big.NewInt(time.Date(2200, time.January, 1, 0, 0, 0, 0, time.UTC).Unix())
+	songbirdActivationTime = big.NewInt(time.Date(2022, time.March, 28, 15, 0, 0, 0, time.UTC).Unix())
 	flareActivationTime    = big.NewInt(time.Date(2200, time.January, 1, 0, 0, 0, 0, time.UTC).Unix())
 
 	costonDefaultAttestors = []common.Address{
@@ -46,11 +43,11 @@ type AttestationVotes struct {
 
 func GetStateConnectorActivated(chainID *big.Int, blockTime *big.Int) bool {
 	switch {
-	case chainID.Cmp(costonChainID) == 0:
+	case chainID.Cmp(params.CostonChainID) == 0:
 		return blockTime.Cmp(costonActivationTime) >= 0
-	case chainID.Cmp(songbirdChainID) == 0:
+	case chainID.Cmp(params.SongbirdChainID) == 0:
 		return blockTime.Cmp(songbirdActivationTime) >= 0
-	case chainID.Cmp(flareChainID) == 0:
+	case chainID.Cmp(params.FlareChainID) == 0:
 		return blockTime.Cmp(flareActivationTime) >= 0
 	default:
 		return true
@@ -59,11 +56,11 @@ func GetStateConnectorActivated(chainID *big.Int, blockTime *big.Int) bool {
 
 func GetStateConnectorContract(chainID *big.Int, blockTime *big.Int) common.Address {
 	switch {
-	case chainID.Cmp(costonChainID) == 0:
+	case chainID.Cmp(params.CostonChainID) == 0:
 		return common.HexToAddress("0x947c76694491d3fD67a73688003c4d36C8780A97")
-	case chainID.Cmp(songbirdChainID) == 0:
+	case chainID.Cmp(params.SongbirdChainID) == 0:
 		return common.HexToAddress("0x3A1b3220527aBA427d1e13e4b4c48c31460B4d91")
-	case chainID.Cmp(flareChainID) == 0:
+	case chainID.Cmp(params.FlareChainID) == 0:
 		return common.HexToAddress("0x1000000000000000000000000000000000000001")
 	default:
 		return common.HexToAddress("0x1000000000000000000000000000000000000001")
@@ -109,11 +106,11 @@ func GetDefaultAttestors(chainID *big.Int) []common.Address {
 		return defaultAttestors
 	}
 	switch {
-	case chainID.Cmp(costonChainID) == 0:
+	case chainID.Cmp(params.CostonChainID) == 0:
 		return costonDefaultAttestors
-	case chainID.Cmp(songbirdChainID) == 0:
+	case chainID.Cmp(params.SongbirdChainID) == 0:
 		return songbirdDefaultAttestors
-	case chainID.Cmp(flareChainID) == 0:
+	case chainID.Cmp(params.FlareChainID) == 0:
 		return flareDefaultAttestors
 	default:
 		return nil

@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 
 # Set up the versions to be used
-coreth_version=${CORETH_VERSION:-'v0.3.3'}
+coreth_version=${CORETH_VERSION:-'v0.4.0'}
