@@ -45,14 +45,6 @@ func (e *EVMBind) AtBlock(hash common.Hash) *EVMSnapshot {
 	return &EVMSnapshot{blockchain: e.blockchain, hash: hash}
 }
 
-func (e *EVMBind) OnContract(contract EVMContract) *EVMCall {
-	header := e.blockchain.CurrentHeader()
-	if header == nil {
-		return &EVMCall{err: fmt.Errorf("no current header")}
-	}
-	return &EVMCall{blockchain: e.blockchain, hash: header.Hash(), contract: contract}
-}
-
 func (e *EVMSnapshot) OnContract(contract EVMContract) *EVMCall {
 	return &EVMCall{blockchain: e.blockchain, hash: e.hash, contract: contract}
 }

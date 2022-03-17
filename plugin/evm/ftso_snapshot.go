@@ -11,7 +11,7 @@ import (
 
 type FTSOSnapshot struct {
 	system *FTSOSystem
-	hash   common.Hash
+	epoch  uint64
 }
 
 func (f *FTSOSnapshot) Indices() ([]uint64, error) {
