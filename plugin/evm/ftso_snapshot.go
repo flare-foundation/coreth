@@ -5,7 +5,6 @@ package evm
 
 import (
 	"fmt"
-	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -17,41 +16,41 @@ type FTSOSnapshot struct {
 
 func (f *FTSOSnapshot) Indices() ([]uint64, error) {
 
-	call := NewFTSOCaller(f.system.blockchain, f.hash)
+	// call := NewFTSOCaller(f.system.blockchain, f.hash)
 
-	submitter := FTSOContract{
-		address: f.system.addresses.Submitter,
-		abi:     f.system.abis.Submitter,
-	}
+	// submitter := FTSOContract{
+	// 	address: f.system.addresses.Submitter,
+	// 	abi:     f.system.abis.Submitter,
+	// }
 
-	var registryAddress common.Address
-	err := call.
-		OnContract(submitter).
-		Execute(f.system.methods.RegistryAddress).
-		Decode(&registryAddress)
-	if err != nil {
-		return nil, fmt.Errorf("could not get manager address: %w", err)
-	}
+	// var registryAddress common.Address
+	// err := call.
+	// 	OnContract(submitter).
+	// 	Execute(f.system.methods.RegistryAddress).
+	// 	Decode(&registryAddress)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("could not get manager address: %w", err)
+	// }
 
-	registry := FTSOContract{
-		address: registryAddress,
-		abi:     f.system.abis.Registry,
-	}
+	// registry := FTSOContract{
+	// 	address: registryAddress,
+	// 	abi:     f.system.abis.Registry,
+	// }
 
-	var values []*big.Int
-	err = call.OnContract(registry).
-		Execute(f.system.methods.AssetIndices).
-		Decode(&values)
-	if err != nil {
-		return nil, fmt.Errorf("could not execute asset indices call: %w", err)
-	}
+	// var values []*big.Int
+	// err = call.OnContract(registry).
+	// 	Execute(f.system.methods.AssetIndices).
+	// 	Decode(&values)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("could not execute asset indices call: %w", err)
+	// }
 
-	indices := make([]uint64, 0, len(values))
-	for _, index := range values {
-		indices = append(indices, index.Uint64())
-	}
+	// indices := make([]uint64, 0, len(values))
+	// for _, index := range values {
+	// 	indices = append(indices, index.Uint64())
+	// }
 
-	return indices, nil
+	return nil, fmt.Errorf("not implemented")
 }
 
 func (f *FTSOSnapshot) Providers(index uint64) ([]common.Address, error) {

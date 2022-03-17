@@ -3,26 +3,14 @@
 
 package evm
 
-var DefaultFTSOMethods = FTSOMethods{
-	EpochSeconds:     "rewardEpochDurationSeconds",
-	ManagerAddress:   "getFtsoManager",
-	RegistryAddress:  "getFtsoRegistry",
-	EpochInfo:        "rewardEpochs",
-	AssetIndices:     "getSupportedIndices",
-	DataProviders:    "getFtsoWhitelistedPriceProviders",
-	ValidatorNode:    "getNodeIdForDataProvider",
-	VotePower:        "votePowerOf",
-	UnclaimedRewards: "getUnclaimedReward",
-}
-
-type FTSOMethods struct {
-	EpochSeconds     string
-	ManagerAddress   string
-	RegistryAddress  string
-	EpochInfo        string
-	AssetIndices     string
-	DataProviders    string
-	ValidatorNode    string
-	VotePower        string
-	UnclaimedRewards string
-}
+const (
+	EpochSeconds     = "rewardEpochDurationSeconds"
+	ManagerAddress   = "getFtsoManager"
+	RegistryAddress  = "getFtsoRegistry"
+	RewardEpoch      = "rewardEpochs"
+	AssetIndices     = "getSupportedIndices"
+	DataProviders    = "getFtsoWhitelistedPriceProviders"
+	ValidatorNode    = "getNodeIdForDataProvider"
+	VotePower        = "votePowerOf"
+	UnclaimedRewards = "getUnclaimedReward"
+)

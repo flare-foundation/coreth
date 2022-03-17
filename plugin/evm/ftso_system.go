@@ -14,58 +14,66 @@ import (
 
 type FTSOSystem struct {
 	blockchain *core.BlockChain
-	addresses  FTSOAddresses
-	abis       FTSOABIs
-	methods    FTSOMethods
+	submitter  common.Address
+	validation common.Address
 }
 
-func NewFTSOSystem(blockchain *core.BlockChain) *FTSOSystem {
+type FTSOContracts struct {
+	Submitter  EVMContract
+	Registry   EVMContract
+	Manager    EVMContract
+	Rewards    EVMContract
+	FTSO       EVMContract
+	Whitelist  EVMContract
+	Validation EVMContract
+	Votepower  EVMContract
+}
+
+func NewFTSOSystem(blockchain *core.BlockChain, submitter common.Address, validation common.Address) *FTSOSystem {
 
 	f := FTSOSystem{
 		blockchain: blockchain,
-		addresses:  DefaultFTSOAddresses,
-		abis:       DefaultFTSOABIs,
-		methods:    DefaultFTSOMethods,
+		submitter:  submitter,
+		validation: validation,
 	}
 
 	return &f
 }
 
+func (f *FTSOSystem) Contracts(epoch uint64) (FTSOContracts, error) {
+
+	info, err := f.EpochInfo(epoch)
+	if err != nil {
+		return FTSOContracts{}, fmt.Errorf("could not get epoch info: %w", err)
+	}
+
+	header := f.blockchain.GetHeaderByNumber(info.StartHeight)
+	if header == nil {
+		return FTSOContracts{}, fmt.Errorf("unknown header (height: %d)", info.StartHeight)
+	}
+
+	contracts := FTSOContracts{}
+
+	return contracts, nil
+}
+
 func (f *FTSOSystem) EpochInfo(epoch uint64) (EpochInfo, error) {
 
-	header := f.blockchain.CurrentHeader()
-
-	call := NewFTSOCaller(f.blockchain, header.Hash())
-
-	submitter := FTSOContract{
-		address: f.addresses.Submitter,
-		abi:     f.abis.Submitter,
-	}
-
-	var managerAddress common.Address
-	err := call.
-		OnContract(submitter).
-		Execute(f.methods.ManagerAddress).
-		Decode(&managerAddress)
-	if err != nil {
-		return EpochInfo{}, fmt.Errorf("could not get manager address: %w", err)
-	}
+	contracts := FTSOContracts{}
 
 	var seconds big.Int
-	manager := FTSOContract{
-		address: managerAddress,
-		abi:     f.abis.Manager,
-	}
-	err = call.OnContract(manager).
-		Execute(f.methods.EpochSeconds).
+	err := BindEVM(f.blockchain).
+		OnContract(contracts.Manager).
+		Execute(EpochSeconds).
 		Decode(&seconds)
 	if err != nil {
 		return EpochInfo{}, fmt.Errorf("could not get epoch seconds: %w", err)
 	}
 
-	var startHeight, startTime big.Int
-	err = call.OnContract(manager).
-		Execute(f.methods.EpochInfo).
+	var startHeight, startTime *big.Int
+	err = BindEVM(f.blockchain).
+		OnContract(contracts.Manager).
+		Execute(RewardEpoch).
 		Decode(nil, &startHeight, &startTime)
 	if err != nil {
 		return EpochInfo{}, fmt.Errorf("could not get epoch info: %w", err)
