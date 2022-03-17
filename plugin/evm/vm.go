@@ -473,18 +473,45 @@ func (vm *VM) Initialize(
 		}
 	}
 
-	// Initialize the FTSO validator set retrieval.
-	var validators []ids.ShortID
-	var info FTSOInfo
-	var shift StateShifter
-	epochs := NewFTSOEpochs(info)
-	mapper := NewFTSOMapper(epochs)
-	retrieve := NewValidatorsFTSO(vm.chain.BlockChain(), epochs, shift,
-		WithRootDegree(4),
+	// Define the default set of validators.
+	validators := []ids.ShortID{}
+
+	// Initialize the FTSO system, which functions as our interface between the
+	// Go logic and the EVM logic.
+	blockchain := vm.chain.BlockChain()
+	ftso, err := NewFTSOSystem(blockchain,
+		common.HexToAddress("0x1000000000000000000000000000000000000003"),
+		common.HexToAddress("0x1000000000000000000000000000000000000004"),
 	)
+	if err != nil {
+		return fmt.Errorf("could not initialize FTSO system: %w", err)
+	}
+
+	// Initialize an epochs cache on top of the FTSO, to avoid retrieving epochs
+	// data unnecessarily.
+	epochs := NewEpochsCache(ftso)
+
+	// Initialize the FTSO validator retriever, which retrieves validators from
+	// the FTSO and calculates their respective weights.
+	retrieve := NewValidatorsFTSO(ftso, WithRootDegree(4))
+
+	// Initialize the epochs manager, which is responsible for mapping block
+	// timestamps to epochs.
+	mapper := NewEpochsManager(epochs)
+
+	// Initialize a validator cache, so we don't need to do expensive FTSO EVM
+	// calls every time we want validators.
 	cache := NewValidatorsCache(retrieve)
+
+	// Initialize the validator transitioner, which is responsible for smoothly
+	// transitioning validators from the default set to the FTSO set.
 	transition := NewValidatorsTransitioner(validators, cache)
-	vm.validators = NewValidatorsManager(vm.chain.BlockChain(), mapper, transition)
+
+	// Initialize the epoch , responsible for mapping the timestamps of
+	// blocks to the reward epoch they belong to.
+
+	// Finally, we can initialize the validator manager
+	vm.validators = NewValidatorsManager(blockchain, mapper, transition)
 
 	return vm.fx.Initialize(vm)
 }

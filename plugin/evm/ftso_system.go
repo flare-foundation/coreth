@@ -183,17 +183,17 @@ func (f *FTSOSystem) Contracts(hash common.Hash) (FTSOContracts, error) {
 	return contracts, nil
 }
 
-func (f *FTSOSystem) EpochInfo(epoch uint64) (EpochInfo, error) {
+func (f *FTSOSystem) Details(epoch uint64) (EpochDetails, error) {
 
 	header := f.blockchain.CurrentHeader()
 	if header == nil {
-		return EpochInfo{}, fmt.Errorf("no current header")
+		return EpochDetails{}, fmt.Errorf("no current header")
 	}
 
 	hash := header.Hash()
 	contracts, err := f.Contracts(hash)
 	if err != nil {
-		return EpochInfo{}, fmt.Errorf("could not get contracts (hash: %x): %w", hash, err)
+		return EpochDetails{}, fmt.Errorf("could not get contracts (hash: %x): %w", hash, err)
 	}
 
 	call := BindEVM(f.blockchain).AtBlock(hash).OnContract(contracts.Manager)
@@ -201,16 +201,16 @@ func (f *FTSOSystem) EpochInfo(epoch uint64) (EpochInfo, error) {
 	var seconds big.Int
 	err = call.Execute(EpochSeconds).Decode(&seconds)
 	if err != nil {
-		return EpochInfo{}, fmt.Errorf("could not get epoch seconds: %w", err)
+		return EpochDetails{}, fmt.Errorf("could not get epoch seconds: %w", err)
 	}
 
 	var startHeight, startTime *big.Int
 	err = call.Execute(RewardEpoch).Decode(nil, &startHeight, &startTime)
 	if err != nil {
-		return EpochInfo{}, fmt.Errorf("could not get epoch info: %w", err)
+		return EpochDetails{}, fmt.Errorf("could not get epoch info: %w", err)
 	}
 
-	info := EpochInfo{
+	info := EpochDetails{
 		StartHeight: startHeight.Uint64(),
 		StartTime:   startTime.Uint64(),
 		EndTime:     startTime.Uint64() + seconds.Uint64(),
@@ -219,9 +219,9 @@ func (f *FTSOSystem) EpochInfo(epoch uint64) (EpochInfo, error) {
 	return info, nil
 }
 
-func (f *FTSOSystem) Snapshot(epoch uint64) (*FTSOSnapshot, error) {
+func (f *FTSOSystem) Snapshot(epoch uint64) (Snapshot, error) {
 
-	currentInfo, err := f.EpochInfo(epoch)
+	currentInfo, err := f.Details(epoch)
 	if err != nil {
 		return nil, fmt.Errorf("could not get current epoch info: %w", err)
 	}
@@ -231,7 +231,7 @@ func (f *FTSOSystem) Snapshot(epoch uint64) (*FTSOSnapshot, error) {
 		return nil, fmt.Errorf("unknown current block (height: %d)", currentInfo.StartHeight)
 	}
 
-	nextInfo, err := f.EpochInfo(epoch + 1)
+	nextInfo, err := f.Details(epoch + 1)
 	if err != nil {
 		return nil, fmt.Errorf("could not get next epoch info: %w", err)
 	}
