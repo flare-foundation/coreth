@@ -29,7 +29,6 @@ type EVMCall struct {
 	blockchain *core.BlockChain
 	hash       common.Hash
 	contract   EVMContract
-	err        error
 }
 
 type EVMReturn struct {
@@ -50,10 +49,6 @@ func (e *EVMSnapshot) OnContract(contract EVMContract) *EVMCall {
 }
 
 func (e *EVMCall) Execute(method string, params ...interface{}) *EVMReturn {
-
-	if e.err != nil {
-		return &EVMReturn{err: e.err}
-	}
 
 	header := e.blockchain.GetHeaderByHash(e.hash)
 	if header == nil {
