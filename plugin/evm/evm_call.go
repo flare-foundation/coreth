@@ -6,7 +6,6 @@ package evm
 import (
 	"fmt"
 	"math"
-	"reflect"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -29,11 +28,6 @@ type EVMCall struct {
 	blockchain *core.BlockChain
 	hash       common.Hash
 	contract   EVMContract
-}
-
-type EVMReturn struct {
-	values []interface{}
-	err    error
 }
 
 func BindEVM(blockchain *core.BlockChain) *EVMBind {
@@ -94,38 +88,4 @@ func (e *EVMCall) Execute(method string, params ...interface{}) *EVMReturn {
 
 	return &EVMReturn{values: values}
 
-}
-
-func (e *EVMReturn) Decode(values ...interface{}) error {
-
-	if e.err != nil {
-		return e.err
-	}
-
-	if len(e.values) != len(values) {
-		return fmt.Errorf("invalid number of decode values (have: %d, want: %d)", len(values), len(e.values))
-	}
-
-	for i, val := range values {
-
-		ret := e.values[i]
-
-		vv := reflect.ValueOf(val)
-		if vv.IsNil() {
-			continue
-		}
-		if vv.Kind() != reflect.Ptr {
-			return fmt.Errorf("invalid non-pointer (index: %d, type: %s)", i, vv)
-		}
-
-		iv := reflect.Indirect(vv)
-		rv := reflect.ValueOf(ret)
-		if iv.Kind() != rv.Kind() {
-			return fmt.Errorf("invalid type for return value (want: %s, have: %s)", iv, rv)
-		}
-
-		iv.Set(rv)
-	}
-
-	return nil
 }
