@@ -250,9 +250,26 @@ func (f *FTSOSystem) EpochInfo(epoch uint64) (EpochInfo, error) {
 
 func (f *FTSOSystem) Snapshot(epoch uint64) (*FTSOSnapshot, error) {
 
+	info, err := f.EpochInfo(epoch)
+	if err != nil {
+		return nil, fmt.Errorf("could not get epoch info: %w", err)
+	}
+
+	header := f.blockchain.GetHeaderByNumber(info.StartHeight)
+	if header == nil {
+		return nil, fmt.Errorf("unknown block (height: %d)", info.StartHeight)
+	}
+
+	hash := header.Hash()
+	contracts, err := f.Contracts(hash)
+	if err != nil {
+		return nil, fmt.Errorf("could not get contracts (hash: %x): %w", hash, err)
+	}
+
 	snap := FTSOSnapshot{
-		system: f,
-		epoch:  epoch,
+		system:    f,
+		hash:      hash,
+		contracts: contracts,
 	}
 
 	return &snap, nil

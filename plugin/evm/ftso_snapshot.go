@@ -7,57 +7,47 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/flare-foundation/flare/ids"
 )
 
 type FTSOSnapshot struct {
-	system *FTSOSystem
-	epoch  uint64
+	system    *FTSOSystem
+	hash      common.Hash
+	contracts FTSOContracts
 }
 
-func (f *FTSOSnapshot) Indices() ([]uint64, error) {
+func (f *FTSOSnapshot) Providers() ([]common.Address, error) {
 
-	// call := NewFTSOCaller(f.system.blockchain, f.hash)
+	providerMap := make(map[common.Address]struct{})
+	for _, serie := range f.contracts.Series {
+		var addresses []common.Address
+		err := BindEVM(f.system.blockchain).
+			AtBlock(f.hash).
+			OnContract(serie).
+			Execute(DataProviders).
+			Decode(&addresses)
+		if err != nil {
+			return nil, fmt.Errorf("could not get provider addresses (serie: %x): %w", serie.address, err)
+		}
+		for _, address := range addresses {
+			providerMap[address] = struct{}{}
+		}
+	}
 
-	// submitter := FTSOContract{
-	// 	address: f.system.addresses.Submitter,
-	// 	abi:     f.system.abis.Submitter,
-	// }
+	providers := make([]common.Address, 0, len(providerMap))
+	for provider := range providerMap {
+		providers = append(providers, provider)
+	}
 
-	// var registryAddress common.Address
-	// err := call.
-	// 	OnContract(submitter).
-	// 	Execute(f.system.methods.RegistryAddress).
-	// 	Decode(&registryAddress)
-	// if err != nil {
-	// 	return nil, fmt.Errorf("could not get manager address: %w", err)
-	// }
-
-	// registry := FTSOContract{
-	// 	address: registryAddress,
-	// 	abi:     f.system.abis.Registry,
-	// }
-
-	// var values []*big.Int
-	// err = call.OnContract(registry).
-	// 	Execute(f.system.methods.AssetIndices).
-	// 	Decode(&values)
-	// if err != nil {
-	// 	return nil, fmt.Errorf("could not execute asset indices call: %w", err)
-	// }
-
-	// indices := make([]uint64, 0, len(values))
-	// for _, index := range values {
-	// 	indices = append(indices, index.Uint64())
-	// }
-
-	return nil, fmt.Errorf("not implemented")
+	return providers, nil
 }
 
-func (f *FTSOSnapshot) Providers(index uint64) ([]common.Address, error) {
-	return nil, fmt.Errorf("not implemented")
+func (f *FTSOSnapshot) Validator(provider common.Address) (ids.ShortID, error) {
+	return ids.ShortEmpty, fmt.Errorf("not implemented")
 }
 
 func (f *FTSOSnapshot) Votepower(provider common.Address) (float64, error) {
+
 	return 0, fmt.Errorf("not implemented")
 }
 
