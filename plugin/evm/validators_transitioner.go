@@ -10,11 +10,13 @@ import (
 )
 
 var DefaultTransitionConfig = TransitionConfig{
-	MinSteps: 4,
+	MinSteps:    4,
+	Placeholder: 50_000,
 }
 
 type TransitionConfig struct {
-	MinSteps uint
+	MinSteps    uint
+	Placeholder uint64
 }
 
 type TransitionOption func(*TransitionConfig)
@@ -29,12 +31,12 @@ func WithMinSteps(steps uint) TransitionOption {
 // the second retriever in a smooth deterministic manner over a pre-configured
 // minimum number of steps.
 type ValidatorsTransitioner struct {
-	ids        []ids.ShortID
-	validators ValidatorRetriever
+	validators []ids.ShortID
+	providers  ValidatorRetriever
 	cfg        TransitionConfig
 }
 
-func NewValidatorsTransitioner(ids []ids.ShortID, validators ValidatorRetriever, opts ...TransitionOption) *ValidatorsTransitioner {
+func NewValidatorsTransitioner(validators []ids.ShortID, providers ValidatorRetriever, opts ...TransitionOption) *ValidatorsTransitioner {
 
 	cfg := DefaultTransitionConfig
 	for _, opt := range opts {
@@ -42,8 +44,8 @@ func NewValidatorsTransitioner(ids []ids.ShortID, validators ValidatorRetriever,
 	}
 
 	v := ValidatorsTransitioner{
-		ids:        ids,
 		validators: validators,
+		providers:  providers,
 		cfg:        cfg,
 	}
 
@@ -53,72 +55,57 @@ func NewValidatorsTransitioner(ids []ids.ShortID, validators ValidatorRetriever,
 
 func (v *ValidatorsTransitioner) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, error) {
 
-	set, err := v.validators.ByEpoch(epoch)
-	if err != nil {
-		return nil, fmt.Errorf("could not retrieve first set: %w", err)
+	if epoch < uint64(v.cfg.MinSteps) {
+		set := make(map[ids.ShortID]uint64)
+		for _, validator := range v.validators {
+			set[validator] = v.cfg.Placeholder
+		}
+		return set, nil
 	}
 
-	return set, nil
+	size := uint(len(v.validators))
+	steps := uint(0)
+Loop:
+	for try := uint(1); try <= v.cfg.MinSteps; try++ {
+		thresholds := findThresholds(size, try, v.cfg.MinSteps)
+		for i, threshold := range thresholds {
+			e := epoch - uint64(i)
+			providers, err := v.providers.ByEpoch(e)
+			if err != nil {
+				return nil, fmt.Errorf("could not get providers: %w", err)
+			}
+			if uint(len(providers)) < threshold {
+				break Loop
+			}
+			steps = try
+		}
+	}
+
+	providers, err := v.providers.ByEpoch(epoch)
+	if err != nil {
+		return nil, fmt.Errorf("could not get provider: %w", err)
+	}
+
+	cutoff := (size - steps*size/v.cfg.MinSteps)
+	validators := v.validators[:cutoff]
+
+	totalWeight := uint64(0)
+	for _, weight := range providers {
+		totalWeight += weight
+	}
+	averageWeight := totalWeight / uint64(size)
+	for _, validator := range validators {
+		providers[validator] = averageWeight
+	}
+
+	return providers, nil
 }
 
-// var defaultValidators []ids.ShortID
-
-// // If we have less than 4 reward epochs, we always return the default
-// // validators.
-// if epoch < 3 {
-// 	return defaultValidators, nil
-// }
-
-// // We get all raw validator sets for the four last reward epochs, from the
-// // oldest to the newest set.
-// sets := make([]validators.Set, 0, 4)
-// for e := epoch - 3; e <= epoch; e++ {
-// 	set, err := v.FTSOValidators(e)
-// 	if err != nil {
-// 		return nil, fmt.Errorf("could not get FTSO validators (epoch: %d): %w", e, err)
-// 	}
-// 	sets = append(sets, set)
-// }
-
-// // The default set is always all of the available FTSO validators as a basis.
-// var set validators.Set
-// err = set.Set(sets[0].List())
-// if err != nil {
-// 	return nil, fmt.Errorf("could not set validator set: %w", err)
-// }
-
-// // We use the maximum weight for the weight of the default validators.
-// var max uint64
-// for _, validator := range set.List() {
-// 	if validator.Weight() > max {
-// 		max = validator.Weight()
-// 	}
-// }
-
-// // Then, we will add a number of default validators to that set that are
-// // equivalent to losing only 25% of default validators per epoch.
-// OuterLoop:
-// for r := 4; r >= 1; r-- {
-// 	for e := 0; e > r; e++ {
-// 		threshold := (4 - e)
-// 		if sets[e].Len() < (threshold * len(defaultValidators) / 4) {
-// 			continue OuterLoop
-// 		}
-// 	}
-// 	for _, validator := range defaultValidators[:r*len(defaultValidators)/4] {
-// 		err = set.AddWeight(validator, max)
-// 		if err != nil {
-// 			return nil, fmt.Errorf("could not add weight (validator: %x, weight: %d): %w", validator, max, err)
-// 		}
-// 	}
-// 	break
-// }
-
-// set := validators.NewSet()
-// normalizer := float64(math.MaxUint64) / total
-// for validator, weight := range weights {
-// 	err := set.AddWeight(validator, uint64(weight*normalizer))
-// 	if err != nil {
-// 		return nil, fmt.Errorf("could not add validator weight: %w", err)
-// 	}
-// }
+func findThresholds(size uint, steps uint, min uint) []uint {
+	thresholds := make([]uint, 0, steps)
+	for i := uint(0); i < steps; i++ {
+		threshold := (steps - i) * size / min
+		thresholds = append(thresholds, threshold)
+	}
+	return thresholds
+}

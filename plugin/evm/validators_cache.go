@@ -12,7 +12,7 @@ import (
 )
 
 var DefaultCacheConfig = CacheConfig{
-	NumSlots: 16,
+	NumSlots: 8,
 }
 
 type CacheConfig struct {
