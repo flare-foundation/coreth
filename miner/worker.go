@@ -161,6 +161,9 @@ func (w *worker) commitNewWork() (*types.Block, error) {
 	if w.chainConfig.DAOForkSupport && w.chainConfig.DAOForkBlock != nil && w.chainConfig.DAOForkBlock.Cmp(header.Number) == 0 {
 		misc.ApplyDAOHardFork(env.state)
 	}
+	if w.chainConfig.IsFlareHardFork1(big.NewInt(0).SetUint64(header.Time)) && !misc.ValidatorRegistryCreated(env.state) {
+		misc.CreateValidatorRegistry(env.state)
+	}
 
 	// Fill the block with all available pending transactions.
 	pending := w.eth.TxPool().Pending(true)

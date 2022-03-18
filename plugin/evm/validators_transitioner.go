@@ -55,14 +55,6 @@ func NewValidatorsTransitioner(validators []ids.ShortID, providers ValidatorRetr
 
 func (v *ValidatorsTransitioner) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, error) {
 
-	if epoch < uint64(v.cfg.MinSteps) {
-		set := make(map[ids.ShortID]uint64)
-		for _, validator := range v.validators {
-			set[validator] = v.cfg.Placeholder
-		}
-		return set, nil
-	}
-
 	size := uint(len(v.validators))
 	steps := uint(0)
 Loop:

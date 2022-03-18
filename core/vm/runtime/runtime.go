@@ -130,7 +130,7 @@ func Execute(code, input []byte, cfg *Config) ([]byte, *state.StateDB, error) {
 		vmenv   = NewEnv(cfg)
 		sender  = vm.AccountRef(cfg.Origin)
 	)
-	if rules := cfg.ChainConfig.AvalancheRules(vmenv.Context.BlockNumber, vmenv.Context.Time); rules.IsApricotPhase2 {
+	if rules := cfg.ChainConfig.FlareRules(vmenv.Context.BlockNumber, vmenv.Context.Time); rules.IsApricotPhase2 {
 		cfg.State.PrepareAccessList(cfg.Origin, &address, vm.ActivePrecompiles(rules), nil)
 	}
 	cfg.State.CreateAccount(address)
@@ -162,7 +162,7 @@ func Create(input []byte, cfg *Config) ([]byte, common.Address, uint64, error) {
 		vmenv  = NewEnv(cfg)
 		sender = vm.AccountRef(cfg.Origin)
 	)
-	if rules := cfg.ChainConfig.AvalancheRules(vmenv.Context.BlockNumber, vmenv.Context.Time); rules.IsApricotPhase2 {
+	if rules := cfg.ChainConfig.FlareRules(vmenv.Context.BlockNumber, vmenv.Context.Time); rules.IsApricotPhase2 {
 		cfg.State.PrepareAccessList(cfg.Origin, nil, vm.ActivePrecompiles(rules), nil)
 	}
 	// Call the code with the given configuration.
@@ -188,7 +188,7 @@ func Call(address common.Address, input []byte, cfg *Config) ([]byte, uint64, er
 	sender := cfg.State.GetOrNewStateObject(cfg.Origin)
 	statedb := cfg.State
 
-	if rules := cfg.ChainConfig.AvalancheRules(vmenv.Context.BlockNumber, vmenv.Context.Time); rules.IsApricotPhase2 {
+	if rules := cfg.ChainConfig.FlareRules(vmenv.Context.BlockNumber, vmenv.Context.Time); rules.IsApricotPhase2 {
 		statedb.PrepareAccessList(cfg.Origin, &address, vm.ActivePrecompiles(rules), nil)
 	}
 	// Call the code with the given configuration.
