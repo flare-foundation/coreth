@@ -30,12 +30,16 @@ func (v *ValidatorsNormalizer) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, er
 		return nil, fmt.Errorf("could not retrieve validators: %w", err)
 	}
 
+	if len(validators) == 0 {
+		return validators, nil
+	}
+
 	var totalWeight uint64
 	for _, weight := range validators {
 		totalWeight += weight
 	}
 
-	ratio := math.MaxUint64 / totalWeight
+	ratio := math.MaxInt64 / totalWeight
 	for validator, weight := range validators {
 		validators[validator] = weight * ratio
 	}
