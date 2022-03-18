@@ -12,6 +12,7 @@ type Epochs interface {
 }
 
 type EpochDetails struct {
+	PowerHeight uint64
 	StartHeight uint64
 	StartTime   uint64
 	EndTime     uint64
