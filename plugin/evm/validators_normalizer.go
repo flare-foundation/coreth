@@ -39,7 +39,7 @@ func (v *ValidatorsNormalizer) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, er
 		totalWeight += weight
 	}
 
-	ratio := math.MaxUint64 / totalWeight
+	ratio := math.MaxInt64 / totalWeight
 	for validator, weight := range validators {
 		validators[validator] = weight * ratio
 	}
