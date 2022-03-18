@@ -4,11 +4,14 @@
 package evm
 
 import (
+	"errors"
 	"fmt"
 	"math"
+	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 
+	"github.com/flare-foundation/coreth/core"
 	"github.com/flare-foundation/flare/ids"
 )
 
@@ -43,11 +46,12 @@ type Snapshot interface {
 // ValidatorsFTSO is responsible for retrieving the set of validators for the FTSO
 // data providers, in accordance with the defined formula and configured root degree.
 type ValidatorsFTSO struct {
-	ftso FTSO
-	cfg  FTSOConfig
+	blockchain *core.BlockChain
+	ftso       FTSO
+	cfg        FTSOConfig
 }
 
-func NewValidatorsFTSO(ftso FTSO, opts ...FTSOOption) *ValidatorsFTSO {
+func NewValidatorsFTSO(blockchain *core.BlockChain, ftso FTSO, opts ...FTSOOption) *ValidatorsFTSO {
 
 	cfg := DefaultFTSOConfig
 	for _, opt := range opts {
@@ -55,14 +59,29 @@ func NewValidatorsFTSO(ftso FTSO, opts ...FTSOOption) *ValidatorsFTSO {
 	}
 
 	v := ValidatorsFTSO{
-		ftso: ftso,
-		cfg:  cfg,
+		blockchain: blockchain,
+		ftso:       ftso,
+		cfg:        cfg,
 	}
 
 	return &v
 }
 
 func (v *ValidatorsFTSO) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, error) {
+
+	validators := make(map[ids.ShortID]uint64)
+
+	details, err := v.ftso.Details(epoch)
+	if errors.Is(err, errFTSONotDeployed) || errors.Is(err, errFTSONotActive) {
+		return validators, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("could not get epoch details: %w", err)
+	}
+
+	if !v.blockchain.Config().IsFlareHardFork1(big.NewInt(0).SetUint64(details.StartTime)) {
+		return nil, nil
+	}
 
 	snap, err := v.ftso.Snapshot(epoch)
 	if err != nil {
@@ -74,12 +93,14 @@ func (v *ValidatorsFTSO) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, error) {
 		return nil, fmt.Errorf("could not get FTSO providers: %w", err)
 	}
 
-	validators := make(map[ids.ShortID]uint64, len(providers))
 	for _, provider := range providers {
 
-		id, err := snap.Validator(provider)
+		validator, err := snap.Validator(provider)
 		if err != nil {
 			return nil, fmt.Errorf("could not get validator  (provider: %x): %w", provider, err)
+		}
+		if validator == ids.ShortEmpty {
+			continue
 		}
 
 		votepower, err := snap.Votepower(provider)
@@ -94,7 +115,7 @@ func (v *ValidatorsFTSO) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, error) {
 
 		weight := uint64(math.Pow(votepower, 1.0/float64(v.cfg.RootDegree)) * (rewards / votepower))
 
-		validators[id] = weight
+		validators[validator] = weight
 	}
 
 	return validators, nil
