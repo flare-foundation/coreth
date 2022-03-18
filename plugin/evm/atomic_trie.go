@@ -253,7 +253,10 @@ func (a *atomicTrie) initialize(lastAcceptedBlockNumber uint64) error {
 			storage, _ := a.trieDB.Size()
 			if storage > commitSizeCap {
 				a.log.Info("committing atomic trie progress", "storage", storage)
-				a.commit(commitHeight)
+				err := a.commit(commitHeight)
+				if err != nil {
+					return err
+				}
 				// Flush any remaining changes that have not been committed yet in the versiondb.
 				if err := a.db.Commit(); err != nil {
 					return err
