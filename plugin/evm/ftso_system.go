@@ -235,15 +235,16 @@ func (f *FTSOSystem) Details(epoch uint64) (EpochDetails, error) {
 		return EpochDetails{}, fmt.Errorf("could not get epoch seconds: %w", err)
 	}
 
-	var startHeight, startTime *big.Int
+	var powerHeight, startHeight, startTime *big.Int
 	err = call.
 		Execute(RewardEpoch, big.NewInt(0).SetUint64(epoch)).
-		Decode(nil, &startHeight, &startTime)
+		Decode(&powerHeight, &startHeight, &startTime)
 	if err != nil {
 		return EpochDetails{}, fmt.Errorf("could not get epoch info: %w", err)
 	}
 
 	info := EpochDetails{
+		PowerHeight: powerHeight.Uint64(),
 		StartHeight: startHeight.Uint64(),
 		StartTime:   startTime.Uint64(),
 		EndTime:     startTime.Uint64() + seconds.Uint64(),
@@ -259,8 +260,13 @@ func (f *FTSOSystem) Snapshot(epoch uint64) (Snapshot, error) {
 		return nil, fmt.Errorf("could not get current epoch info: %w", err)
 	}
 
-	currentHeader := f.blockchain.GetHeaderByNumber(currentInfo.StartHeight)
-	if currentHeader == nil {
+	powerHeader := f.blockchain.GetBlockByNumber(currentInfo.PowerHeight)
+	if powerHeader == nil {
+		return nil, fmt.Errorf("unknown power block (height: %d)", currentInfo.PowerHeight)
+	}
+
+	startHeader := f.blockchain.GetHeaderByNumber(currentInfo.StartHeight)
+	if startHeader == nil {
 		return nil, fmt.Errorf("unknown current block (height: %d)", currentInfo.StartHeight)
 	}
 
@@ -269,22 +275,23 @@ func (f *FTSOSystem) Snapshot(epoch uint64) (Snapshot, error) {
 		return nil, fmt.Errorf("could not get next epoch info: %w", err)
 	}
 
-	nextHeader := f.blockchain.GetHeaderByNumber(nextInfo.StartHeight)
-	if nextHeader == nil {
+	endHeader := f.blockchain.GetHeaderByNumber(nextInfo.StartHeight)
+	if endHeader == nil {
 		return nil, fmt.Errorf("unknown next block (height: %d)", nextInfo.StartHeight)
 	}
 
-	hash := currentHeader.Hash()
-	contracts, err := f.Contracts(hash)
+	startHash := startHeader.Hash()
+	contracts, err := f.Contracts(startHash)
 	if err != nil {
-		return nil, fmt.Errorf("could not get contracts (hash: %x): %w", hash, err)
+		return nil, fmt.Errorf("could not get contracts (hash: %x): %w", startHash, err)
 	}
 
 	snap := FTSOSnapshot{
 		system:    f,
 		epoch:     epoch,
-		current:   hash,
-		next:      nextHeader.Hash(),
+		power:     powerHeader.Hash(),
+		start:     startHash,
+		end:       endHeader.Hash(),
 		contracts: contracts,
 	}
 
