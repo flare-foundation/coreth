@@ -6,61 +6,83 @@ package evm
 import (
 	"fmt"
 
+	lru "github.com/hashicorp/golang-lru"
+
+	"github.com/ethereum/go-ethereum/common"
+
+	"github.com/flare-foundation/coreth/core"
 	"github.com/flare-foundation/flare/ids"
+	"github.com/flare-foundation/flare/snow/validators"
 )
 
-type Validators interface {
-	DefaultValidators() (map[ids.ShortID]uint64, error)
-	FTSOValidators(epoch uint64) (map[ids.ShortID]uint64, error)
-	ActiveValidators(epoch uint64) (map[ids.ShortID]uint64, error)
+var DefaultManagerCacheConfig = CacheConfig{
+	CacheSize: 4,
+}
+
+type EpochMapper interface {
+	ByTimestamp(timestamp uint64) (uint64, error)
 }
 
 type ValidatorRetriever interface {
 	ByEpoch(epoch uint64) (map[ids.ShortID]uint64, error)
 }
 
-// ValidatorsManager is responsible for choosing the strategy for building a validator
-// set depending on a block hash. It might choose a legacy static validator set, as used
-// before the hard fork upgrade, or a dynamic set of validators based on a transition to
-// the FTSO validator set.
 type ValidatorsManager struct {
-	defaultValidators map[ids.ShortID]uint64
-	ftsoValidators    ValidatorRetriever
-	activeValidators  ValidatorRetriever
+	blockchain *core.BlockChain
+	epochs     EpochMapper
+	validators ValidatorRetriever
+	sets       *lru.Cache
 }
 
-// NewValidatorsManager creates a new manager of validator sets. It uses the given
-// blockchain to map block hashes to block headers, the given epoch mapper no map
-// block timestamps to FTSO rewards epochs, the given validators as the legacy static
-// validator set, and the given retriever to get the validator set based on FTSO
-// data providers.
-func NewValidatorsManager(defaultValidators map[ids.ShortID]uint64, ftsoValidators ValidatorRetriever, activeValidators ValidatorRetriever, opts ...CacheOption) *ValidatorsManager {
+func NewValidatorsManager(blockchain *core.BlockChain, epochs EpochMapper, validators ValidatorRetriever, opts ...CacheOption) *ValidatorsManager {
 
+	cfg := DefaultManagerCacheConfig
+	for _, opt := range opts {
+		opt(&cfg)
+	}
+
+	sets, _ := lru.New(int(cfg.CacheSize))
 	v := ValidatorsManager{
-		defaultValidators: defaultValidators,
-		ftsoValidators:    ftsoValidators,
-		activeValidators:  activeValidators,
+		blockchain: blockchain,
+		epochs:     epochs,
+		validators: validators,
+		sets:       sets,
 	}
 
 	return &v
 }
 
-func (v *ValidatorsManager) DefaultValidators() (map[ids.ShortID]uint64, error) {
-	return v.defaultValidators, nil
-}
+func (v *ValidatorsManager) ByBlock(blockID common.Hash) (validators.Set, error) {
 
-func (v *ValidatorsManager) FTSOValidators(epoch uint64) (map[ids.ShortID]uint64, error) {
-	validators, err := v.ftsoValidators.ByEpoch(epoch)
-	if err != nil {
-		return nil, fmt.Errorf("could not retrieve FTSO validators by epoch: %w", err)
+	header := v.blockchain.GetHeaderByHash(blockID)
+	if header == nil {
+		return nil, fmt.Errorf("invalid hash (block: %x)", blockID)
 	}
-	return validators, nil
-}
 
-func (v *ValidatorsManager) ActiveValidators(epoch uint64) (map[ids.ShortID]uint64, error) {
-	validators, err := v.activeValidators.ByEpoch(epoch)
+	epoch, err := v.epochs.ByTimestamp(header.Time)
 	if err != nil {
-		return nil, fmt.Errorf("could not retrieve active validators by epoch: %w", err)
+		return nil, fmt.Errorf("could not get epoch (timestamp: %d): %w", header.Time, err)
 	}
-	return validators, nil
+
+	entry, ok := v.sets.Get(epoch)
+	if ok {
+		return entry.(validators.Set), nil
+	}
+
+	validatorMap, err := v.validators.ByEpoch(epoch)
+	if err != nil {
+		return nil, fmt.Errorf("could not retrieve validators (epoch: %d): %w", epoch, err)
+	}
+
+	set := validators.NewSet()
+	for id, weight := range validatorMap {
+		err = set.AddWeight(id, weight)
+		if err != nil {
+			return nil, fmt.Errorf("could not add weight: %w", err)
+		}
+	}
+
+	v.sets.Add(epoch, set)
+
+	return set, nil
 }

@@ -4,7 +4,6 @@
 package evm
 
 import (
-	"errors"
 	"fmt"
 	"math"
 
@@ -15,8 +14,6 @@ import (
 	"github.com/flare-foundation/coreth/core/vm"
 	"github.com/flare-foundation/coreth/internal/ethapi"
 )
-
-var errNoReturnData = errors.New("no return data")
 
 type EVMBind struct {
 	blockchain *core.BlockChain
@@ -81,10 +78,7 @@ func (e *EVMCall) Execute(method string, params ...interface{}) *EVMReturn {
 		return &EVMReturn{err: fmt.Errorf("could not apply message: %w", err)}
 	}
 	if result.Err != nil {
-		return &EVMReturn{err: fmt.Errorf("could not execute transaction: %w", result.Err)}
-	}
-	if len(result.ReturnData) == 0 {
-		return &EVMReturn{err: errNoReturnData}
+		return &EVMReturn{err: fmt.Errorf("could not execute transaction: %w", err)}
 	}
 
 	values, err := e.contract.abi.Unpack(method, result.ReturnData)
