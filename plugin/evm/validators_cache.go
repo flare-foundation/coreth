@@ -11,7 +11,7 @@ import (
 	"github.com/flare-foundation/flare/ids"
 )
 
-var DefaultCacheConfig = CacheConfig{
+var DefaultRetrieverCacheConfig = CacheConfig{
 	CacheSize: 8,
 }
 
@@ -35,10 +35,10 @@ type ValidatorsCache struct {
 }
 
 // NewValidatorCache creates a new LRU cache for validator retrieval with the
-// configured cache size.
+// configured  number of cache slots.
 func NewValidatorsCache(validators ValidatorRetriever, opts ...CacheOption) *ValidatorsCache {
 
-	cfg := DefaultCacheConfig
+	cfg := DefaultRetrieverCacheConfig
 	for _, opt := range opts {
 		opt(&cfg)
 	}
@@ -61,7 +61,7 @@ func (v *ValidatorsCache) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, error) 
 
 	validators, err := v.validators.ByEpoch(epoch)
 	if err != nil {
-		return nil, fmt.Errorf("could not retrieve validators for caching: %w", err)
+		return nil, fmt.Errorf("could not retrieve validators: %w", err)
 	}
 
 	v.cache.Add(epoch, validators)

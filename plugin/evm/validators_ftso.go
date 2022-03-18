@@ -10,19 +10,14 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/flare-foundation/flare/ids"
-	"github.com/flare-foundation/flare/utils/logging"
-
-	"github.com/flare-foundation/coreth/core"
 )
 
 var DefaultFTSOConfig = FTSOConfig{
-	RootDegree:      4,
-	RatioMultiplier: 100.0,
+	RootDegree: 4,
 }
 
 type FTSOConfig struct {
-	RootDegree      uint
-	RatioMultiplier float64
+	RootDegree uint
 }
 
 type FTSOOption func(*FTSOConfig)
@@ -33,15 +28,8 @@ func WithRootDegree(degree uint) FTSOOption {
 	}
 }
 
-func WithRatioMultiplier(multiplier float64) FTSOOption {
-	return func(cfg *FTSOConfig) {
-		cfg.RatioMultiplier = multiplier
-	}
-}
-
 type FTSO interface {
-	Current(hash common.Hash) (uint64, error)
-	Details(epoch uint64) (FTSOEpoch, error)
+	Details(epoch uint64) (EpochDetails, error)
 	Snapshot(epoch uint64) (Snapshot, error)
 }
 
@@ -55,13 +43,11 @@ type Snapshot interface {
 // ValidatorsFTSO is responsible for retrieving the set of validators for the FTSO
 // data providers, in accordance with the defined formula and configured root degree.
 type ValidatorsFTSO struct {
-	log        logging.Logger
-	blockchain *core.BlockChain
-	ftso       FTSO
-	cfg        FTSOConfig
+	ftso FTSO
+	cfg  FTSOConfig
 }
 
-func NewValidatorsFTSO(log logging.Logger, blockchain *core.BlockChain, ftso FTSO, opts ...FTSOOption) *ValidatorsFTSO {
+func NewValidatorsFTSO(ftso FTSO, opts ...FTSOOption) *ValidatorsFTSO {
 
 	cfg := DefaultFTSOConfig
 	for _, opt := range opts {
@@ -69,10 +55,8 @@ func NewValidatorsFTSO(log logging.Logger, blockchain *core.BlockChain, ftso FTS
 	}
 
 	v := ValidatorsFTSO{
-		log:        log,
-		blockchain: blockchain,
-		ftso:       ftso,
-		cfg:        cfg,
+		ftso: ftso,
+		cfg:  cfg,
 	}
 
 	return &v
@@ -90,41 +74,27 @@ func (v *ValidatorsFTSO) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, error) {
 		return nil, fmt.Errorf("could not get FTSO providers: %w", err)
 	}
 
-	validators := make(map[ids.ShortID]uint64)
+	validators := make(map[ids.ShortID]uint64, len(providers))
 	for _, provider := range providers {
 
-		validator, err := snap.Validator(provider)
+		id, err := snap.Validator(provider)
 		if err != nil {
-			return nil, fmt.Errorf("could not get FTSO validator (provider: %s): %w", provider, err)
-		}
-		if validator == ids.ShortEmpty {
-			v.log.Debug("skipping provider %s with unset validator", provider.Hex())
-			continue
+			return nil, fmt.Errorf("could not get validator  (provider: %x): %w", provider, err)
 		}
 
 		votepower, err := snap.Votepower(provider)
 		if err != nil {
-			return nil, fmt.Errorf("could not get vote power (provider: %s): %w", provider, err)
-		}
-		if votepower == 0 {
-			v.log.Debug("skipping provider %s with validator %s and no votepower", provider.Hex(), validator)
-			continue
+			return nil, fmt.Errorf("could not get vote power (provider: %x): %w", provider, err)
 		}
 
 		rewards, err := snap.Rewards(provider)
 		if err != nil {
-			return nil, fmt.Errorf("could not get rewards (provider: %s): %w", provider, err)
-		}
-		if rewards == 0 {
-			v.log.Debug("skipping provider %s with validator %s and no rewards", provider.Hex(), validator)
-			continue
+			return nil, fmt.Errorf("could not get rewards (provider: %x): %w", provider, err)
 		}
 
-		weight := uint64(math.Pow(votepower, 1.0/float64(v.cfg.RootDegree)) * (v.cfg.RatioMultiplier * rewards / votepower))
+		weight := uint64(math.Pow(votepower, 1.0/float64(v.cfg.RootDegree)) * (rewards / votepower))
 
-		v.log.Debug("pro:%s val:%s vp:%f rw:%f w:%d", provider.Hex(), validator, votepower, rewards, weight)
-
-		validators[validator] = weight
+		validators[id] = weight
 	}
 
 	return validators, nil

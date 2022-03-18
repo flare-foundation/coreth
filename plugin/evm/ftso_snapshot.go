@@ -4,7 +4,6 @@
 package evm
 
 import (
-	"errors"
 	"fmt"
 	"math/big"
 
@@ -16,9 +15,8 @@ import (
 type FTSOSnapshot struct {
 	system    *FTSOSystem
 	epoch     uint64
-	power     common.Hash
-	start     common.Hash
-	end       common.Hash
+	current   common.Hash
+	next      common.Hash
 	contracts FTSOContracts
 }
 
@@ -26,7 +24,7 @@ func (f *FTSOSnapshot) Providers() ([]common.Address, error) {
 
 	var indices []*big.Int
 	err := BindEVM(f.system.blockchain).
-		AtBlock(f.start).
+		AtBlock(f.current).
 		OnContract(f.contracts.Registry).
 		Execute(SeriesIndices).
 		Decode(&indices)
@@ -38,9 +36,9 @@ func (f *FTSOSnapshot) Providers() ([]common.Address, error) {
 	for _, index := range indices {
 		var addresses []common.Address
 		err := BindEVM(f.system.blockchain).
-			AtBlock(f.start).
+			AtBlock(f.current).
 			OnContract(f.contracts.Whitelist).
-			Execute(DataProviders, index).
+			Execute(DataProviders).
 			Decode(&addresses)
 		if err != nil {
 			return nil, fmt.Errorf("could not get provider addresses (index: %d): %w", index, err)
@@ -62,13 +60,10 @@ func (f *FTSOSnapshot) Validator(provider common.Address) (ids.ShortID, error) {
 
 	var validator [20]byte
 	err := BindEVM(f.system.blockchain).
-		AtBlock(f.start).
+		AtBlock(f.current).
 		OnContract(f.contracts.Validation).
 		Execute(ProviderNode, provider).
 		Decode(&validator)
-	if errors.Is(err, errNoReturnData) {
-		return ids.ShortEmpty, errRegistryNotDeployed
-	}
 	if err != nil {
 		return ids.ShortEmpty, fmt.Errorf("could not get provider node: %w", err)
 	}
@@ -80,7 +75,7 @@ func (f *FTSOSnapshot) Votepower(provider common.Address) (float64, error) {
 
 	vpInt := &big.Int{}
 	err := BindEVM(f.system.blockchain).
-		AtBlock(f.power).
+		AtBlock(f.current).
 		OnContract(f.contracts.Votepower).
 		Execute(ProviderVotepower, provider).
 		Decode(&vpInt)
@@ -100,10 +95,10 @@ func (f *FTSOSnapshot) Rewards(provider common.Address) (float64, error) {
 
 	rwInt := &big.Int{}
 	err := BindEVM(f.system.blockchain).
-		AtBlock(f.end).
+		AtBlock(f.next).
 		OnContract(f.contracts.Rewards).
 		Execute(ProviderRewards, epoch, provider).
-		Decode(&rwInt, nil)
+		Decode(&rwInt)
 	if err != nil {
 		return 0, fmt.Errorf("could not get provider rewards: %w", err)
 	}
