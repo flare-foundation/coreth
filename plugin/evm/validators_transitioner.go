@@ -55,6 +55,11 @@ func NewValidatorsTransitioner(validators []ids.ShortID, providers ValidatorRetr
 
 func (v *ValidatorsTransitioner) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, error) {
 
+	providers, err := v.providers.ByEpoch(epoch)
+	if err != nil {
+		return nil, fmt.Errorf("could not get provider: %w", err)
+	}
+
 	size := uint(len(v.validators))
 	steps := uint(0)
 Loop:
@@ -73,11 +78,6 @@ Loop:
 		}
 	}
 
-	providers, err := v.providers.ByEpoch(epoch)
-	if err != nil {
-		return nil, fmt.Errorf("could not get provider: %w", err)
-	}
-
 	cutoff := (size - steps*size/v.cfg.MinSteps)
 	validators := v.validators[:cutoff]
 
@@ -86,6 +86,9 @@ Loop:
 		totalWeight += weight
 	}
 	averageWeight := totalWeight / uint64(size)
+	if averageWeight == 0 {
+		averageWeight = v.cfg.Placeholder
+	}
 	for _, validator := range validators {
 		providers[validator] = averageWeight
 	}
