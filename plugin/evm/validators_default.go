@@ -8,6 +8,7 @@ import (
 
 	"github.com/flare-foundation/coreth/params"
 	"github.com/flare-foundation/flare/ids"
+	"github.com/flare-foundation/flare/utils/constants"
 )
 
 var costonNodeIDs = []string{
@@ -63,7 +64,7 @@ func getDefaultValidators(chainID *big.Int) ([]ids.ShortID, error) {
 
 	validators := make([]ids.ShortID, 0, len(nodeIDs))
 	for _, nodeID := range nodeIDs {
-		validator, err := ids.ShortFromString(nodeID)
+		validator, err := ids.ShortFromPrefixedString(nodeID, constants.NodeIDPrefix)
 		if err != nil {
 			return nil, fmt.Errorf("could not parse validator (nodeid: %s): %w", nodeID, err)
 		}
