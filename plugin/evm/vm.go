@@ -493,25 +493,35 @@ func (vm *VM) Initialize(
 	// Initialize an epochs cache on top of the FTSO, to avoid retrieving epochs
 	// data unnecessarily, and inject it into the epochs manager, which is responsible
 	// for mapping block timestamps to epochs.
-	epochsCache := NewEpochsCache(ftso)
+	epochsCache := NewEpochsCache(ftso,
+		WithCacheSize(16),
+	)
 	epochs := NewEpochsManager(epochsCache)
 
 	// Initialize the FTSO validator retriever, which retrieves validators for the
 	// FTSO data providers, and wrap it in a cache to avoid unnecessary retrievals.
 	providers := NewValidatorsFTSO(ftso, WithRootDegree(4))
-	cachedProviders := NewValidatorsCache(providers)
+	cachedProviders := NewValidatorsCache(providers,
+		WithCacheSize(12),
+	)
 
 	// Initialize the validator transitioner, which is responsible for smoothly
 	// transitioning validators from the default set to the FTSO set, wrap it in
 	// a normalizer to have uniform weights across epochs, and wrap it in a cache
 	// to avoid unnecessary recomputation.
-	transition := NewValidatorsTransitioner(validators, cachedProviders)
+	transition := NewValidatorsTransitioner(validators, cachedProviders,
+		WithMinSteps(4),
+	)
 	normalize := NewValidatorsNormalizer(transition)
-	cachedTransition := NewValidatorsCache(normalize)
+	cachedTransition := NewValidatorsCache(normalize,
+		WithCacheSize(8),
+	)
 
 	// Initialize the validators manager, which is our interface between the EVM
 	// implementation and the Flare logic.
-	vm.validators = NewValidatorsManager(blockchain, epochs, cachedTransition)
+	vm.validators = NewValidatorsManager(blockchain, epochs, cachedTransition,
+		WithCacheSize(4),
+	)
 
 	return vm.fx.Initialize(vm)
 }

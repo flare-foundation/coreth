@@ -15,6 +15,10 @@ import (
 	"github.com/flare-foundation/flare/snow/validators"
 )
 
+var DefaultManagerCacheConfig = CacheConfig{
+	CacheSize: 4,
+}
+
 type EpochMapper interface {
 	ByTimestamp(timestamp uint64) (uint64, error)
 }
@@ -30,9 +34,14 @@ type ValidatorsManager struct {
 	sets       *lru.Cache
 }
 
-func NewValidatorsManager(blockchain *core.BlockChain, epochs EpochMapper, validators ValidatorRetriever) *ValidatorsManager {
+func NewValidatorsManager(blockchain *core.BlockChain, epochs EpochMapper, validators ValidatorRetriever, opts ...CacheOption) *ValidatorsManager {
 
-	sets, _ := lru.New(8)
+	cfg := DefaultManagerCacheConfig
+	for _, opt := range opts {
+		opt(&cfg)
+	}
+
+	sets, _ := lru.New(int(cfg.CacheSize))
 	v := ValidatorsManager{
 		blockchain: blockchain,
 		epochs:     epochs,

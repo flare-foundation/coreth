@@ -11,19 +11,19 @@ import (
 	"github.com/flare-foundation/flare/ids"
 )
 
-var DefaultCacheConfig = CacheConfig{
-	NumSlots: 8,
+var DefaultRetrieverCacheConfig = CacheConfig{
+	CacheSize: 8,
 }
 
 type CacheConfig struct {
-	NumSlots uint
+	CacheSize uint
 }
 
 type CacheOption func(*CacheConfig)
 
-func WithNumSlots(slots uint) CacheOption {
+func WithCacheSize(slots uint) CacheOption {
 	return func(cfg *CacheConfig) {
-		cfg.NumSlots = slots
+		cfg.CacheSize = slots
 	}
 }
 
@@ -38,12 +38,12 @@ type ValidatorsCache struct {
 // configured  number of cache slots.
 func NewValidatorsCache(validators ValidatorRetriever, opts ...CacheOption) *ValidatorsCache {
 
-	cfg := DefaultCacheConfig
+	cfg := DefaultRetrieverCacheConfig
 	for _, opt := range opts {
 		opt(&cfg)
 	}
 
-	cache, _ := lru.New(int(cfg.NumSlots))
+	cache, _ := lru.New(int(cfg.CacheSize))
 	v := ValidatorsCache{
 		validators: validators,
 		cache:      cache,

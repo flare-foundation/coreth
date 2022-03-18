@@ -9,20 +9,8 @@ import (
 	lru "github.com/hashicorp/golang-lru"
 )
 
-var DefaultEpochsConfig = EpochsConfig{
+var DefaultEpochsCacheConfig = CacheConfig{
 	CacheSize: 16,
-}
-
-type EpochsConfig struct {
-	CacheSize uint
-}
-
-type EpochsOption func(*EpochsConfig)
-
-func WithCacheSize(size uint) EpochsOption {
-	return func(cfg *EpochsConfig) {
-		cfg.CacheSize = size
-	}
 }
 
 type EpochsCache struct {
@@ -30,9 +18,9 @@ type EpochsCache struct {
 	cache  *lru.Cache
 }
 
-func NewEpochsCache(epochs Epochs, opts ...EpochsOption) *EpochsCache {
+func NewEpochsCache(epochs Epochs, opts ...CacheOption) *EpochsCache {
 
-	cfg := DefaultEpochsConfig
+	cfg := DefaultEpochsCacheConfig
 	for _, opt := range opts {
 		opt(&cfg)
 	}
