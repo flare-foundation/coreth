@@ -208,13 +208,17 @@ func (f *FTSOSystem) Details(epoch uint64) (EpochDetails, error) {
 	call := BindEVM(f.blockchain).AtBlock(hash).OnContract(contracts.Manager)
 
 	var seconds big.Int
-	err = call.Execute(EpochSeconds).Decode(&seconds)
+	err = call.
+		Execute(EpochSeconds).
+		Decode(&seconds)
 	if err != nil {
 		return EpochDetails{}, fmt.Errorf("could not get epoch seconds: %w", err)
 	}
 
 	var startHeight, startTime *big.Int
-	err = call.Execute(RewardEpoch).Decode(nil, &startHeight, &startTime)
+	err = call.
+		Execute(RewardEpoch, big.NewInt(0).SetUint64(epoch)).
+		Decode(nil, &startHeight, &startTime)
 	if err != nil {
 		return EpochDetails{}, fmt.Errorf("could not get epoch info: %w", err)
 	}
