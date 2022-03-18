@@ -9,7 +9,7 @@ require (
 	github.com/deckarep/golang-set v1.8.0
 	github.com/ethereum/go-ethereum v1.10.15
 	github.com/fjl/memsize v0.0.0-20190710130421-bcb5799ab5e5
-	github.com/flare-foundation/flare v0.5.4-0.20220309161006-46c35bad7fff
+	github.com/flare-foundation/flare v0.5.4-0.20220317200519-32e012f8b1a0
 	github.com/gballet/go-libpcsclite v0.0.0-20191108122812-4678299bea08
 	github.com/google/uuid v1.1.5
 	github.com/gorilla/rpc v1.2.0

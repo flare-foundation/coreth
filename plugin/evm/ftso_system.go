@@ -114,26 +114,35 @@ func (f *FTSOSystem) Contracts(hash common.Hash) (FTSOContracts, error) {
 
 	snap := BindEVM(f.blockchain).AtBlock(hash)
 
-	var registryAddress common.Address
-	err := snap.OnContract(f.submitter).Execute(RegistryAddress).Decode(&registryAddress)
-	if err != nil {
-		return FTSOContracts{}, fmt.Errorf("could not get registry address: %w", err)
-	}
-
-	registry := EVMContract{
-		address: registryAddress,
-		abi:     f.abis.Registry,
-	}
-
 	var managerAddress common.Address
-	err = snap.OnContract(f.submitter).Execute(ManagerAddress).Decode(&managerAddress)
+	err := snap.OnContract(f.submitter).Execute(ManagerAddress).Decode(&managerAddress)
 	if err != nil {
 		return FTSOContracts{}, fmt.Errorf("could not get manager address: %w", err)
+	}
+
+	empty := common.Address{}
+	if managerAddress == empty {
+		return FTSOContracts{}, errFTSONotDeployed
 	}
 
 	manager := EVMContract{
 		address: managerAddress,
 		abi:     f.abis.Manager,
+	}
+
+	var timestamp *big.Int
+	err = snap.OnContract(manager).Execute(EpochsStart).Decode(&timestamp)
+	if err != nil {
+		return FTSOContracts{}, fmt.Errorf("could not get epochs start: %w", err)
+	}
+
+	header := f.blockchain.GetBlockByHash(hash)
+	if header == nil {
+		return FTSOContracts{}, fmt.Errorf("unknown block (hash: %x)", hash)
+	}
+
+	if header.Time() < timestamp.Uint64() {
+		return FTSOContracts{}, errFTSONotActive
 	}
 
 	var rewardsAddress common.Address
@@ -145,6 +154,17 @@ func (f *FTSOSystem) Contracts(hash common.Hash) (FTSOContracts, error) {
 	rewards := EVMContract{
 		address: rewardsAddress,
 		abi:     f.abis.Rewards,
+	}
+
+	var registryAddress common.Address
+	err = snap.OnContract(f.submitter).Execute(RegistryAddress).Decode(&registryAddress)
+	if err != nil {
+		return FTSOContracts{}, fmt.Errorf("could not get registry address: %w", err)
+	}
+
+	registry := EVMContract{
+		address: registryAddress,
+		abi:     f.abis.Registry,
 	}
 
 	var whitelistAddress common.Address
