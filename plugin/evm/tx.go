@@ -28,16 +28,13 @@ import (
 )
 
 var (
-	errWrongBlockchainID = errors.New("wrong blockchain ID provided")
-	errWrongNetworkID    = errors.New("tx was issued with a different network ID")
-	errNilTx             = errors.New("tx is nil")
-	errNoValueOutput     = errors.New("output has no value")
-	errNoValueInput      = errors.New("input has no value")
-	errNilOutput         = errors.New("nil output")
-	errNilInput          = errors.New("nil input")
-	errEmptyAssetID      = errors.New("empty asset ID is not valid")
-	errNilBaseFee        = errors.New("cannot calculate dynamic fee with nil baseFee")
-	errFeeOverflow       = errors.New("overflow occurred while calculating the fee")
+	errNoValueOutput = errors.New("output has no value")
+	errNoValueInput  = errors.New("input has no value")
+	errNilOutput     = errors.New("nil output")
+	errNilInput      = errors.New("nil input")
+	errEmptyAssetID  = errors.New("empty asset ID is not valid")
+	errNilBaseFee    = errors.New("cannot calculate dynamic fee with nil baseFee")
+	errFeeOverflow   = errors.New("overflow occurred while calculating the fee")
 )
 
 // Constants for calculating the gas consumed by atomic transactions
@@ -274,10 +271,6 @@ func calculateDynamicFee(cost uint64, baseFee *big.Int) (uint64, error) {
 		return 0, errFeeOverflow
 	}
 	return feeInNAVAX.Uint64(), nil
-}
-
-func calcBytesCost(len int) uint64 {
-	return uint64(len) * TxBytesGas
 }
 
 // mergeAtomicOps merges atomic requests represented by [txs]
