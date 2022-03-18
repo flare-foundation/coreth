@@ -339,8 +339,6 @@ func TestIndexingNilShouldNotImpactTrie(t *testing.T) {
 			if err := a1.Index(i, ops[i]); err != nil {
 				t.Fatal(err)
 			}
-		} else {
-			// do nothing
 		}
 	}
 

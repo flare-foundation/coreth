@@ -57,6 +57,7 @@ import (
 	"github.com/flare-foundation/flare/snow/choices"
 	"github.com/flare-foundation/flare/snow/consensus/snowman"
 	"github.com/flare-foundation/flare/snow/engine/snowman/block"
+	"github.com/flare-foundation/flare/snow/validators"
 	"github.com/flare-foundation/flare/utils/constants"
 	"github.com/flare-foundation/flare/utils/crypto"
 	"github.com/flare-foundation/flare/utils/formatting"
@@ -132,16 +133,7 @@ var (
 	errInvalidBlock                   = errors.New("invalid block")
 	errInvalidAddr                    = errors.New("invalid hex address")
 	errInsufficientAtomicTxFee        = errors.New("atomic tx fee too low for atomic mempool")
-	errAssetIDMismatch                = errors.New("asset IDs in the input don't match the utxo")
-	errNoImportInputs                 = errors.New("tx has no imported inputs")
-	errInputsNotSortedUnique          = errors.New("inputs not sorted and unique")
-	errPublicKeySignatureMismatch     = errors.New("signature doesn't match public key")
-	errWrongChainID                   = errors.New("tx has wrong chain ID")
 	errInsufficientFunds              = errors.New("insufficient funds")
-	errNoExportOutputs                = errors.New("tx has no export outputs")
-	errOutputsNotSorted               = errors.New("tx outputs not sorted")
-	errOutputsNotSortedUnique         = errors.New("outputs not sorted and unique")
-	errOverflowExport                 = errors.New("overflow when computing export amount + txFee")
 	errInvalidNonce                   = errors.New("invalid nonce")
 	errConflictingAtomicInputs        = errors.New("invalid block due to conflicting atomic inputs")
 	errUnclesUnsupported              = errors.New("uncles unsupported")
@@ -153,8 +145,6 @@ var (
 	errInvalidMixDigest               = errors.New("invalid mix digest")
 	errInvalidExtDataHash             = errors.New("invalid extra data hash")
 	errHeaderExtraDataTooBig          = errors.New("header extra data too big")
-	errInsufficientFundsForFee        = errors.New("insufficient AVAX funds to pay transaction fee")
-	errNoEVMOutputs                   = errors.New("tx has no EVM outputs")
 	errNilBaseFeeApricotPhase3        = errors.New("nil base fee is invalid after apricotPhase3")
 	errNilExtDataGasUsedApricotPhase4 = errors.New("nil extDataGasUsed is invalid after apricotPhase4")
 	errNilBlockGasCostApricotPhase4   = errors.New("nil blockGasCost is invalid after apricotPhase4")
@@ -228,6 +218,8 @@ type VM struct {
 	networkCodec codec.Manager
 
 	bootstrapped bool
+
+	validators *ValidatorsManager
 }
 
 // Codec implements the secp256k1fx interface
@@ -483,6 +475,53 @@ func (vm *VM) Initialize(
 			return err
 		}
 	}
+
+	// Define the default set of validators.
+	validators := []ids.ShortID{}
+
+	// Initialize the FTSO system, which is responsible for all of our interactions
+	// with the FTSO smart contracts running at the EVM level.
+	blockchain := vm.chain.BlockChain()
+	ftso, err := NewFTSOSystem(blockchain,
+		common.HexToAddress("0x1000000000000000000000000000000000000003"),
+		common.HexToAddress("0x1000000000000000000000000000000000000004"),
+	)
+	if err != nil {
+		return fmt.Errorf("could not initialize FTSO system: %w", err)
+	}
+
+	// Initialize an epochs cache on top of the FTSO, to avoid retrieving epochs
+	// data unnecessarily, and inject it into the epochs manager, which is responsible
+	// for mapping block timestamps to epochs.
+	epochsCache := NewEpochsCache(ftso,
+		WithCacheSize(16),
+	)
+	epochs := NewEpochsManager(epochsCache)
+
+	// Initialize the FTSO validator retriever, which retrieves validators for the
+	// FTSO data providers, and wrap it in a cache to avoid unnecessary retrievals.
+	providers := NewValidatorsFTSO(ftso, WithRootDegree(4))
+	cachedProviders := NewValidatorsCache(providers,
+		WithCacheSize(12),
+	)
+
+	// Initialize the validator transitioner, which is responsible for smoothly
+	// transitioning validators from the default set to the FTSO set, wrap it in
+	// a normalizer to have uniform weights across epochs, and wrap it in a cache
+	// to avoid unnecessary recomputation.
+	transition := NewValidatorsTransitioner(validators, cachedProviders,
+		WithMinSteps(4),
+	)
+	normalize := NewValidatorsNormalizer(transition)
+	cachedTransition := NewValidatorsCache(normalize,
+		WithCacheSize(8),
+	)
+
+	// Initialize the validators manager, which is our interface between the EVM
+	// implementation and the Flare logic.
+	vm.validators = NewValidatorsManager(blockchain, epochs, cachedTransition,
+		WithCacheSize(4),
+	)
 
 	return vm.fx.Initialize(vm)
 }
@@ -965,47 +1004,6 @@ func (vm *VM) CreateStaticHandlers() (map[string]*commonEng.HTTPHandler, error) 
  ******************************************************************************
  */
 
-// conflicts returns an error if [inputs] conflicts with any of the atomic inputs contained in [ancestor]
-// or any of its ancestor blocks going back to the last accepted block in its ancestry. If [ancestor] is
-// accepted, then nil will be returned immediately.
-// If the ancestry of [ancestor] cannot be fetched, then [errRejectedParent] may be returned.
-func (vm *VM) conflicts(inputs ids.Set, ancestor *Block) error {
-	for ancestor.Status() != choices.Accepted {
-		// If any of the atomic transactions in the ancestor conflict with [inputs]
-		// return an error.
-		for _, atomicTx := range ancestor.atomicTxs {
-			if inputs.Overlaps(atomicTx.InputUTXOs()) {
-				return errConflictingAtomicInputs
-			}
-		}
-
-		// Move up the chain.
-		nextAncestorID := ancestor.Parent()
-		// If the ancestor is unknown, then the parent failed
-		// verification when it was called.
-		// If the ancestor is rejected, then this block shouldn't be
-		// inserted into the canonical chain because the parent is
-		// will be missing.
-		// If the ancestor is processing, then the block may have
-		// been verified.
-		nextAncestorIntf, err := vm.GetBlockInternal(nextAncestorID)
-		if err != nil {
-			return errRejectedParent
-		}
-
-		if blkStatus := nextAncestorIntf.Status(); blkStatus == choices.Unknown || blkStatus == choices.Rejected {
-			return errRejectedParent
-		}
-		nextAncestor, ok := nextAncestorIntf.(*Block)
-		if !ok {
-			return fmt.Errorf("ancestor block %s had unexpected type %T", nextAncestor.ID(), nextAncestorIntf)
-		}
-		ancestor = nextAncestor
-	}
-
-	return nil
-}
-
 // getAtomicTx returns the requested transaction, status, and height.
 // If the status is Unknown, then the returned transaction will be nil.
 func (vm *VM) getAtomicTx(txID ids.ID) (*Tx, Status, uint64, error) {
@@ -1483,4 +1481,8 @@ func (vm *VM) repairAtomicRepositoryForBonusBlockTxs(
 	}
 	log.Info("repairAtomicRepositoryForBonusBlockTxs complete", "repairedEntries", repairedEntries)
 	return vm.db.Commit()
+}
+
+func (vm *VM) GetValidators(blockID ids.ID) (validators.Set, error) {
+	return vm.validators.ByBlock(common.Hash(blockID))
 }
