@@ -23,7 +23,7 @@ const (
 
 var (
 	costonActivationTime   = big.NewInt(time.Date(2022, time.February, 25, 17, 0, 0, 0, time.UTC).Unix())
-	songbirdActivationTime = big.NewInt(time.Date(2022, time.March, 28, 15, 0, 0, 0, time.UTC).Unix())
+	songbirdActivationTime = big.NewInt(time.Date(2022, time.March, 31, 14, 0, 0, 0, time.UTC).Unix())
 	flareActivationTime    = big.NewInt(time.Date(2200, time.January, 1, 0, 0, 0, 0, time.UTC).Unix())
 
 	costonDefaultAttestors = []common.Address{
