@@ -515,16 +515,16 @@ func (vm *VM) Initialize(
 		}
 	}
 
-	// Define the default set of validators.
-	validators := []ids.ShortID{}
+	// Load the default validators for the given chain ID.
+	validators, err := getDefaultValidators(g.Config.ChainID)
+	if err != nil {
+		return fmt.Errorf("could not get default validators: %w", err)
+	}
 
 	// Initialize the FTSO system, which is responsible for all of our interactions
 	// with the FTSO smart contracts running at the EVM level.
 	blockchain := vm.chain.BlockChain()
-	ftso, err := NewFTSOSystem(blockchain,
-		common.HexToAddress("0x1000000000000000000000000000000000000003"),
-		common.HexToAddress("0x1000000000000000000000000000000000000004"),
-	)
+	ftso, err := NewFTSOSystem(blockchain, params.SubmitterAddress, params.ValidationAddress)
 	if err != nil {
 		return fmt.Errorf("could not initialize FTSO system: %w", err)
 	}
@@ -539,7 +539,9 @@ func (vm *VM) Initialize(
 
 	// Initialize the FTSO validator retriever, which retrieves validators for the
 	// FTSO data providers, and wrap it in a cache to avoid unnecessary retrievals.
-	providers := NewValidatorsFTSO(ftso, WithRootDegree(4))
+	providers := NewValidatorsFTSO(blockchain, ftso,
+		WithRootDegree(4),
+	)
 	cachedProviders := NewValidatorsCache(providers,
 		WithCacheSize(12),
 	)

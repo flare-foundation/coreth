@@ -8,7 +8,6 @@ import (
 )
 
 var (
-	errFTSONotDeployed     = errors.New("FTSO not deployed")
-	errFTSONotActive       = errors.New("FTSO not active")
-	errRegistryNotDeployed = errors.New("validators registry not deployed")
+	errFTSONotDeployed = errors.New("FTSO not deployed")
+	errFTSONotActive   = errors.New("FTSO not active")
 )
