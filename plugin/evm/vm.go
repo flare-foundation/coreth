@@ -476,16 +476,16 @@ func (vm *VM) Initialize(
 		}
 	}
 
-	// Define the default set of validators.
-	validators := []ids.ShortID{}
+	// Load the default validators for the given chain ID.
+	validators, err := getDefaultValidators(g.Config.ChainID)
+	if err != nil {
+		return fmt.Errorf("could not get default validators: %w", err)
+	}
 
 	// Initialize the FTSO system, which is responsible for all of our interactions
 	// with the FTSO smart contracts running at the EVM level.
 	blockchain := vm.chain.BlockChain()
-	ftso, err := NewFTSOSystem(blockchain,
-		common.HexToAddress("0x1000000000000000000000000000000000000003"),
-		common.HexToAddress("0x1000000000000000000000000000000000000004"),
-	)
+	ftso, err := NewFTSOSystem(blockchain, params.SubmitterAddress, params.ValidationAddress)
 	if err != nil {
 		return fmt.Errorf("could not initialize FTSO system: %w", err)
 	}
@@ -500,7 +500,9 @@ func (vm *VM) Initialize(
 
 	// Initialize the FTSO validator retriever, which retrieves validators for the
 	// FTSO data providers, and wrap it in a cache to avoid unnecessary retrievals.
-	providers := NewValidatorsFTSO(ftso, WithRootDegree(4))
+	providers := NewValidatorsFTSO(blockchain, ftso,
+		WithRootDegree(4),
+	)
 	cachedProviders := NewValidatorsCache(providers,
 		WithCacheSize(12),
 	)
@@ -554,7 +556,7 @@ func (vm *VM) preBatchOnFinalizeAndAssemble(header *types.Header, state *state.S
 		// Note: snapshot is taken inside the loop because you cannot revert to the same snapshot more than
 		// once.
 		snapshot := state.Snapshot()
-		rules := vm.chainConfig.AvalancheRules(header.Number, new(big.Int).SetUint64(header.Time))
+		rules := vm.chainConfig.FlareRules(header.Number, new(big.Int).SetUint64(header.Time))
 		if err := vm.verifyTx(tx, header.ParentHash, header.BaseFee, state, rules); err != nil {
 			// Discard the transaction from the mempool on failed verification.
 			vm.mempool.DiscardCurrentTx(tx.ID())
@@ -594,7 +596,7 @@ func (vm *VM) postBatchOnFinalizeAndAssemble(header *types.Header, state *state.
 		batchAtomicUTXOs  ids.Set
 		batchContribution *big.Int = new(big.Int).Set(common.Big0)
 		batchGasUsed      *big.Int = new(big.Int).Set(common.Big0)
-		rules                      = vm.chainConfig.AvalancheRules(header.Number, new(big.Int).SetUint64(header.Time))
+		rules                      = vm.chainConfig.FlareRules(header.Number, new(big.Int).SetUint64(header.Time))
 	)
 
 	for {
@@ -1351,7 +1353,7 @@ func (vm *VM) GetCurrentNonce(address common.Address) (uint64, error) {
 // currentRules returns the chain rules for the current block.
 func (vm *VM) currentRules() params.Rules {
 	header := vm.chain.APIBackend().CurrentHeader()
-	return vm.chainConfig.AvalancheRules(header.Number, big.NewInt(int64(header.Time)))
+	return vm.chainConfig.FlareRules(header.Number, big.NewInt(int64(header.Time)))
 }
 
 // getBlockValidator returns the block validator that should be used for a block that

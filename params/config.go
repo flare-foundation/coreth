@@ -35,14 +35,15 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// Avalanche ChainIDs
 var (
-	// CostonChainID ...
-	CostonChainID = big.NewInt(16)
-	// SongbirdChainID ...
-	SongbirdChainID = big.NewInt(19)
-	// FlareChainID ...
-	FlareChainID = big.NewInt(14)
+	// Flare Chain IDs.
+	CostonChainID   = big.NewInt(16) // https://github.com/ethereum-lists/chains/blob/master/_data/chains/eip155-16.json
+	SongbirdChainID = big.NewInt(19) // https://github.com/ethereum-lists/chains/blob/master/_data/chains/eip155-19.json
+	FlareChainID    = big.NewInt(14) // https://github.com/ethereum-lists/chains/blob/master/_data/chains/eip155-14.json
+
+	// Flare core contract addresses.
+	SubmitterAddress  = common.HexToAddress("0x1000000000000000000000000000000000000003")
+	ValidationAddress = common.HexToAddress("0x1000000000000000000000000000000000000004")
 
 	errNonGenesisForkByHeight = errors.New("coreth only supports forking by height at the genesis block")
 )
@@ -50,78 +51,82 @@ var (
 var (
 	// CostonChainConfig is the configuration for the Coston test network.
 	CostonChainConfig = &ChainConfig{
-		ChainID:                     CostonChainID,
-		HomesteadBlock:              big.NewInt(0),
-		DAOForkBlock:                big.NewInt(0),
-		DAOForkSupport:              true,
-		EIP150Block:                 big.NewInt(0),
-		EIP150Hash:                  common.HexToHash("0x2086799aeebeae135c246c65021c82b4e15a2c451340993aacfd2751886514f0"),
-		EIP155Block:                 big.NewInt(0),
-		EIP158Block:                 big.NewInt(0),
-		ByzantiumBlock:              big.NewInt(0),
-		ConstantinopleBlock:         big.NewInt(0),
-		PetersburgBlock:             big.NewInt(0),
-		IstanbulBlock:               big.NewInt(0),
-		MuirGlacierBlock:            big.NewInt(0),
-		ApricotPhase1BlockTimestamp: big.NewInt(time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()),
-		ApricotPhase2BlockTimestamp: big.NewInt(time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()),
-		ApricotPhase3BlockTimestamp: big.NewInt(time.Date(2022, time.February, 25, 14, 0, 0, 0, time.UTC).Unix()),
-		ApricotPhase4BlockTimestamp: big.NewInt(time.Date(2022, time.February, 25, 15, 0, 0, 0, time.UTC).Unix()),
-		ApricotPhase5BlockTimestamp: big.NewInt(time.Date(2022, time.February, 25, 16, 0, 0, 0, time.UTC).Unix()),
+		ChainID:                      CostonChainID,
+		HomesteadBlock:               big.NewInt(0),
+		DAOForkBlock:                 big.NewInt(0),
+		DAOForkSupport:               true,
+		EIP150Block:                  big.NewInt(0),
+		EIP150Hash:                   common.HexToHash("0x2086799aeebeae135c246c65021c82b4e15a2c451340993aacfd2751886514f0"),
+		EIP155Block:                  big.NewInt(0),
+		EIP158Block:                  big.NewInt(0),
+		ByzantiumBlock:               big.NewInt(0),
+		ConstantinopleBlock:          big.NewInt(0),
+		PetersburgBlock:              big.NewInt(0),
+		IstanbulBlock:                big.NewInt(0),
+		MuirGlacierBlock:             big.NewInt(0),
+		ApricotPhase1BlockTimestamp:  big.NewInt(time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()),
+		ApricotPhase2BlockTimestamp:  big.NewInt(time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()),
+		ApricotPhase3BlockTimestamp:  big.NewInt(time.Date(2022, time.February, 25, 14, 0, 0, 0, time.UTC).Unix()),
+		ApricotPhase4BlockTimestamp:  big.NewInt(time.Date(2022, time.February, 25, 15, 0, 0, 0, time.UTC).Unix()),
+		ApricotPhase5BlockTimestamp:  big.NewInt(time.Date(2022, time.February, 25, 16, 0, 0, 0, time.UTC).Unix()),
+		FlareHardFork1BlockTimestamp: big.NewInt(time.Date(2022, time.March, 23, 14, 0, 0, 0, time.UTC).Unix()),
 	}
 
 	// SongbirdChainConfig is the configuration for the Songbird canary network.
 	SongbirdChainConfig = &ChainConfig{
-		ChainID:                     SongbirdChainID,
-		HomesteadBlock:              big.NewInt(0),
-		DAOForkBlock:                big.NewInt(0),
-		DAOForkSupport:              true,
-		EIP150Block:                 big.NewInt(0),
-		EIP150Hash:                  common.HexToHash("0x2086799aeebeae135c246c65021c82b4e15a2c451340993aacfd2751886514f0"),
-		EIP155Block:                 big.NewInt(0),
-		EIP158Block:                 big.NewInt(0),
-		ByzantiumBlock:              big.NewInt(0),
-		ConstantinopleBlock:         big.NewInt(0),
-		PetersburgBlock:             big.NewInt(0),
-		IstanbulBlock:               big.NewInt(0),
-		MuirGlacierBlock:            big.NewInt(0),
-		ApricotPhase1BlockTimestamp: big.NewInt(time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()),
-		ApricotPhase2BlockTimestamp: big.NewInt(time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()),
-		ApricotPhase3BlockTimestamp: big.NewInt(time.Date(2022, time.March, 7, 14, 0, 0, 0, time.UTC).Unix()),
-		ApricotPhase4BlockTimestamp: big.NewInt(time.Date(2022, time.March, 7, 15, 0, 0, 0, time.UTC).Unix()),
-		ApricotPhase5BlockTimestamp: big.NewInt(time.Date(2022, time.March, 7, 16, 0, 0, 0, time.UTC).Unix()),
+		ChainID:                      SongbirdChainID,
+		HomesteadBlock:               big.NewInt(0),
+		DAOForkBlock:                 big.NewInt(0),
+		DAOForkSupport:               true,
+		EIP150Block:                  big.NewInt(0),
+		EIP150Hash:                   common.HexToHash("0x2086799aeebeae135c246c65021c82b4e15a2c451340993aacfd2751886514f0"),
+		EIP155Block:                  big.NewInt(0),
+		EIP158Block:                  big.NewInt(0),
+		ByzantiumBlock:               big.NewInt(0),
+		ConstantinopleBlock:          big.NewInt(0),
+		PetersburgBlock:              big.NewInt(0),
+		IstanbulBlock:                big.NewInt(0),
+		MuirGlacierBlock:             big.NewInt(0),
+		ApricotPhase1BlockTimestamp:  big.NewInt(time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()),
+		ApricotPhase2BlockTimestamp:  big.NewInt(time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()),
+		ApricotPhase3BlockTimestamp:  big.NewInt(time.Date(2022, time.March, 7, 14, 0, 0, 0, time.UTC).Unix()),
+		ApricotPhase4BlockTimestamp:  big.NewInt(time.Date(2022, time.March, 7, 15, 0, 0, 0, time.UTC).Unix()),
+		ApricotPhase5BlockTimestamp:  big.NewInt(time.Date(2022, time.March, 7, 16, 0, 0, 0, time.UTC).Unix()),
+		FlareHardFork1BlockTimestamp: big.NewInt(time.Date(2022, time.March, 28, 14, 0, 0, 0, time.UTC).Unix()),
 	}
 
 	// FlareChainConfig is the configuration for Flare main network.
 	FlareChainConfig = &ChainConfig{
-		ChainID:                     FlareChainID,
-		HomesteadBlock:              big.NewInt(0),
-		DAOForkBlock:                big.NewInt(0),
-		DAOForkSupport:              true,
-		EIP150Block:                 big.NewInt(0),
-		EIP150Hash:                  common.HexToHash("0x2086799aeebeae135c246c65021c82b4e15a2c451340993aacfd2751886514f0"),
-		EIP155Block:                 big.NewInt(0),
-		EIP158Block:                 big.NewInt(0),
-		ByzantiumBlock:              big.NewInt(0),
-		ConstantinopleBlock:         big.NewInt(0),
-		PetersburgBlock:             big.NewInt(0),
-		IstanbulBlock:               big.NewInt(0),
-		MuirGlacierBlock:            big.NewInt(0),
-		ApricotPhase1BlockTimestamp: big.NewInt(time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()),
-		ApricotPhase2BlockTimestamp: big.NewInt(time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()),
-		ApricotPhase3BlockTimestamp: big.NewInt(time.Date(2022, time.February, 9, 15, 0, 0, 0, time.UTC).Unix()),
-		ApricotPhase4BlockTimestamp: big.NewInt(time.Date(2022, time.February, 10, 15, 0, 0, 0, time.UTC).Unix()),
-		ApricotPhase5BlockTimestamp: big.NewInt(time.Date(2022, time.February, 11, 15, 0, 0, 0, time.UTC).Unix()),
+		ChainID:                      FlareChainID,
+		HomesteadBlock:               big.NewInt(0),
+		DAOForkBlock:                 big.NewInt(0),
+		DAOForkSupport:               true,
+		EIP150Block:                  big.NewInt(0),
+		EIP150Hash:                   common.HexToHash("0x2086799aeebeae135c246c65021c82b4e15a2c451340993aacfd2751886514f0"),
+		EIP155Block:                  big.NewInt(0),
+		EIP158Block:                  big.NewInt(0),
+		ByzantiumBlock:               big.NewInt(0),
+		ConstantinopleBlock:          big.NewInt(0),
+		PetersburgBlock:              big.NewInt(0),
+		IstanbulBlock:                big.NewInt(0),
+		MuirGlacierBlock:             big.NewInt(0),
+		ApricotPhase1BlockTimestamp:  big.NewInt(time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()),
+		ApricotPhase2BlockTimestamp:  big.NewInt(time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC).Unix()),
+		ApricotPhase3BlockTimestamp:  big.NewInt(time.Date(2022, time.February, 9, 15, 0, 0, 0, time.UTC).Unix()),
+		ApricotPhase4BlockTimestamp:  big.NewInt(time.Date(2022, time.February, 10, 15, 0, 0, 0, time.UTC).Unix()),
+		ApricotPhase5BlockTimestamp:  big.NewInt(time.Date(2022, time.February, 11, 15, 0, 0, 0, time.UTC).Unix()),
+		FlareHardFork1BlockTimestamp: big.NewInt(time.Date(2022, time.March, 20, 18, 0, 0, 0, time.UTC).Unix()),
 	}
 
-	TestChainConfig         = &ChainConfig{big.NewInt(1), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0)}
-	TestLaunchConfig        = &ChainConfig{big.NewInt(1), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, nil, nil, nil}
-	TestApricotPhase1Config = &ChainConfig{big.NewInt(1), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, nil, nil}
-	TestApricotPhase2Config = &ChainConfig{big.NewInt(1), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, nil}
-	TestApricotPhase3Config = &ChainConfig{big.NewInt(1), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil}
-	TestApricotPhase4Config = &ChainConfig{big.NewInt(1), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil}
-	TestApricotPhase5Config = &ChainConfig{big.NewInt(1), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0)}
-	TestRules               = TestChainConfig.AvalancheRules(new(big.Int), new(big.Int))
+	TestChainConfig          = &ChainConfig{big.NewInt(1), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0)}
+	TestLaunchConfig         = &ChainConfig{big.NewInt(1), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, nil, nil, nil, nil}
+	TestApricotPhase1Config  = &ChainConfig{big.NewInt(1), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, nil, nil, nil}
+	TestApricotPhase2Config  = &ChainConfig{big.NewInt(1), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, nil, nil}
+	TestApricotPhase3Config  = &ChainConfig{big.NewInt(1), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, nil}
+	TestApricotPhase4Config  = &ChainConfig{big.NewInt(1), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil}
+	TestApricotPhase5Config  = &ChainConfig{big.NewInt(1), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil}
+	TestFlareHardFork1Config = &ChainConfig{big.NewInt(1), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0)}
+	TestRules                = TestChainConfig.FlareRules(new(big.Int), new(big.Int))
 )
 
 // ChainConfig is the core config which determines the blockchain settings.
@@ -161,11 +166,14 @@ type ChainConfig struct {
 	ApricotPhase4BlockTimestamp *big.Int `json:"apricotPhase4BlockTimestamp,omitempty"`
 	// Apricot Phase 5 introduces a batch of atomic transactions with a maximum atomic gas limit per block. (nil = no fork, 0 = already activated)
 	ApricotPhase5BlockTimestamp *big.Int `json:"apricotPhase5BlockTimestamp,omitempty"`
+
+	// Flare Hard Fork 1 introduces the FTSO data providers as validators.
+	FlareHardFork1BlockTimestamp *big.Int `json:"flareHardFork1BlockTimestamp,omitempty"`
 }
 
 // String implements the fmt.Stringer interface.
 func (c *ChainConfig) String() string {
-	return fmt.Sprintf("{ChainID: %v Homestead: %v DAO: %v DAOSupport: %v EIP150: %v EIP155: %v EIP158: %v Byzantium: %v Constantinople: %v Petersburg: %v Istanbul: %v, Muir Glacier: %v, Apricot Phase 1: %v, Apricot Phase 2: %v, Apricot Phase 3: %v, Apricot Phase 4: %v, Apricot Phase 5: %v, Engine: Dummy Consensus Engine}",
+	return fmt.Sprintf("{ChainID: %v Homestead: %v DAO: %v DAOSupport: %v EIP150: %v EIP155: %v EIP158: %v Byzantium: %v Constantinople: %v Petersburg: %v Istanbul: %v, Muir Glacier: %v, Apricot Phase 1: %v, Apricot Phase 2: %v, Apricot Phase 3: %v, Apricot Phase 4: %v, Apricot Phase 5: %v, Flare Hard Fork 1: %v, Engine: Dummy Consensus Engine}",
 		c.ChainID,
 		c.HomesteadBlock,
 		c.DAOForkBlock,
@@ -183,6 +191,7 @@ func (c *ChainConfig) String() string {
 		c.ApricotPhase3BlockTimestamp,
 		c.ApricotPhase4BlockTimestamp,
 		c.ApricotPhase5BlockTimestamp,
+		c.FlareHardFork1BlockTimestamp,
 	)
 }
 
@@ -270,6 +279,12 @@ func (c *ChainConfig) IsApricotPhase5(blockTimestamp *big.Int) bool {
 	return isForked(c.ApricotPhase5BlockTimestamp, blockTimestamp)
 }
 
+// IsFlareHardFork1 returns whether [blockTimestamp] represents a block
+// with a timestamp after the Flare Hard Fork 1 upgrade time.
+func (c *ChainConfig) IsFlareHardFork1(blockTimestamp *big.Int) bool {
+	return isForked(c.FlareHardFork1BlockTimestamp, blockTimestamp)
+}
+
 // CheckCompatible checks whether scheduled fork transitions have been imported
 // with a mismatching chain configuration.
 func (c *ChainConfig) CheckCompatible(newcfg *ChainConfig, height uint64, timestamp uint64) *ConfigCompatError {
@@ -344,6 +359,8 @@ func (c *ChainConfig) CheckConfigForkOrder() error {
 		{name: "apricotPhase2BlockTimestamp", block: c.ApricotPhase2BlockTimestamp},
 		{name: "apricotPhase3BlockTimestamp", block: c.ApricotPhase3BlockTimestamp},
 		{name: "apricotPhase4BlockTimestamp", block: c.ApricotPhase4BlockTimestamp},
+		{name: "apricotPhase5BlockTimestamp", block: c.ApricotPhase5BlockTimestamp},
+		{name: "flareHardFork1BlockTimestamp", block: c.FlareHardFork1BlockTimestamp},
 	} {
 		if lastFork.name != "" {
 			// Next one must be higher number
@@ -426,6 +443,9 @@ func (c *ChainConfig) checkCompatible(newcfg *ChainConfig, headHeight *big.Int, 
 	if isForkIncompatible(c.ApricotPhase5BlockTimestamp, newcfg.ApricotPhase5BlockTimestamp, headTimestamp) {
 		return newCompatError("ApricotPhase5 fork block timestamp", c.ApricotPhase5BlockTimestamp, newcfg.ApricotPhase5BlockTimestamp)
 	}
+	if isForkIncompatible(c.FlareHardFork1BlockTimestamp, newcfg.FlareHardFork1BlockTimestamp, headTimestamp) {
+		return newCompatError("FlareHardFork1 fork block timestamp", c.FlareHardFork1BlockTimestamp, newcfg.FlareHardFork1BlockTimestamp)
+	}
 
 	return nil
 }
@@ -497,9 +517,12 @@ type Rules struct {
 
 	// Rules for Avalanche releases
 	IsApricotPhase1, IsApricotPhase2, IsApricotPhase3, IsApricotPhase4, IsApricotPhase5 bool
+
+	// Rules for Flare releases
+	IsFlareHardFork1 bool
 }
 
-// Rules ensures c's ChainID is not nil.
+// rules ensures c's ChainID is not nil.
 func (c *ChainConfig) rules(num *big.Int) Rules {
 	chainID := c.ChainID
 	if chainID == nil {
@@ -518,9 +541,9 @@ func (c *ChainConfig) rules(num *big.Int) Rules {
 	}
 }
 
-// AvalancheRules returns the Avalanche modified rules to support Avalanche
+// avalancheRules returns the Avalanche modified rules to support Avalanche
 // network upgrades
-func (c *ChainConfig) AvalancheRules(blockNum, blockTimestamp *big.Int) Rules {
+func (c *ChainConfig) avalancheRules(blockNum, blockTimestamp *big.Int) Rules {
 	rules := c.rules(blockNum)
 
 	rules.IsApricotPhase1 = c.IsApricotPhase1(blockTimestamp)
@@ -528,5 +551,14 @@ func (c *ChainConfig) AvalancheRules(blockNum, blockTimestamp *big.Int) Rules {
 	rules.IsApricotPhase3 = c.IsApricotPhase3(blockTimestamp)
 	rules.IsApricotPhase4 = c.IsApricotPhase4(blockTimestamp)
 	rules.IsApricotPhase5 = c.IsApricotPhase5(blockTimestamp)
+	return rules
+}
+
+// FlareRules returns the Flare modified rules to support Flare network
+// upgrades.
+func (c *ChainConfig) FlareRules(blockNum, blockTimestamp *big.Int) Rules {
+	rules := c.avalancheRules(blockNum, blockTimestamp)
+
+	rules.IsFlareHardFork1 = c.IsFlareHardFork1(blockTimestamp)
 	return rules
 }
