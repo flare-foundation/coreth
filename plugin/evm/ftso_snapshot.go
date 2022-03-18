@@ -15,8 +15,9 @@ import (
 type FTSOSnapshot struct {
 	system    *FTSOSystem
 	epoch     uint64
-	current   common.Hash
-	next      common.Hash
+	power     common.Hash
+	start     common.Hash
+	end       common.Hash
 	contracts FTSOContracts
 }
 
@@ -24,7 +25,7 @@ func (f *FTSOSnapshot) Providers() ([]common.Address, error) {
 
 	var indices []*big.Int
 	err := BindEVM(f.system.blockchain).
-		AtBlock(f.current).
+		AtBlock(f.start).
 		OnContract(f.contracts.Registry).
 		Execute(SeriesIndices).
 		Decode(&indices)
@@ -36,7 +37,7 @@ func (f *FTSOSnapshot) Providers() ([]common.Address, error) {
 	for _, index := range indices {
 		var addresses []common.Address
 		err := BindEVM(f.system.blockchain).
-			AtBlock(f.current).
+			AtBlock(f.start).
 			OnContract(f.contracts.Whitelist).
 			Execute(DataProviders).
 			Decode(&addresses)
@@ -60,7 +61,7 @@ func (f *FTSOSnapshot) Validator(provider common.Address) (ids.ShortID, error) {
 
 	var validator [20]byte
 	err := BindEVM(f.system.blockchain).
-		AtBlock(f.current).
+		AtBlock(f.start).
 		OnContract(f.contracts.Validation).
 		Execute(ProviderNode, provider).
 		Decode(&validator)
@@ -75,7 +76,7 @@ func (f *FTSOSnapshot) Votepower(provider common.Address) (float64, error) {
 
 	vpInt := &big.Int{}
 	err := BindEVM(f.system.blockchain).
-		AtBlock(f.current).
+		AtBlock(f.power).
 		OnContract(f.contracts.Votepower).
 		Execute(ProviderVotepower, provider).
 		Decode(&vpInt)
@@ -95,7 +96,7 @@ func (f *FTSOSnapshot) Rewards(provider common.Address) (float64, error) {
 
 	rwInt := &big.Int{}
 	err := BindEVM(f.system.blockchain).
-		AtBlock(f.next).
+		AtBlock(f.end).
 		OnContract(f.contracts.Rewards).
 		Execute(ProviderRewards, epoch, provider).
 		Decode(&rwInt)
