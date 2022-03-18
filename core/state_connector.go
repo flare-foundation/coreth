@@ -129,6 +129,7 @@ func GetLocalAttestors() []common.Address {
 		for _, localAttestorEntry := range localAttestorEntries {
 			localAttestors = append(localAttestors, common.HexToAddress(localAttestorEntry))
 		}
+		return localAttestors
 	}
 
 	return localAttestors
