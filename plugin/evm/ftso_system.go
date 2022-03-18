@@ -4,7 +4,6 @@
 package evm
 
 import (
-	"errors"
 	"fmt"
 	"math/big"
 	"strings"
@@ -13,7 +12,6 @@ import (
 
 	"github.com/flare-foundation/coreth/accounts/abi"
 	"github.com/flare-foundation/coreth/core"
-	"github.com/flare-foundation/coreth/core/vm"
 )
 
 type FTSOSystem struct {
@@ -39,12 +37,6 @@ type FTSOContracts struct {
 	Whitelist  EVMContract
 	Votepower  EVMContract
 	Validation EVMContract
-}
-
-type FTSOEpoch struct {
-	PowerHeight uint64
-	StartHeight uint64
-	StartTime   uint64
 }
 
 func NewFTSOSystem(blockchain *core.BlockChain, addressSubmitter common.Address, addressValidation common.Address) (*FTSOSystem, error) {
@@ -122,29 +114,26 @@ func (f *FTSOSystem) Contracts(hash common.Hash) (FTSOContracts, error) {
 
 	snap := BindEVM(f.blockchain).AtBlock(hash)
 
-	var managerAddress common.Address
-	err := snap.OnContract(f.submitter).Execute(ManagerAddress).Decode(&managerAddress)
+	var registryAddress common.Address
+	err := snap.OnContract(f.submitter).Execute(RegistryAddress).Decode(&registryAddress)
 	if err != nil {
-		return FTSOContracts{}, fmt.Errorf("could not get manager address: %w", err)
+		return FTSOContracts{}, fmt.Errorf("could not get registry address: %w", err)
 	}
 
-	empty := common.Address{}
-	if managerAddress == empty {
-		return FTSOContracts{}, errFTSONotDeployed
+	registry := EVMContract{
+		address: registryAddress,
+		abi:     f.abis.Registry,
+	}
+
+	var managerAddress common.Address
+	err = snap.OnContract(f.submitter).Execute(ManagerAddress).Decode(&managerAddress)
+	if err != nil {
+		return FTSOContracts{}, fmt.Errorf("could not get manager address: %w", err)
 	}
 
 	manager := EVMContract{
 		address: managerAddress,
 		abi:     f.abis.Manager,
-	}
-
-	height := &big.Int{}
-	err = snap.OnContract(manager).Execute(RewardEpoch, big.NewInt(0)).Decode(nil, &height, nil)
-	if errors.Is(err, vm.ErrExecutionReverted) || height.Uint64() == 0 {
-		return FTSOContracts{}, errFTSONotActive
-	}
-	if err != nil {
-		return FTSOContracts{}, fmt.Errorf("could not get first epoch: %w", err)
 	}
 
 	var rewardsAddress common.Address
@@ -156,17 +145,6 @@ func (f *FTSOSystem) Contracts(hash common.Hash) (FTSOContracts, error) {
 	rewards := EVMContract{
 		address: rewardsAddress,
 		abi:     f.abis.Rewards,
-	}
-
-	var registryAddress common.Address
-	err = snap.OnContract(f.submitter).Execute(RegistryAddress).Decode(&registryAddress)
-	if err != nil {
-		return FTSOContracts{}, fmt.Errorf("could not get registry address: %w", err)
-	}
-
-	registry := EVMContract{
-		address: registryAddress,
-		abi:     f.abis.Registry,
 	}
 
 	var whitelistAddress common.Address
@@ -214,55 +192,41 @@ func (f *FTSOSystem) Contracts(hash common.Hash) (FTSOContracts, error) {
 	return contracts, nil
 }
 
-func (f *FTSOSystem) Current(hash common.Hash) (uint64, error) {
-
-	contracts, err := f.Contracts(hash)
-	if err != nil {
-		return 0, fmt.Errorf("could not get contracts: %w", err)
-	}
-
-	epoch := &big.Int{}
-	err = BindEVM(f.blockchain).
-		AtBlock(hash).
-		OnContract(contracts.Manager).
-		Execute(CurrentEpoch).
-		Decode(&epoch)
-	if err != nil {
-		return 0, fmt.Errorf("could not execute current epoch retrieval: %w", err)
-	}
-
-	return epoch.Uint64(), nil
-}
-
-func (f *FTSOSystem) Details(epoch uint64) (FTSOEpoch, error) {
+func (f *FTSOSystem) Details(epoch uint64) (EpochDetails, error) {
 
 	header := f.blockchain.CurrentHeader()
 	if header == nil {
-		return FTSOEpoch{}, fmt.Errorf("no current header")
+		return EpochDetails{}, fmt.Errorf("no current header")
 	}
 
 	hash := header.Hash()
 	contracts, err := f.Contracts(hash)
 	if err != nil {
-		return FTSOEpoch{}, fmt.Errorf("could not get contracts (hash: %x): %w", hash, err)
+		return EpochDetails{}, fmt.Errorf("could not get contracts (hash: %x): %w", hash, err)
 	}
 
 	call := BindEVM(f.blockchain).AtBlock(hash).OnContract(contracts.Manager)
 
-	powerHeight := &big.Int{}
-	startHeight := &big.Int{}
-	startTime := &big.Int{}
+	var seconds big.Int
 	err = call.
-		Execute(RewardEpoch, big.NewInt(0).SetUint64(epoch)).
-		Decode(&powerHeight, &startHeight, &startTime)
+		Execute(EpochSeconds).
+		Decode(&seconds)
 	if err != nil {
-		return FTSOEpoch{}, fmt.Errorf("could not execute epoch info retrieval (hash: %x): %w", hash, err)
+		return EpochDetails{}, fmt.Errorf("could not get epoch seconds: %w", err)
 	}
 
-	info := FTSOEpoch{
-		PowerHeight: powerHeight.Uint64(),
+	var startHeight, startTime *big.Int
+	err = call.
+		Execute(RewardEpoch, big.NewInt(0).SetUint64(epoch)).
+		Decode(nil, &startHeight, &startTime)
+	if err != nil {
+		return EpochDetails{}, fmt.Errorf("could not get epoch info: %w", err)
+	}
+
+	info := EpochDetails{
 		StartHeight: startHeight.Uint64(),
 		StartTime:   startTime.Uint64(),
+		EndTime:     startTime.Uint64() + seconds.Uint64(),
 	}
 
 	return info, nil
@@ -270,43 +234,37 @@ func (f *FTSOSystem) Details(epoch uint64) (FTSOEpoch, error) {
 
 func (f *FTSOSystem) Snapshot(epoch uint64) (Snapshot, error) {
 
-	currentEpoch, err := f.Details(epoch)
+	currentInfo, err := f.Details(epoch)
 	if err != nil {
-		return nil, fmt.Errorf("could not get current epoch details: %w", err)
+		return nil, fmt.Errorf("could not get current epoch info: %w", err)
 	}
 
-	powerHeader := f.blockchain.GetHeaderByNumber(currentEpoch.PowerHeight)
-	if powerHeader == nil {
-		return nil, fmt.Errorf("unknown power block (height: %d)", currentEpoch.PowerHeight)
+	currentHeader := f.blockchain.GetHeaderByNumber(currentInfo.StartHeight)
+	if currentHeader == nil {
+		return nil, fmt.Errorf("unknown current block (height: %d)", currentInfo.StartHeight)
 	}
 
-	startHeader := f.blockchain.GetHeaderByNumber(currentEpoch.StartHeight)
-	if startHeader == nil {
-		return nil, fmt.Errorf("unknown current block (height: %d)", currentEpoch.StartHeight)
-	}
-
-	nextEpoch, err := f.Details(epoch + 1)
+	nextInfo, err := f.Details(epoch + 1)
 	if err != nil {
-		return nil, fmt.Errorf("could not get next epoch details: %w", err)
+		return nil, fmt.Errorf("could not get next epoch info: %w", err)
 	}
 
-	endHeader := f.blockchain.GetHeaderByNumber(nextEpoch.StartHeight)
-	if endHeader == nil {
-		return nil, fmt.Errorf("unknown next block (height: %d)", nextEpoch.StartHeight)
+	nextHeader := f.blockchain.GetHeaderByNumber(nextInfo.StartHeight)
+	if nextHeader == nil {
+		return nil, fmt.Errorf("unknown next block (height: %d)", nextInfo.StartHeight)
 	}
 
-	startHash := startHeader.Hash()
-	contracts, err := f.Contracts(startHash)
+	hash := currentHeader.Hash()
+	contracts, err := f.Contracts(hash)
 	if err != nil {
-		return nil, fmt.Errorf("could not get contracts (hash: %x): %w", startHash, err)
+		return nil, fmt.Errorf("could not get contracts (hash: %x): %w", hash, err)
 	}
 
 	snap := FTSOSnapshot{
 		system:    f,
 		epoch:     epoch,
-		power:     powerHeader.Hash(),
-		start:     startHash,
-		end:       endHeader.Hash(),
+		current:   hash,
+		next:      nextHeader.Hash(),
 		contracts: contracts,
 	}
 

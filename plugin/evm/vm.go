@@ -35,7 +35,7 @@ import (
 	"github.com/flare-foundation/flare/snow/choices"
 	"github.com/flare-foundation/flare/snow/consensus/snowman"
 	"github.com/flare-foundation/flare/snow/engine/snowman/block"
-	"github.com/flare-foundation/flare/snow/validation"
+	"github.com/flare-foundation/flare/snow/validators"
 	"github.com/flare-foundation/flare/utils/constants"
 	"github.com/flare-foundation/flare/utils/crypto"
 	"github.com/flare-foundation/flare/utils/formatting"
@@ -218,8 +218,7 @@ type VM struct {
 
 	bootstrapped bool
 
-	ftso       FTSO
-	validators Validators
+	validators *ValidatorsManager
 }
 
 // Codec implements the secp256k1fx interface
@@ -515,6 +514,53 @@ func (vm *VM) Initialize(
 			return err
 		}
 	}
+
+	// Define the default set of validators.
+	validators := []ids.ShortID{}
+
+	// Initialize the FTSO system, which is responsible for all of our interactions
+	// with the FTSO smart contracts running at the EVM level.
+	blockchain := vm.chain.BlockChain()
+	ftso, err := NewFTSOSystem(blockchain,
+		common.HexToAddress("0x1000000000000000000000000000000000000003"),
+		common.HexToAddress("0x1000000000000000000000000000000000000004"),
+	)
+	if err != nil {
+		return fmt.Errorf("could not initialize FTSO system: %w", err)
+	}
+
+	// Initialize an epochs cache on top of the FTSO, to avoid retrieving epochs
+	// data unnecessarily, and inject it into the epochs manager, which is responsible
+	// for mapping block timestamps to epochs.
+	epochsCache := NewEpochsCache(ftso,
+		WithCacheSize(16),
+	)
+	epochs := NewEpochsManager(epochsCache)
+
+	// Initialize the FTSO validator retriever, which retrieves validators for the
+	// FTSO data providers, and wrap it in a cache to avoid unnecessary retrievals.
+	providers := NewValidatorsFTSO(ftso, WithRootDegree(4))
+	cachedProviders := NewValidatorsCache(providers,
+		WithCacheSize(12),
+	)
+
+	// Initialize the validator transitioner, which is responsible for smoothly
+	// transitioning validators from the default set to the FTSO set, wrap it in
+	// a normalizer to have uniform weights across epochs, and wrap it in a cache
+	// to avoid unnecessary recomputation.
+	transition := NewValidatorsTransitioner(validators, cachedProviders,
+		WithMinSteps(4),
+	)
+	normalize := NewValidatorsNormalizer(transition)
+	cachedTransition := NewValidatorsCache(normalize,
+		WithCacheSize(8),
+	)
+
+	// Initialize the validators manager, which is our interface between the EVM
+	// implementation and the Flare logic.
+	vm.validators = NewValidatorsManager(blockchain, epochs, cachedTransition,
+		WithCacheSize(4),
+	)
 
 	return vm.fx.Initialize(vm)
 }
@@ -1483,49 +1529,6 @@ func (vm *VM) repairAtomicRepositoryForBonusBlockTxs(
 	return vm.db.Commit()
 }
 
-func (vm *VM) GetValidators(blockID ids.ID) (validation.Set, error) {
-
-	hash := common.Hash(blockID)
-	blockchain := vm.chain.BlockChain()
-
-	header := blockchain.GetHeaderByHash(hash)
-	if header == nil {
-		return nil, fmt.Errorf("unknown block (hash: %x)", hash)
-	}
-
-	// If the hard fork was not active at the given block yet, we simply return the
-	// default validator set, which corresponds to what we had before the upgrade.
-	if !blockchain.Config().IsFlareHardFork1(big.NewInt(0).SetUint64(header.Time)) {
-		vm.ctx.Log.Debug("hard fork not active, using default validators")
-		return toSet(vm.validators.DefaultValidators())
-	}
-
-	// If the hard fork is active, we try to map the header to an FTSO rewards epoch.
-	// If the FTSO is not yet deployed, or not yet active, we simply go ahead with an
-	// epoch value of zero as well.
-	epoch, err := vm.ftso.Current(hash)
-	if errors.Is(err, errFTSONotDeployed) || errors.Is(err, errFTSONotActive) {
-		vm.ctx.Log.Debug("FTSO not active, using default validators")
-		return toSet(vm.validators.DefaultValidators())
-	}
-	if err != nil {
-		return nil, fmt.Errorf("could not get epoch (timestamp: %d): %w", header.Time, err)
-	}
-
-	vm.ctx.Log.Debug("hard fork and FTSO active, using active validators")
-	return toSet(vm.validators.ActiveValidators(epoch))
-}
-
-func toSet(validatorMap map[ids.ShortID]uint64, err error) (validation.Set, error) {
-	if err != nil {
-		return nil, err
-	}
-	set := validation.NewSet()
-	for validator, weight := range validatorMap {
-		err := set.AddWeight(validator, weight)
-		if err != nil {
-			return nil, fmt.Errorf("could not add weight: %w", err)
-		}
-	}
-	return set, nil
+func (vm *VM) GetValidators(blockID ids.ID) (validators.Set, error) {
+	return vm.validators.ByBlock(common.Hash(blockID))
 }
