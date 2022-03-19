@@ -11,6 +11,13 @@ import (
 	"github.com/flare-foundation/flare/utils/constants"
 )
 
+const (
+	costonValidatorWeight   = 200_000
+	songbirdValidatorWeight = 50_000
+	flareValidatorWeight    = 50_000
+	customValidatorWeight   = 200_000
+)
+
 var costonNodeIDs = []string{
 	"NodeID-5dDZXn99LCkDoEi6t9gTitZuQmhokxQTc",
 	"NodeID-EkH8wyEshzEQBToAdR7Fexxcj9rrmEEHZ",
@@ -44,31 +51,42 @@ var songbirdNodeIDs = []string{
 
 var flareNodeIDs = []string{}
 
-func getDefaultValidators(chainID *big.Int) ([]ids.ShortID, error) {
+// getDefaultValidators gets the set of default validators, with their respective
+// weights, as defined in the legacy code base of Flare.
+func getDefaultValidators(chainID *big.Int) (map[ids.ShortID]uint64, error) {
 
+	var weight uint64
 	var nodeIDs []string
 	switch {
 	case chainID.Cmp(params.CostonChainID) == 0:
 		nodeIDs = costonNodeIDs
+		weight = costonValidatorWeight
 	case chainID.Cmp(params.SongbirdChainID) == 0:
 		nodeIDs = songbirdNodeIDs
+		weight = songbirdValidatorWeight
 	case chainID.Cmp(params.FlareChainID) == 0:
 		nodeIDs = flareNodeIDs
+		weight = flareValidatorWeight
 	default:
-		nodeIDs = strings.Split(os.Getenv("DEFAULT_VALIDATORS"), ",")
+		customValidators := os.Getenv("CUSTOM_VALIDATORS")
+		if customValidators == "" {
+			return nil, fmt.Errorf("custom validators not set for non-standard network (chain: %s)", chainID)
+		}
+		nodeIDs = strings.Split(customValidators, ",")
+		weight = customValidatorWeight
 	}
 
 	if len(nodeIDs) == 0 {
 		return nil, fmt.Errorf("no default validators set")
 	}
 
-	validators := make([]ids.ShortID, 0, len(nodeIDs))
+	validators := make(map[ids.ShortID]uint64, len(nodeIDs))
 	for _, nodeID := range nodeIDs {
 		validator, err := ids.ShortFromPrefixedString(nodeID, constants.NodeIDPrefix)
 		if err != nil {
 			return nil, fmt.Errorf("could not parse validator (nodeid: %s): %w", nodeID, err)
 		}
-		validators = append(validators, validator)
+		validators[validator] = weight
 	}
 
 	return validators, nil

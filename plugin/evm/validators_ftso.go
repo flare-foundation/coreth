@@ -4,10 +4,8 @@
 package evm
 
 import (
-	"errors"
 	"fmt"
 	"math"
-	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -71,18 +69,6 @@ func (v *ValidatorsFTSO) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, error) {
 
 	validators := make(map[ids.ShortID]uint64)
 
-	details, err := v.ftso.Details(epoch)
-	if errors.Is(err, errFTSONotDeployed) || errors.Is(err, errFTSONotActive) {
-		return validators, nil
-	}
-	if err != nil {
-		return nil, fmt.Errorf("could not get epoch details: %w", err)
-	}
-
-	if !v.blockchain.Config().IsFlareHardFork1(big.NewInt(0).SetUint64(details.StartTime)) {
-		return nil, nil
-	}
-
 	snap, err := v.ftso.Snapshot(epoch)
 	if err != nil {
 		return nil, fmt.Errorf("could not get FTSO snapshot: %w", err)
@@ -107,10 +93,16 @@ func (v *ValidatorsFTSO) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, error) {
 		if err != nil {
 			return nil, fmt.Errorf("could not get vote power (provider: %x): %w", provider, err)
 		}
+		if votepower == 0 {
+			continue
+		}
 
 		rewards, err := snap.Rewards(provider)
 		if err != nil {
 			return nil, fmt.Errorf("could not get rewards (provider: %x): %w", provider, err)
+		}
+		if rewards == 0 {
+			continue
 		}
 
 		weight := uint64(math.Pow(votepower, 1.0/float64(v.cfg.RootDegree)) * (rewards / votepower))
