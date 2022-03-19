@@ -146,7 +146,7 @@ func TestFTSOSystem_Contracts(t *testing.T) {
 	require.NoError(t, err)
 
 	balance := new(big.Int)
-	balance.SetUint64(18446744073709551614)
+	balance.SetUint64(math.MaxUint64)
 	alloc := make(core.GenesisAlloc)
 	alloc[auth.From] = core.GenesisAccount{
 		Balance: balance,
