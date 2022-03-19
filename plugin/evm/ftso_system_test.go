@@ -1,7 +1,6 @@
 package evm
 
 import (
-	"fmt"
 	"math"
 	"math/big"
 	"strings"
@@ -9,6 +8,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/flare-foundation/coreth/accounts/abi"
@@ -79,7 +79,7 @@ func TestFTSOSystem_Contracts(t *testing.T) {
 		rewardEpochPowerHeight := big.NewInt(100)
 		rewardEpochStartHeight := big.NewInt(100)
 		rewardEpochStartTime := big.NewInt(100)
-		rewardEpochsStartTs := big.NewInt(100)
+		rewardEpochsStartTs := big.NewInt(1) // this should be less than header.Time()
 		ftsoManagerAddr := deployTestContract(t, auth, be, testAbiManager, testAbiManagerBin, rewardAddr, rewardEpochDurationSeconds, rewardEpochPowerHeight, rewardEpochStartHeight, rewardEpochStartTime, rewardEpochsStartTs)
 
 		// Registry contract
@@ -108,11 +108,55 @@ func TestFTSOSystem_Contracts(t *testing.T) {
 		latestBlock := be.Blockchain().LastAcceptedBlock()
 
 		contracts, err := ftsoSystem.Contracts(latestBlock.Hash())
+		assert.NoError(t, err)
 
-		fmt.Println(contracts)
-		fmt.Println(err)
+		assert.Equal(t, ftsoRegistryAddr, contracts.Registry.address)
+		assert.Equal(t, ftsoManagerAddr, contracts.Manager.address)
+		assert.Equal(t, rewardAddr, contracts.Rewards.address)
+		assert.Equal(t, voterWhitelisterAddr, contracts.Whitelist.address)
+		assert.Equal(t, votePowerAddr, contracts.Votepower.address)
+		assert.Equal(t, validationAddr, contracts.Validation.address)
 	})
 
+	t.Run("handles FTSO not deployed error", func(t *testing.T) {
+		auth, be := simulatedBlockchain(t)
+
+		// Submitter contract
+		submitterAddr := deployTestContract(t, auth, be, testAbiSubmitter, testAbiSubmitterBin, common.Address{}, common.Address{}, common.Address{})
+
+		be.Commit(true)
+
+		ftsoSystem := testFTSOSystem(t, be, submitterAddr, common.Address{})
+
+		latestBlock := be.Blockchain().LastAcceptedBlock()
+
+		_, err := ftsoSystem.Contracts(latestBlock.Hash())
+		assert.ErrorIs(t, err, errFTSONotDeployed)
+	})
+
+	t.Run("handles FTSO not active error", func(t *testing.T) {
+		auth, be := simulatedBlockchain(t)
+
+		// Manager contract
+		rewardEpochDurationSeconds := big.NewInt(100)
+		rewardEpochPowerHeight := big.NewInt(100)
+		rewardEpochStartHeight := big.NewInt(100)
+		rewardEpochStartTime := big.NewInt(100)
+		rewardEpochsStartTs := big.NewInt(1000000)
+		ftsoManagerAddr := deployTestContract(t, auth, be, testAbiManager, testAbiManagerBin, common.Address{}, rewardEpochDurationSeconds, rewardEpochPowerHeight, rewardEpochStartHeight, rewardEpochStartTime, rewardEpochsStartTs)
+
+		// Submitter contract
+		submitterAddr := deployTestContract(t, auth, be, testAbiSubmitter, testAbiSubmitterBin, common.Address{}, common.Address{}, ftsoManagerAddr)
+
+		be.Commit(true)
+
+		ftsoSystem := testFTSOSystem(t, be, submitterAddr, common.Address{})
+
+		latestBlock := be.Blockchain().LastAcceptedBlock()
+
+		_, err := ftsoSystem.Contracts(latestBlock.Hash())
+		assert.ErrorIs(t, err, errFTSONotActive)
+	})
 }
 
 func testFTSOSystem(t *testing.T, be *backends.SimulatedBackend, submitterAddr, validationAddr common.Address) *FTSOSystem {
