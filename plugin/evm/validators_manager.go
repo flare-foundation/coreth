@@ -71,7 +71,7 @@ func (v *ValidatorsManager) ByBlock(hash common.Hash) (validators.Set, error) {
 	// First, we check whether we have the header with the given hash available.
 	header := v.blockchain.GetHeaderByHash(hash)
 	if header == nil {
-		return nil, fmt.Errorf("invalid block (hash: %x)", hash)
+		return nil, fmt.Errorf("unknown block (hash: %x)", hash)
 	}
 
 	// If the hard fork was not active at the given block yet, we simply return the
