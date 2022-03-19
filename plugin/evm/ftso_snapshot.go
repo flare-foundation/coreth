@@ -39,7 +39,7 @@ func (f *FTSOSnapshot) Providers() ([]common.Address, error) {
 		err := BindEVM(f.system.blockchain).
 			AtBlock(f.start).
 			OnContract(f.contracts.Whitelist).
-			Execute(DataProviders).
+			Execute(DataProviders, index).
 			Decode(&addresses)
 		if err != nil {
 			return nil, fmt.Errorf("could not get provider addresses (index: %d): %w", index, err)
