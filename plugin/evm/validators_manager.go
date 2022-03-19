@@ -57,7 +57,7 @@ func (v *ValidatorsManager) ByBlock(blockID common.Hash) (validators.Set, error)
 
 	header := v.blockchain.GetHeaderByHash(blockID)
 	if header == nil {
-		return nil, fmt.Errorf("invalid hash (block: %x)", blockID)
+		return nil, fmt.Errorf("unknown block (hash: %x)", hash)
 	}
 
 	epoch, err := v.epochs.ByTimestamp(header.Time)
