@@ -25,6 +25,10 @@ func (e *EVMReturn) Decode(values ...interface{}) error {
 
 	for i, val := range values {
 
+		if val == nil {
+			continue
+		}
+
 		ret := e.values[i]
 
 		vv := reflect.ValueOf(val)
