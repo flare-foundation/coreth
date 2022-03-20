@@ -12,23 +12,23 @@ import (
 )
 
 const (
-	defaultPruningEnabled                       = true
-	defaultSnapshotAsync                        = true
-	defaultRpcGasCap                            = 120_000_000 // Default to 120M Gas Limit
-	defaultRpcTxFeeCap                          = 100         // 100 AVAX
-	defaultMetricsEnabled                       = true
-	defaultMetricsExpensiveEnabled              = false
-	defaultApiMaxDuration                       = 0 // Default to no maximum API call duration
-	defaultWsCpuRefillRate                      = 0 // Default to no maximum WS CPU usage
-	defaultWsCpuMaxStored                       = 0 // Default to no maximum WS CPU usage
-	defaultMaxBlocksPerRequest                  = 0 // Default to no maximum on the number of blocks per getLogs request
-	defaultContinuousProfilerFrequency          = 15 * time.Minute
-	defaultContinuousProfilerMaxFiles           = 5
-	defaultTxRegossipFrequency                  = 1 * time.Minute
-	defaultTxRegossipMaxSize                    = 15
-	defaultOfflinePruningBloomFilterSize uint64 = 512 // Default size (MB) for the offline pruner to use
-	defaultLogLevel                             = "info"
-	defaultMaxOutboundActiveRequests            = 8
+	defaultPruningEnabled                = true
+	defaultSnapshotAsync                 = true
+	defaultRpcGasCap                     = 120_000_000 // Default to 120M Gas Limit
+	defaultRpcTxFeeCap                   = 100         // 100 AVAX
+	defaultMetricsEnabled                = true
+	defaultMetricsExpensiveEnabled       = false
+	defaultApiMaxDuration                = 0 // Default to no maximum API call duration
+	defaultWsCpuRefillRate               = 0 // Default to no maximum WS CPU usage
+	defaultWsCpuMaxStored                = 0 // Default to no maximum WS CPU usage
+	defaultMaxBlocksPerRequest           = 0 // Default to no maximum on the number of blocks per getLogs request
+	defaultContinuousProfilerFrequency   = 15 * time.Minute
+	defaultContinuousProfilerMaxFiles    = 5
+	defaultTxRegossipFrequency           = 1 * time.Minute
+	defaultTxRegossipMaxSize             = 15
+	defaultOfflinePruningBloomFilterSize = 512 // Default size (MB) for the offline pruner to use
+	defaultLogLevel                      = "info"
+	defaultMaxOutboundActiveRequests     = 8
 )
 
 var defaultEnabledAPIs = []string{
@@ -51,6 +51,9 @@ type Config struct {
 	SnowmanAPIEnabled     bool   `json:"snowman-api-enabled"`
 	CorethAdminAPIEnabled bool   `json:"coreth-admin-api-enabled"`
 	CorethAdminAPIDir     string `json:"coreth-admin-api-dir"`
+
+	// Flare APIs
+	FlareAPIEnabled bool `json:"flare-api-enabled"`
 
 	// EnabledEthAPIs is a list of Ethereum services that should be enabled
 	// If none is specified, then we use the default list [defaultEnabledAPIs]
