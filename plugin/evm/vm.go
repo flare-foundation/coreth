@@ -16,34 +16,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/flare-foundation/coreth/plugin/evm/message"
-
-	coreth "github.com/flare-foundation/coreth/chain"
-	"github.com/flare-foundation/coreth/consensus/dummy"
-	"github.com/flare-foundation/coreth/core"
-	"github.com/flare-foundation/coreth/core/state"
-	"github.com/flare-foundation/coreth/core/types"
-	"github.com/flare-foundation/coreth/eth/ethconfig"
-	"github.com/flare-foundation/coreth/metrics/prometheus"
-	"github.com/flare-foundation/coreth/node"
-	"github.com/flare-foundation/coreth/params"
-	"github.com/flare-foundation/coreth/peer"
-	"github.com/flare-foundation/coreth/rpc"
-
-	// Force-load tracer engine to trigger registration
-	//
-	// We must import this package (not referenced elsewhere) so that the native "callTracer"
-	// is added to a map of client-accessible tracers. In geth, this is done
-	// inside of cmd/geth.
-	_ "github.com/flare-foundation/coreth/eth/tracers/js"
-	_ "github.com/flare-foundation/coreth/eth/tracers/native"
+	avalancheRPC "github.com/gorilla/rpc/v2"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/ethereum/go-ethereum/rlp"
-
-	avalancheRPC "github.com/gorilla/rpc/v2"
 
 	"github.com/flare-foundation/flare/cache"
 	"github.com/flare-foundation/flare/codec"
@@ -57,6 +35,7 @@ import (
 	"github.com/flare-foundation/flare/snow/choices"
 	"github.com/flare-foundation/flare/snow/consensus/snowman"
 	"github.com/flare-foundation/flare/snow/engine/snowman/block"
+	"github.com/flare-foundation/flare/snow/validators"
 	"github.com/flare-foundation/flare/utils/constants"
 	"github.com/flare-foundation/flare/utils/crypto"
 	"github.com/flare-foundation/flare/utils/formatting"
@@ -70,8 +49,29 @@ import (
 	"github.com/flare-foundation/flare/vms/secp256k1fx"
 
 	commonEng "github.com/flare-foundation/flare/snow/engine/common"
-
 	avalancheJSON "github.com/flare-foundation/flare/utils/json"
+
+	"github.com/flare-foundation/coreth/consensus/dummy"
+	"github.com/flare-foundation/coreth/core"
+	"github.com/flare-foundation/coreth/core/state"
+	"github.com/flare-foundation/coreth/core/types"
+	"github.com/flare-foundation/coreth/eth/ethconfig"
+	"github.com/flare-foundation/coreth/metrics/prometheus"
+	"github.com/flare-foundation/coreth/node"
+	"github.com/flare-foundation/coreth/params"
+	"github.com/flare-foundation/coreth/peer"
+	"github.com/flare-foundation/coreth/plugin/evm/message"
+	"github.com/flare-foundation/coreth/rpc"
+
+	coreth "github.com/flare-foundation/coreth/chain"
+
+	// Force-load tracer engine to trigger registration
+	//
+	// We must import this package (not referenced elsewhere) so that the native "callTracer"
+	// is added to a map of client-accessible tracers. In geth, this is done
+	// inside of cmd/geth.
+	_ "github.com/flare-foundation/coreth/eth/tracers/js"
+	_ "github.com/flare-foundation/coreth/eth/tracers/native"
 )
 
 const (
@@ -1483,7 +1483,7 @@ func (vm *VM) repairAtomicRepositoryForBonusBlockTxs(
 	return vm.db.Commit()
 }
 
-func (vm *VM) GetValidators(blockID ids.ID) (map[ids.ShortID]uint64, error) {
+func (vm *VM) GetValidators(blockID ids.ID) (validators.Set, error) {
 
 	hash := common.Hash(blockID)
 	blockchain := vm.chain.BlockChain()
@@ -1496,22 +1496,33 @@ func (vm *VM) GetValidators(blockID ids.ID) (map[ids.ShortID]uint64, error) {
 	// If the hard fork was not active at the given block yet, we simply return the
 	// default validator set, which corresponds to what we had before the upgrade.
 	if !blockchain.Config().IsFlareHardFork1(big.NewInt(0).SetUint64(header.Time)) {
-		return vm.validators.DefaultValidators()
+		return toSet(vm.validators.DefaultValidators())
 	}
 
 	// If the hard fork is active, we try to map the header to an FTSO rewards epoch.
 	// If the FTSO is not yet deployed, or not yet active, we simply go ahead with an
 	// epoch value of zero as well.
 	epoch, err := vm.epochs.ByTimestamp(header.Time)
-	if errors.Is(err, errFTSONotDeployed) {
-		return vm.validators.DefaultValidators()
-	}
-	if errors.Is(err, errFTSONotActive) {
-		return vm.validators.DefaultValidators()
+	if errors.Is(err, errFTSONotDeployed) || errors.Is(err, errFTSONotActive) {
+		return toSet(vm.validators.DefaultValidators())
 	}
 	if err != nil {
 		return nil, fmt.Errorf("could not get epoch (timestamp: %d): %w", header.Time, err)
 	}
 
-	return vm.validators.ActiveValidators(epoch)
+	return toSet(vm.validators.ActiveValidators(epoch))
+}
+
+func toSet(validatorMap map[ids.ShortID]uint64, err error) (validators.Set, error) {
+	if err != nil {
+		return nil, err
+	}
+	set := validators.NewSet()
+	for validator, weight := range validatorMap {
+		err := set.AddWeight(validator, weight)
+		if err != nil {
+			return nil, fmt.Errorf("could not add weight: %w", err)
+		}
+	}
+	return set, nil
 }
