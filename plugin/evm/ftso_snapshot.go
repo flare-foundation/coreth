@@ -4,6 +4,7 @@
 package evm
 
 import (
+	"errors"
 	"fmt"
 	"math/big"
 
@@ -65,6 +66,9 @@ func (f *FTSOSnapshot) Validator(provider common.Address) (ids.ShortID, error) {
 		OnContract(f.contracts.Validation).
 		Execute(ProviderNode, provider).
 		Decode(&validator)
+	if errors.Is(err, errNoReturnData) {
+		return ids.ShortEmpty, errRegistryNotDeployed
+	}
 	if err != nil {
 		return ids.ShortEmpty, fmt.Errorf("could not get provider node: %w", err)
 	}

@@ -32,13 +32,13 @@ func (e *EVMReturn) Decode(values ...interface{}) error {
 			continue
 		}
 		if vv.Kind() != reflect.Ptr {
-			return fmt.Errorf("invalid non-pointer (index: %d, type: %s)", i, vv)
+			return fmt.Errorf("invalid non-pointer (index: %d, type: %T)", i, val)
 		}
 
 		iv := reflect.Indirect(vv)
 		rv := reflect.ValueOf(ret)
 		if iv.Kind() != rv.Kind() {
-			return fmt.Errorf("invalid type for return value (want: %s, have: %s)", iv, rv)
+			return fmt.Errorf("invalid type for return value (have: %T, want: %T)", val, ret)
 		}
 
 		iv.Set(rv)
