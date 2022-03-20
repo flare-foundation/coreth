@@ -11,6 +11,7 @@ import (
 
 	"github.com/flare-foundation/coreth/core"
 	"github.com/flare-foundation/flare/ids"
+	"github.com/flare-foundation/flare/utils/logging"
 )
 
 var DefaultFTSOConfig = FTSOConfig{
@@ -45,12 +46,13 @@ type Snapshot interface {
 // ValidatorsFTSO is responsible for retrieving the set of validators for the FTSO
 // data providers, in accordance with the defined formula and configured root degree.
 type ValidatorsFTSO struct {
+	log        logging.Logger
 	blockchain *core.BlockChain
 	ftso       FTSO
 	cfg        FTSOConfig
 }
 
-func NewValidatorsFTSO(blockchain *core.BlockChain, ftso FTSO, opts ...FTSOOption) *ValidatorsFTSO {
+func NewValidatorsFTSO(log logging.Logger, blockchain *core.BlockChain, ftso FTSO, opts ...FTSOOption) *ValidatorsFTSO {
 
 	cfg := DefaultFTSOConfig
 	for _, opt := range opts {
@@ -58,6 +60,7 @@ func NewValidatorsFTSO(blockchain *core.BlockChain, ftso FTSO, opts ...FTSOOptio
 	}
 
 	v := ValidatorsFTSO{
+		log:        log,
 		blockchain: blockchain,
 		ftso:       ftso,
 		cfg:        cfg,
@@ -84,29 +87,34 @@ func (v *ValidatorsFTSO) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, error) {
 
 		validator, err := snap.Validator(provider)
 		if err != nil {
-			return nil, fmt.Errorf("could not get FTSO validator (provider: %x): %w", provider, err)
+			return nil, fmt.Errorf("could not get FTSO validator (provider: %s): %w", provider, err)
 		}
 		if validator == ids.ShortEmpty {
+			v.log.Debug("skipping provider with unset validator: %s", validator.Hex())
 			continue
 		}
 
 		votepower, err := snap.Votepower(provider)
 		if err != nil {
-			return nil, fmt.Errorf("could not get vote power (provider: %x): %w", provider, err)
+			return nil, fmt.Errorf("could not get vote power (provider: %s): %w", provider, err)
 		}
 		if votepower == 0 {
+			v.log.Debug("skipping provider with zero votepower: %s", validator.Hex())
 			continue
 		}
 
 		rewards, err := snap.Rewards(provider)
 		if err != nil {
-			return nil, fmt.Errorf("could not get rewards (provider: %x): %w", provider, err)
+			return nil, fmt.Errorf("could not get rewards (provider: %s): %w", provider, err)
 		}
 		if rewards == 0 {
+			v.log.Debug("skipping provider with zero rewards: %s", validator.Hex())
 			continue
 		}
 
 		weight := uint64(math.Pow(votepower, 1.0/float64(v.cfg.RootDegree)) * (rewards / votepower))
+
+		v.log.Debug("val:%s vp:%f rw:%f w:%d", validator.Hex(), votepower, rewards, weight)
 
 		validators[validator] = weight
 	}

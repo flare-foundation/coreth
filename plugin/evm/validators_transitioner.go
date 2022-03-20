@@ -9,6 +9,7 @@ import (
 	"sort"
 
 	"github.com/flare-foundation/flare/ids"
+	"github.com/flare-foundation/flare/utils/logging"
 )
 
 var DefaultTransitionConfig = TransitionConfig{
@@ -32,6 +33,7 @@ func WithMinSteps(steps uint) TransitionOption {
 // ValidatorsTransitioner transitions validators from a static set of validators
 // to a growing set of dynamic validators over a number of smooth steps.
 type ValidatorsTransitioner struct {
+	log        logging.Logger
 	validators map[ids.ShortID]uint64
 	providers  ValidatorRetriever
 	cfg        TransitionConfig
@@ -39,7 +41,7 @@ type ValidatorsTransitioner struct {
 
 // NewValidatorsTransitioner creates a transition from the given default validators
 // to the validators retrieved from the given FTSO validators retriever.
-func NewValidatorsTransitioner(validators map[ids.ShortID]uint64, providers ValidatorRetriever, opts ...TransitionOption) *ValidatorsTransitioner {
+func NewValidatorsTransitioner(log logging.Logger, validators map[ids.ShortID]uint64, providers ValidatorRetriever, opts ...TransitionOption) *ValidatorsTransitioner {
 
 	cfg := DefaultTransitionConfig
 	for _, opt := range opts {
@@ -47,6 +49,7 @@ func NewValidatorsTransitioner(validators map[ids.ShortID]uint64, providers Vali
 	}
 
 	v := ValidatorsTransitioner{
+		log:        log,
 		validators: validators,
 		providers:  providers,
 		cfg:        cfg,
@@ -65,6 +68,7 @@ func (v *ValidatorsTransitioner) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, 
 	// The validators active in an epoch are actually the FTSO validators from
 	// the epoch before, so epoch needs to be at least 1.
 	if epoch < 1 {
+		v.log.Debug("epoch is zero, returning default validators")
 		return v.validators, nil
 	}
 
@@ -79,6 +83,7 @@ func (v *ValidatorsTransitioner) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, 
 
 	// If there are non, we always return the full set of static validators.
 	if len(providers) == 0 {
+		v.log.Debug("providers are empty, returning default validators")
 		return v.validators, nil
 	}
 
@@ -110,12 +115,14 @@ Loop:
 	// If we are not ready to take any steps yet, we stick with the default
 	// validator set still.
 	if steps == 0 {
+		v.log.Debug("transition didn't start, returning default validators")
 		return v.validators, nil
 	}
 
 	// If we have reached the minimum number of steps, we can return the dynamic
 	// set.
 	if steps == v.cfg.MinSteps {
+		v.log.Debug("transition complete, returning provider validators: %#v", providers)
 		return providers, nil
 	}
 
@@ -133,6 +140,8 @@ Loop:
 	cutoff := (size - steps*size/v.cfg.MinSteps)
 	validators = validators[:cutoff]
 
+	v.log.Debug("%d/%d partial transition, using some default validators: %#v", steps, v.cfg.MinSteps, validators)
+
 	// Then, we try to balance the weights between the default validators and the
 	// validators from the FTSO. In order to do so, we calculate the total weight
 	// of FTSO validators. From that, we derive the total weigth we should have based on
@@ -145,6 +154,8 @@ Loop:
 	totalWeight := (providerWeight) * uint64(v.cfg.MinSteps) / uint64(steps)
 	validatorWeight := totalWeight * uint64(v.cfg.MinSteps-steps) / uint64(v.cfg.MinSteps)
 
+	v.log.Debug("providers: %d, total: %d, validators: %d", providerWeight, totalWeight, validatorWeight)
+
 	// Finally, we add the selected default validators to the set of the validators
 	// with the weights we have calculated.
 	transitioned := make(map[ids.ShortID]uint64, len(providers)+len(validators))
@@ -154,6 +165,8 @@ Loop:
 	for _, validator := range validators {
 		transitioned[validator] = validatorWeight / uint64(len(validators))
 	}
+
+	v.log.Debug("final validator selection done: %#v", transitioned)
 
 	return transitioned, nil
 }

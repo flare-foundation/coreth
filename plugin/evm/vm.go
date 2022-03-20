@@ -415,7 +415,7 @@ func (vm *VM) Initialize(
 
 	// Initialize the FTSO validator retriever, which retrieves validators for the
 	// FTSO data providers, and wrap it in a cache to avoid unnecessary retrievals.
-	ftsoValidators := NewValidatorsFTSO(blockchain, ftso,
+	ftsoValidators := NewValidatorsFTSO(ctx.Log, blockchain, ftso,
 		WithRootDegree(4),
 	)
 	cachedFTSOValidators := NewValidatorsCache(ftsoValidators,
@@ -426,10 +426,10 @@ func (vm *VM) Initialize(
 	// transitioning validators from the default set to the FTSO set, wrap it in
 	// a normalizer to have uniform weights across epochs, and wrap it in a cache
 	// to avoid unnecessary recomputation.
-	activeValidators := NewValidatorsTransitioner(defaultValidators, cachedFTSOValidators,
+	activeValidators := NewValidatorsTransitioner(ctx.Log, defaultValidators, cachedFTSOValidators,
 		WithMinSteps(4),
 	)
-	normalizedActiveValidators := NewValidatorsNormalizer(activeValidators)
+	normalizedActiveValidators := NewValidatorsNormalizer(ctx.Log, activeValidators)
 	cachedNormalizedActiveValidators := NewValidatorsCache(normalizedActiveValidators,
 		WithCacheSize(8),
 	)
@@ -1503,6 +1503,7 @@ func (vm *VM) GetValidators(blockID ids.ID) (validators.Set, error) {
 	// If the hard fork was not active at the given block yet, we simply return the
 	// default validator set, which corresponds to what we had before the upgrade.
 	if !blockchain.Config().IsFlareHardFork1(big.NewInt(0).SetUint64(header.Time)) {
+		vm.ctx.Log.Debug("hard fork not active, using default validators")
 		return toSet(vm.validators.DefaultValidators())
 	}
 
@@ -1511,12 +1512,14 @@ func (vm *VM) GetValidators(blockID ids.ID) (validators.Set, error) {
 	// epoch value of zero as well.
 	epoch, err := vm.epochs.ByHash(hash)
 	if errors.Is(err, errFTSONotDeployed) || errors.Is(err, errFTSONotActive) {
+		vm.ctx.Log.Debug("FTSO not active, using default validators")
 		return toSet(vm.validators.DefaultValidators())
 	}
 	if err != nil {
 		return nil, fmt.Errorf("could not get epoch (timestamp: %d): %w", header.Time, err)
 	}
 
+	vm.ctx.Log.Debug("hard fork and FTSO active, using active validators")
 	return toSet(vm.validators.ActiveValidators(epoch))
 }
 
