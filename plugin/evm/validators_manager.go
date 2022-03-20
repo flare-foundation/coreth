@@ -43,18 +43,18 @@ func (v *ValidatorsManager) DefaultValidators() (map[ids.ShortID]uint64, error) 
 	return v.defaultValidators, nil
 }
 
-func (v ValidatorsManager) FTSOValidators(epoch uint64) (map[ids.ShortID]uint64, error) {
+func (v *ValidatorsManager) FTSOValidators(epoch uint64) (map[ids.ShortID]uint64, error) {
 	validators, err := v.ftsoValidators.ByEpoch(epoch)
 	if err != nil {
-		return nil, fmt.Errorf("could not retrieve FTSO validators: %w", err)
+		return nil, fmt.Errorf("could not retrieve FTSO validators by epoch: %w", err)
 	}
 	return validators, nil
 }
 
-func (v ValidatorsManager) ActiveValidators(epoch uint64) (map[ids.ShortID]uint64, error) {
+func (v *ValidatorsManager) ActiveValidators(epoch uint64) (map[ids.ShortID]uint64, error) {
 	validators, err := v.activeValidators.ByEpoch(epoch)
 	if err != nil {
-		return nil, fmt.Errorf("could not retrieve FTSO validators: %w", err)
+		return nil, fmt.Errorf("could not retrieve active validators by epoch: %w", err)
 	}
 	return validators, nil
 }

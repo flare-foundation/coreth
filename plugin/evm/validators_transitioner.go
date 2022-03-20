@@ -65,7 +65,7 @@ func (v *ValidatorsTransitioner) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, 
 	// First, we get the dynamic set of defaultValidators from the underlying retriever.
 	validators, err := v.ftsoValidators.ByEpoch(epoch)
 	if err != nil {
-		return nil, fmt.Errorf("could not get provider defaultValidators: %w", err)
+		return nil, fmt.Errorf("could not retrieve FTSO validators: %w", err)
 	}
 
 	// If there are non, we always return the full set of static validators.
@@ -89,7 +89,7 @@ Loop:
 			}
 			ftsoValidators, err := v.ftsoValidators.ByEpoch(e)
 			if err != nil {
-				return nil, fmt.Errorf("could not get ftsoValidators: %w", err)
+				return nil, fmt.Errorf("could not get retrieve FTSO validators (epoch: %d): %w", e, err)
 			}
 			if uint(len(ftsoValidators)) < threshold {
 				break Loop

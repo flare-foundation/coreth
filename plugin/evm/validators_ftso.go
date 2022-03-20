@@ -83,7 +83,7 @@ func (v *ValidatorsFTSO) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, error) {
 
 		validator, err := snap.Validator(provider)
 		if err != nil {
-			return nil, fmt.Errorf("could not get validator  (provider: %x): %w", provider, err)
+			return nil, fmt.Errorf("could not get FTSO validator (provider: %x): %w", provider, err)
 		}
 		if validator == ids.ShortEmpty {
 			continue
