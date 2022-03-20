@@ -12,6 +12,7 @@ const (
 	WhitelistAddress  = "getVoterWhitelister"
 	WNATAddress       = "wNat"
 	VotepowerAddress  = "readVotePowerContract"
+	CurrentEpoch      = "getCurrentRewardEpoch"
 	RewardEpoch       = "rewardEpochs"
 	DataProviders     = "getFtsoWhitelistedPriceProviders"
 	ProviderNode      = "getNodeIdForDataProvider"
