@@ -214,12 +214,12 @@ func (f *FTSOSystem) Contracts(hash common.Hash) (FTSOContracts, error) {
 
 func (f *FTSOSystem) Details(epoch uint64) (EpochDetails, error) {
 
-	header := f.blockchain.CurrentHeader()
-	if header == nil {
-		return EpochDetails{}, fmt.Errorf("no current header")
+	block := f.blockchain.LastAcceptedBlock()
+	if block == nil {
+		return EpochDetails{}, fmt.Errorf("no last accepted block")
 	}
 
-	hash := header.Hash()
+	hash := block.Hash()
 	contracts, err := f.Contracts(hash)
 	if err != nil {
 		return EpochDetails{}, fmt.Errorf("could not get contracts (hash: %x): %w", hash, err)
@@ -232,7 +232,7 @@ func (f *FTSOSystem) Details(epoch uint64) (EpochDetails, error) {
 		Execute(EpochSeconds).
 		Decode(&seconds)
 	if err != nil {
-		return EpochDetails{}, fmt.Errorf("could not get epoch seconds: %w", err)
+		return EpochDetails{}, fmt.Errorf("could not get epoch seconds (hash: %x): %w", hash, err)
 	}
 
 	var powerHeight, startHeight, startTime *big.Int
@@ -240,7 +240,7 @@ func (f *FTSOSystem) Details(epoch uint64) (EpochDetails, error) {
 		Execute(RewardEpoch, big.NewInt(0).SetUint64(epoch)).
 		Decode(&powerHeight, &startHeight, &startTime)
 	if err != nil {
-		return EpochDetails{}, fmt.Errorf("could not get epoch info: %w", err)
+		return EpochDetails{}, fmt.Errorf("could not get epoch info (hash: %x): %w", hash, err)
 	}
 
 	info := EpochDetails{
