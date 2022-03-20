@@ -103,7 +103,7 @@ func (f *FTSOSnapshot) Rewards(provider common.Address) (float64, error) {
 		AtBlock(f.end).
 		OnContract(f.contracts.Rewards).
 		Execute(ProviderRewards, epoch, provider).
-		Decode(&rwInt)
+		Decode(&rwInt, nil)
 	if err != nil {
 		return 0, fmt.Errorf("could not get provider rewards: %w", err)
 	}
