@@ -40,7 +40,7 @@ func (e *EpochsManager) ByTimestamp(timestamp uint64) (uint64, error) {
 
 		details, err := e.epochs.Details(epoch)
 		if err != nil {
-			return 0, fmt.Errorf("could not get epoch details for mapping: %w", err)
+			return 0, fmt.Errorf("could not get epoch details for mapping (epoch: %d): %w", epoch, err)
 		}
 
 		if timestamp < details.StartTime {
