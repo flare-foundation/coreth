@@ -4,6 +4,7 @@
 package evm
 
 import (
+	"errors"
 	"fmt"
 	"math/big"
 	"strings"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/flare-foundation/coreth/accounts/abi"
 	"github.com/flare-foundation/coreth/core"
+	"github.com/flare-foundation/coreth/core/vm"
 )
 
 type FTSOSystem struct {
@@ -132,12 +134,11 @@ func (f *FTSOSystem) Contracts(hash common.Hash) (FTSOContracts, error) {
 
 	var height *big.Int
 	err = snap.OnContract(manager).Execute(RewardEpoch, big.NewInt(0)).Decode(nil, &height, nil)
+	if errors.Is(err, vm.ErrExecutionReverted) {
+		return FTSOContracts{}, errFTSONotActive
+	}
 	if err != nil {
 		return FTSOContracts{}, fmt.Errorf("could not get first epoch: %w", err)
-	}
-
-	if height.Uint64() == 0 {
-		return FTSOContracts{}, errFTSONotActive
 	}
 
 	var rewardsAddress common.Address
