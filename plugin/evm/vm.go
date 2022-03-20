@@ -111,6 +111,7 @@ const (
 	adminEndpoint  = "/admin"
 	ethRPCEndpoint = "/rpc"
 	ethWSEndpoint  = "/ws"
+	flareEndpoint  = "/flare"
 )
 
 var (
@@ -969,9 +970,11 @@ func (vm *VM) CreateHandlers() (map[string]*commonEng.HTTPHandler, error) {
 	}
 
 	if vm.config.FlareAPIEnabled {
-		if err := handler.RegisterName("flare", &FlareAPI{vm}); err != nil {
-			return nil, err
+		flareAPI, err := newHandler("flare", &FlareAPI{vm})
+		if err != nil {
+			return nil, fmt.Errorf("failed to register service for flare API due to %w", err)
 		}
+		apis[flareEndpoint] = flareAPI
 		enabledAPIs = append(enabledAPIs, "flare")
 	}
 

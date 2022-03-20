@@ -530,8 +530,11 @@ func (api *FlareAPI) DefaultValidators(_ *http.Request, args *struct{}, reply *V
 
 func (api *FlareAPI) FTSOValidators(_ *http.Request, args *EpochArgs, reply *ValidatorsReply) error {
 	validators, err := api.vm.validators.FTSOValidators(args.Epoch)
+	if errors.Is(err, errFTSONotDeployed) || errors.Is(err, errFTSONotActive) {
+		return nil
+	}
 	if err != nil {
-		return fmt.Errorf("could not get default validators: %w", err)
+		return fmt.Errorf("could not get FTSO validators: %w", err)
 	}
 	reply.Validators = validators
 	return nil
@@ -543,7 +546,7 @@ func (api *FlareAPI) ActiveValidators(_ *http.Request, args *EpochArgs, reply *V
 		return nil
 	}
 	if err != nil {
-		return fmt.Errorf("could not get default validators: %w", err)
+		return fmt.Errorf("could not get active validators: %w", err)
 	}
 	reply.Validators = validators
 	return nil
