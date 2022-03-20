@@ -62,7 +62,16 @@ func NewValidatorsTransitioner(defaultValidators map[ids.ShortID]uint64, ftsoVal
 // validators have been entirely phased out.
 func (v *ValidatorsTransitioner) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, error) {
 
-	// First, we get the dynamic set of defaultValidators from the underlying retriever.
+	// The validators active in an epoch are actually the FTSO validators from
+	// the epoch before, so epoch needs to be at least 1.
+	if epoch < 1 {
+		return v.defaultValidators, nil
+	}
+
+	// In order to get a validator's weight, we need to be able to see his unclaimed
+	// rewards as of the end of the epoch. This means the epoch must have ended. So
+	// if we are currently in epoch n, we retrieve the FTSo validators for n-1.
+	epoch--
 	validators, err := v.ftsoValidators.ByEpoch(epoch)
 	if err != nil {
 		return nil, fmt.Errorf("could not retrieve FTSO validators: %w", err)
