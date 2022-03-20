@@ -35,11 +35,7 @@ import (
 	"github.com/flare-foundation/flare/snow/choices"
 	"github.com/flare-foundation/flare/snow/consensus/snowman"
 	"github.com/flare-foundation/flare/snow/engine/snowman/block"
-<<<<<<< HEAD
-	"github.com/flare-foundation/flare/snow/validation"
-=======
 	"github.com/flare-foundation/flare/snow/validators"
->>>>>>> 639a8dc5 (Add support to fetch FTSO validator set (#12))
 	"github.com/flare-foundation/flare/utils/constants"
 	"github.com/flare-foundation/flare/utils/crypto"
 	"github.com/flare-foundation/flare/utils/formatting"
@@ -227,7 +223,11 @@ type VM struct {
 	validators Validators
 =======
 	validators *ValidatorsManager
+<<<<<<< HEAD
 >>>>>>> 639a8dc5 (Add support to fetch FTSO validator set (#12))
+=======
+	epochs     *EpochsManager
+>>>>>>> aa1fa58c (Add API to retrieve validators info (#20))
 }
 
 // Codec implements the secp256k1fx interface
@@ -413,6 +413,7 @@ func (vm *VM) Initialize(
 		return fmt.Errorf("could not initialize FTSO system: %w", err)
 	}
 
+<<<<<<< HEAD
 	// Initialize the FTSO validator retriever, which retrieves validators for the
 	// FTSO data providers, and wrap it in a cache to avoid unnecessary retrievals.
 	ftsoValidators := NewValidatorsFTSO(ctx.Log, blockchain, ftso,
@@ -420,6 +421,23 @@ func (vm *VM) Initialize(
 	)
 	cachedFTSOValidators := NewValidatorsCache(ftsoValidators,
 		WithCacheSize(uint(len(defaultValidators))),
+=======
+	// Initialize an epochs cache on top of the FTSO, to avoid retrieving epochs
+	// data unnecessarily, and inject it into the epochs manager, which is responsible
+	// for mapping block timestamps to epochs.
+	cachedEpochs := NewEpochsCache(ftso,
+		WithCacheSize(16),
+	)
+	vm.epochs = NewEpochsManager(cachedEpochs)
+
+	// Initialize the FTSO validator retriever, which retrieves validators for the
+	// FTSO data providers, and wrap it in a cache to avoid unnecessary retrievals.
+	ftsoValidators := NewValidatorsFTSO(blockchain, ftso,
+		WithRootDegree(4),
+	)
+	cachedFTSOValidators := NewValidatorsCache(ftsoValidators,
+		WithCacheSize(12),
+>>>>>>> aa1fa58c (Add API to retrieve validators info (#20))
 	)
 
 	// Initialize the validator transitioner, which is responsible for smoothly
@@ -427,16 +445,27 @@ func (vm *VM) Initialize(
 	// a normalizer to have uniform weights across epochs, and wrap it in a cache
 	// to avoid unnecessary recomputation.
 	activeValidators := NewValidatorsTransitioner(defaultValidators, cachedFTSOValidators,
+<<<<<<< HEAD
 		WithCacheSize(uint(len(defaultValidators))),
 	)
 	normalizedActiveValidators := NewValidatorsNormalizer(ctx.Log, activeValidators)
 	cachedNormalizedActiveValidators := NewValidatorsCache(normalizedActiveValidators,
 		WithCacheSize(uint(len(defaultValidators))),
+=======
+		WithMinSteps(4),
+	)
+	normalizedActiveValidators := NewValidatorsNormalizer(activeValidators)
+	cachedNormalizedActiveValidators := NewValidatorsCache(normalizedActiveValidators,
+		WithCacheSize(8),
+>>>>>>> aa1fa58c (Add API to retrieve validators info (#20))
 	)
 
 	// Initialize the validators manager, which is our interface between the EVM
 	// implementation and the Flare logic.
+<<<<<<< HEAD
 	vm.ftso = ftso
+=======
+>>>>>>> aa1fa58c (Add API to retrieve validators info (#20))
 	vm.validators = NewValidatorsManager(defaultValidators, cachedFTSOValidators, cachedNormalizedActiveValidators)
 
 	vm.atomicTxRepository, err = NewAtomicTxRepository(vm.db, vm.codec, lastAccepted.NumberU64())
@@ -523,55 +552,6 @@ func (vm *VM) Initialize(
 			return err
 		}
 	}
-
-	// Load the default validators for the given chain ID.
-	validators, err := getDefaultValidators(g.Config.ChainID)
-	if err != nil {
-		return fmt.Errorf("could not initialize default validators: %w", err)
-	}
-
-	// Initialize the FTSO system, which is responsible for all of our interactions
-	// with the FTSO smart contracts running at the EVM level.
-	blockchain := vm.chain.BlockChain()
-	ftso, err := NewFTSOSystem(blockchain, params.SubmitterAddress, params.ValidationAddress)
-	if err != nil {
-		return fmt.Errorf("could not initialize FTSO system: %w", err)
-	}
-
-	// Initialize an epochs cache on top of the FTSO, to avoid retrieving epochs
-	// data unnecessarily, and inject it into the epochs manager, which is responsible
-	// for mapping block timestamps to epochs.
-	cachedEpochs := NewEpochsCache(ftso,
-		WithCacheSize(16),
-	)
-	mapper := NewEpochsManager(cachedEpochs)
-
-	// Initialize the FTSO validator retriever, which retrieves validators for the
-	// FTSO data providers, and wrap it in a cache to avoid unnecessary retrievals.
-	providers := NewValidatorsFTSO(blockchain, ftso,
-		WithRootDegree(4),
-	)
-	cachedProviders := NewValidatorsCache(providers,
-		WithCacheSize(12),
-	)
-
-	// Initialize the validator transitioner, which is responsible for smoothly
-	// transitioning validators from the default set to the FTSO set, wrap it in
-	// a normalizer to have uniform weights across epochs, and wrap it in a cache
-	// to avoid unnecessary recomputation.
-	transition := NewValidatorsTransitioner(validators, cachedProviders,
-		WithMinSteps(4),
-	)
-	normalizedTransition := NewValidatorsNormalizer(transition)
-	cachedTransition := NewValidatorsCache(normalizedTransition,
-		WithCacheSize(8),
-	)
-
-	// Initialize the validators manager, which is our interface between the EVM
-	// implementation and the Flare logic.
-	vm.validators = NewValidatorsManager(blockchain, mapper, validators, cachedTransition,
-		WithCacheSize(4),
-	)
 
 	return vm.fx.Initialize(vm)
 }
@@ -1541,5 +1521,45 @@ func (vm *VM) repairAtomicRepositoryForBonusBlockTxs(
 }
 
 func (vm *VM) GetValidators(blockID ids.ID) (validators.Set, error) {
-	return vm.validators.ByBlock(common.Hash(blockID))
+
+	hash := common.Hash(blockID)
+	blockchain := vm.chain.BlockChain()
+
+	header := blockchain.GetHeaderByHash(hash)
+	if header == nil {
+		return nil, fmt.Errorf("unknown block (hash: %x)", hash)
+	}
+
+	// If the hard fork was not active at the given block yet, we simply return the
+	// default validator set, which corresponds to what we had before the upgrade.
+	if !blockchain.Config().IsFlareHardFork1(big.NewInt(0).SetUint64(header.Time)) {
+		return toSet(vm.validators.DefaultValidators())
+	}
+
+	// If the hard fork is active, we try to map the header to an FTSO rewards epoch.
+	// If the FTSO is not yet deployed, or not yet active, we simply go ahead with an
+	// epoch value of zero as well.
+	epoch, err := vm.epochs.ByTimestamp(header.Time)
+	if errors.Is(err, errFTSONotDeployed) || errors.Is(err, errFTSONotActive) {
+		return toSet(vm.validators.DefaultValidators())
+	}
+	if err != nil {
+		return nil, fmt.Errorf("could not get epoch (timestamp: %d): %w", header.Time, err)
+	}
+
+	return toSet(vm.validators.ActiveValidators(epoch))
+}
+
+func toSet(validatorMap map[ids.ShortID]uint64, err error) (validators.Set, error) {
+	if err != nil {
+		return nil, err
+	}
+	set := validators.NewSet()
+	for validator, weight := range validatorMap {
+		err := set.AddWeight(validator, weight)
+		if err != nil {
+			return nil, fmt.Errorf("could not add weight: %w", err)
+		}
+	}
+	return set, nil
 }

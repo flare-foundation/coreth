@@ -34,7 +34,7 @@ func (v *ValidatorsNormalizer) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, er
 
 	validators, err := v.validators.ByEpoch(epoch)
 	if err != nil {
-		return nil, fmt.Errorf("could not retrieve validators: %w", err)
+		return nil, fmt.Errorf("could not retrieve validators for normalizing: %w", err)
 	}
 
 	if len(validators) == 0 {
