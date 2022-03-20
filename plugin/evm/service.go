@@ -519,7 +519,7 @@ func (api *FlareAPI) DefaultValidators(_ context.Context) (map[string]uint64, er
 	return toJSON(validators), nil
 }
 
-func (api *FlareAPI) FTSOValidators(_ context.Context, epoch uint64) (map[string]uint64, error) {
+func (api *FlareAPI) FtsoValidators(_ context.Context, epoch uint64) (map[string]uint64, error) {
 	validators, err := api.vm.validators.FTSOValidators(epoch)
 	if err != nil {
 		return nil, fmt.Errorf("could not get default validators: %w", err)
