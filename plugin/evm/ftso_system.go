@@ -132,7 +132,7 @@ func (f *FTSOSystem) Contracts(hash common.Hash) (FTSOContracts, error) {
 		abi:     f.abis.Manager,
 	}
 
-	var height *big.Int
+	height := &big.Int{}
 	err = snap.OnContract(manager).Execute(RewardEpoch, big.NewInt(0)).Decode(nil, &height, nil)
 	if errors.Is(err, vm.ErrExecutionReverted) {
 		return FTSOContracts{}, errFTSONotActive
@@ -215,7 +215,7 @@ func (f *FTSOSystem) Current(hash common.Hash) (uint64, error) {
 		return 0, fmt.Errorf("could not get contracts: %w", err)
 	}
 
-	var epoch *big.Int
+	epoch := &big.Int{}
 	err = BindEVM(f.blockchain).
 		AtBlock(hash).
 		OnContract(contracts.Manager).
@@ -243,7 +243,7 @@ func (f *FTSOSystem) Details(epoch uint64) (EpochDetails, error) {
 
 	call := BindEVM(f.blockchain).AtBlock(hash).OnContract(contracts.Manager)
 
-	var seconds *big.Int
+	seconds := &big.Int{}
 	err = call.
 		Execute(EpochSeconds).
 		Decode(&seconds)
@@ -251,7 +251,9 @@ func (f *FTSOSystem) Details(epoch uint64) (EpochDetails, error) {
 		return EpochDetails{}, fmt.Errorf("could not execute epoch seconds retrieval (hash: %x): %w", hash, err)
 	}
 
-	var powerHeight, startHeight, startTime *big.Int
+	powerHeight := &big.Int{}
+	startHeight := &big.Int{}
+	startTime := &big.Int{}
 	err = call.
 		Execute(RewardEpoch, big.NewInt(0).SetUint64(epoch)).
 		Decode(&powerHeight, &startHeight, &startTime)
