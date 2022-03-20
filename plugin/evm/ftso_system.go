@@ -227,7 +227,7 @@ func (f *FTSOSystem) Details(epoch uint64) (EpochDetails, error) {
 
 	call := BindEVM(f.blockchain).AtBlock(hash).OnContract(contracts.Manager)
 
-	var seconds big.Int
+	var seconds *big.Int
 	err = call.
 		Execute(EpochSeconds).
 		Decode(&seconds)

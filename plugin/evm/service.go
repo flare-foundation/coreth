@@ -538,7 +538,7 @@ func (api *FlareAPI) ActiveValidators(_ context.Context, epoch uint64) (map[stri
 func toJSON(validators map[ids.ShortID]uint64) map[string]uint64 {
 	json := make(map[string]uint64, len(validators))
 	for validator, weight := range validators {
-		json[validator.Hex()] = weight
+		json[validator.PrefixedString(constants.NodeIDPrefix)] = weight
 	}
 	return json
 }
