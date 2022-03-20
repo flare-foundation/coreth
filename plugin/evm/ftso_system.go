@@ -136,12 +136,12 @@ func (f *FTSOSystem) Contracts(hash common.Hash) (FTSOContracts, error) {
 		return FTSOContracts{}, fmt.Errorf("could not get epochs start: %w", err)
 	}
 
-	header := f.blockchain.GetBlockByHash(hash)
+	header := f.blockchain.GetHeaderByHash(hash)
 	if header == nil {
 		return FTSOContracts{}, fmt.Errorf("unknown block (hash: %x)", hash)
 	}
 
-	if header.Time() < timestamp.Uint64() {
+	if header.Time < timestamp.Uint64() {
 		return FTSOContracts{}, errFTSONotActive
 	}
 
@@ -257,10 +257,10 @@ func (f *FTSOSystem) Snapshot(epoch uint64) (Snapshot, error) {
 
 	currentInfo, err := f.Details(epoch)
 	if err != nil {
-		return nil, fmt.Errorf("could not get current epoch info: %w", err)
+		return nil, fmt.Errorf("could not get current epoch details: %w", err)
 	}
 
-	powerHeader := f.blockchain.GetBlockByNumber(currentInfo.PowerHeight)
+	powerHeader := f.blockchain.GetHeaderByNumber(currentInfo.PowerHeight)
 	if powerHeader == nil {
 		return nil, fmt.Errorf("unknown power block (height: %d)", currentInfo.PowerHeight)
 	}
@@ -272,7 +272,7 @@ func (f *FTSOSystem) Snapshot(epoch uint64) (Snapshot, error) {
 
 	nextInfo, err := f.Details(epoch + 1)
 	if err != nil {
-		return nil, fmt.Errorf("could not get next epoch info: %w", err)
+		return nil, fmt.Errorf("could not get next epoch details: %w", err)
 	}
 
 	endHeader := f.blockchain.GetHeaderByNumber(nextInfo.StartHeight)
