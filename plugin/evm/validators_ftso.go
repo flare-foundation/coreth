@@ -15,11 +15,13 @@ import (
 )
 
 var DefaultFTSOConfig = FTSOConfig{
-	RootDegree: 4,
+	RootDegree:      4,
+	RatioMultiplier: 100.0,
 }
 
 type FTSOConfig struct {
-	RootDegree uint
+	RootDegree      uint
+	RatioMultiplier float64
 }
 
 type FTSOOption func(*FTSOConfig)
@@ -27,6 +29,12 @@ type FTSOOption func(*FTSOConfig)
 func WithRootDegree(degree uint) FTSOOption {
 	return func(cfg *FTSOConfig) {
 		cfg.RootDegree = degree
+	}
+}
+
+func WithRatioMultiplier(multiplier float64) FTSOOption {
+	return func(cfg *FTSOConfig) {
+		cfg.RatioMultiplier = multiplier
 	}
 }
 
@@ -90,7 +98,7 @@ func (v *ValidatorsFTSO) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, error) {
 			return nil, fmt.Errorf("could not get FTSO validator (provider: %s): %w", provider, err)
 		}
 		if validator == ids.ShortEmpty {
-			v.log.Debug("skipping provider with unset validator: %s", validator.Hex())
+			v.log.Debug("skipping provider %s with unset validator", provider.Hex())
 			continue
 		}
 
@@ -99,7 +107,7 @@ func (v *ValidatorsFTSO) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, error) {
 			return nil, fmt.Errorf("could not get vote power (provider: %s): %w", provider, err)
 		}
 		if votepower == 0 {
-			v.log.Debug("skipping provider with zero votepower: %s", validator.Hex())
+			v.log.Debug("skipping provider %s with validator %s and no votepower", provider.Hex(), validator)
 			continue
 		}
 
@@ -108,13 +116,13 @@ func (v *ValidatorsFTSO) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, error) {
 			return nil, fmt.Errorf("could not get rewards (provider: %s): %w", provider, err)
 		}
 		if rewards == 0 {
-			v.log.Debug("skipping provider with zero rewards: %s", validator.Hex())
+			v.log.Debug("skipping provider %s with validator %s and no rewards", provider.Hex(), validator)
 			continue
 		}
 
-		weight := uint64(math.Pow(votepower, 1.0/float64(v.cfg.RootDegree)) * (rewards / votepower))
+		weight := uint64(math.Pow(votepower, 1.0/float64(v.cfg.RootDegree)) * (v.cfg.RatioMultiplier * rewards / votepower))
 
-		v.log.Debug("val:%s vp:%f rw:%f w:%d", validator.Hex(), votepower, rewards, weight)
+		v.log.Debug("pro:%s val:%s vp:%f rw:%f w:%d", provider.Hex(), validator, votepower, rewards, weight)
 
 		validators[validator] = weight
 	}
