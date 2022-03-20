@@ -43,7 +43,7 @@ func (e *EpochsCache) Details(epoch uint64) (EpochDetails, error) {
 
 	details, err := e.epochs.Details(epoch)
 	if err != nil {
-		return EpochDetails{}, fmt.Errorf("could not get epoch details: %w", err)
+		return EpochDetails{}, fmt.Errorf("could not get epoch details for caching: %w", err)
 	}
 
 	e.cache.Add(epoch, details)
