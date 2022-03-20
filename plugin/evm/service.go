@@ -511,43 +511,14 @@ type FlareAPI struct {
 	vm *VM
 }
 
-type EpochArgs struct {
-	Epoch uint64 `json:"epoch"`
+func (api *FlareAPI) DefaultValidators(_ context.Context) (map[ids.ShortID]uint64, error) {
+	return api.vm.validators.DefaultValidators()
 }
 
-type ValidatorsReply struct {
-	Validators map[ids.ShortID]uint64 `json:"validators"`
+func (api *FlareAPI) FTSOValidators(_ context.Context, epoch uint64) (map[ids.ShortID]uint64, error) {
+	return api.vm.validators.FTSOValidators(epoch)
 }
 
-func (api *FlareAPI) DefaultValidators(_ *http.Request, args *struct{}, reply *ValidatorsReply) error {
-	validators, err := api.vm.validators.DefaultValidators()
-	if err != nil {
-		return fmt.Errorf("could not get default validators: %w", err)
-	}
-	reply.Validators = validators
-	return nil
-}
-
-func (api *FlareAPI) FTSOValidators(_ *http.Request, args *EpochArgs, reply *ValidatorsReply) error {
-	validators, err := api.vm.validators.FTSOValidators(args.Epoch)
-	if errors.Is(err, errFTSONotDeployed) || errors.Is(err, errFTSONotActive) {
-		return nil
-	}
-	if err != nil {
-		return fmt.Errorf("could not get FTSO validators: %w", err)
-	}
-	reply.Validators = validators
-	return nil
-}
-
-func (api *FlareAPI) ActiveValidators(_ *http.Request, args *EpochArgs, reply *ValidatorsReply) error {
-	validators, err := api.vm.validators.ActiveValidators(args.Epoch)
-	if errors.Is(err, errFTSONotDeployed) || errors.Is(err, errFTSONotActive) {
-		return nil
-	}
-	if err != nil {
-		return fmt.Errorf("could not get active validators: %w", err)
-	}
-	reply.Validators = validators
-	return nil
+func (api *FlareAPI) ActiveValidators(_ context.Context, epoch uint64) (map[ids.ShortID]uint64, error) {
+	return api.vm.validators.ActiveValidators(epoch)
 }
