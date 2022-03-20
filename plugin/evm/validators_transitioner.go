@@ -32,14 +32,14 @@ func WithMinSteps(steps uint) TransitionOption {
 // ValidatorsTransitioner transitions validators from a static set of validators
 // to a growing set of dynamic validators over a number of smooth steps.
 type ValidatorsTransitioner struct {
-	defaultValidators map[ids.ShortID]uint64
-	ftsoValidators    ValidatorRetriever
-	cfg               TransitionConfig
+	validators map[ids.ShortID]uint64
+	providers  ValidatorRetriever
+	cfg        TransitionConfig
 }
 
 // NewValidatorsTransitioner creates a transition from the given default validators
 // to the validators retrieved from the given FTSO validators retriever.
-func NewValidatorsTransitioner(defaultValidators map[ids.ShortID]uint64, ftsoValidators ValidatorRetriever, opts ...TransitionOption) *ValidatorsTransitioner {
+func NewValidatorsTransitioner(validators map[ids.ShortID]uint64, providers ValidatorRetriever, opts ...TransitionOption) *ValidatorsTransitioner {
 
 	cfg := DefaultTransitionConfig
 	for _, opt := range opts {
@@ -47,9 +47,9 @@ func NewValidatorsTransitioner(defaultValidators map[ids.ShortID]uint64, ftsoVal
 	}
 
 	v := ValidatorsTransitioner{
-		defaultValidators: defaultValidators,
-		ftsoValidators:    ftsoValidators,
-		cfg:               cfg,
+		validators: validators,
+		providers:  providers,
+		cfg:        cfg,
 	}
 
 	return &v
@@ -65,28 +65,28 @@ func (v *ValidatorsTransitioner) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, 
 	// The validators active in an epoch are actually the FTSO validators from
 	// the epoch before, so epoch needs to be at least 1.
 	if epoch < 1 {
-		return v.defaultValidators, nil
+		return v.validators, nil
 	}
 
 	// In order to get a validator's weight, we need to be able to see his unclaimed
 	// rewards as of the end of the epoch. This means the epoch must have ended. So
 	// if we are currently in epoch n, we retrieve the FTSo validators for n-1.
 	epoch--
-	validators, err := v.ftsoValidators.ByEpoch(epoch)
+	providers, err := v.providers.ByEpoch(epoch)
 	if err != nil {
 		return nil, fmt.Errorf("could not retrieve FTSO validators: %w", err)
 	}
 
 	// If there are non, we always return the full set of static validators.
-	if len(validators) == 0 {
-		return v.defaultValidators, nil
+	if len(providers) == 0 {
+		return v.validators, nil
 	}
 
 	// Otherwise, we try to identify the number of the step we are at in our transition
 	// from the static to the dynamic set. It can range from zero to the minimum number
 	// of steps; at zero, we still return the static set; at minimum steps reached, we
 	// return only the dynamic set.
-	size := uint(len(v.defaultValidators))
+	size := uint(len(v.validators))
 	steps := uint(0)
 Loop:
 	for try := uint(1); try <= v.cfg.MinSteps; try++ {
@@ -96,11 +96,11 @@ Loop:
 			if e > epoch {
 				break Loop
 			}
-			ftsoValidators, err := v.ftsoValidators.ByEpoch(e)
+			providers, err := v.providers.ByEpoch(e)
 			if err != nil {
 				return nil, fmt.Errorf("could not get retrieve FTSO validators (epoch: %d): %w", e, err)
 			}
-			if uint(len(ftsoValidators)) < threshold {
+			if uint(len(providers)) < threshold {
 				break Loop
 			}
 			steps = try
@@ -110,28 +110,28 @@ Loop:
 	// If we are not ready to take any steps yet, we stick with the default
 	// validator set still.
 	if steps == 0 {
-		return v.defaultValidators, nil
+		return v.validators, nil
 	}
 
 	// If we have reached the minimum number of steps, we can return the dynamic
 	// set.
 	if steps == v.cfg.MinSteps {
-		return validators, nil
+		return providers, nil
 	}
 
 	// If we are somewhere in-between, we need to balance the list of FTSO validators
 	// with the list of static default validators. First, we choose a deterministic
 	// list of validator IDs from the default validators, cut off at the appropriate
 	// percentage depending on steps
-	defaultValidators := make([]ids.ShortID, 0, len(v.defaultValidators))
-	for validator := range v.defaultValidators {
-		defaultValidators = append(defaultValidators, validator)
+	validators := make([]ids.ShortID, 0, len(v.validators))
+	for validator := range v.validators {
+		validators = append(validators, validator)
 	}
-	sort.Slice(defaultValidators, func(i int, j int) bool {
-		return bytes.Compare(defaultValidators[i][:], defaultValidators[j][:]) < 0
+	sort.Slice(validators, func(i int, j int) bool {
+		return bytes.Compare(validators[i][:], validators[j][:]) < 0
 	})
 	cutoff := (size - steps*size/v.cfg.MinSteps)
-	defaultValidators = defaultValidators[:cutoff]
+	validators = validators[:cutoff]
 
 	// Then, we try to balance the weights between the default validators and the
 	// validators from the FTSO. In order to do so, we calculate the total weight
@@ -139,7 +139,7 @@ Loop:
 	// the step we are on and the proportion the FTSO validators should have. Then we
 	// derive the weight default validators should have based on the total.
 	providerWeight := uint64(0)
-	for _, weight := range validators {
+	for _, weight := range providers {
 		providerWeight += weight
 	}
 	totalWeight := (providerWeight) * uint64(v.cfg.MinSteps) / uint64(steps)
@@ -147,11 +147,15 @@ Loop:
 
 	// Finally, we add the selected default validators to the set of the validators
 	// with the weights we have calculated.
-	for _, validator := range defaultValidators {
-		validators[validator] = validatorWeight
+	transitioned := make(map[ids.ShortID]uint64, len(providers)+len(validators))
+	for provider, weight := range providers {
+		transitioned[provider] = weight
+	}
+	for _, validator := range validators {
+		transitioned[validator] = validatorWeight / uint64(len(validators))
 	}
 
-	return validators, nil
+	return transitioned, nil
 }
 
 func findThresholds(size uint, steps uint, min uint) []uint {
