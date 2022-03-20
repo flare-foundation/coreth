@@ -55,7 +55,6 @@ import (
 	"github.com/flare-foundation/coreth/core"
 	"github.com/flare-foundation/coreth/core/state"
 	"github.com/flare-foundation/coreth/core/types"
-	vmerr "github.com/flare-foundation/coreth/core/vm"
 	"github.com/flare-foundation/coreth/eth/ethconfig"
 	"github.com/flare-foundation/coreth/metrics/prometheus"
 	"github.com/flare-foundation/coreth/node"
@@ -1510,12 +1509,9 @@ func (vm *VM) GetValidators(blockID ids.ID) (validators.Set, error) {
 	// If the hard fork is active, we try to map the header to an FTSO rewards epoch.
 	// If the FTSO is not yet deployed, or not yet active, we simply go ahead with an
 	// epoch value of zero as well.
-	epoch, err := vm.epochs.ByTimestamp(header.Time)
+	epoch, err := vm.epochs.ByHash(hash)
 	if errors.Is(err, errFTSONotDeployed) || errors.Is(err, errFTSONotActive) {
 		return toSet(vm.validators.DefaultValidators())
-	}
-	if errors.Is(err, vmerr.ErrExecutionReverted) {
-		epoch, err = vm.epochs.ByHash(hash)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("could not get epoch (timestamp: %d): %w", header.Time, err)
