@@ -130,18 +130,13 @@ func (f *FTSOSystem) Contracts(hash common.Hash) (FTSOContracts, error) {
 		abi:     f.abis.Manager,
 	}
 
-	var timestamp *big.Int
-	err = snap.OnContract(manager).Execute(EpochsStart).Decode(&timestamp)
+	var height *big.Int
+	err = snap.OnContract(manager).Execute(RewardEpoch, big.NewInt(0)).Decode(nil, &height, nil)
 	if err != nil {
-		return FTSOContracts{}, fmt.Errorf("could not get epochs start: %w", err)
+		return FTSOContracts{}, fmt.Errorf("could not get first epoch: %w", err)
 	}
 
-	header := f.blockchain.GetHeaderByHash(hash)
-	if header == nil {
-		return FTSOContracts{}, fmt.Errorf("unknown block (hash: %x)", hash)
-	}
-
-	if header.Time < timestamp.Uint64() {
+	if height.Uint64() == 0 {
 		return FTSOContracts{}, errFTSONotActive
 	}
 
@@ -226,7 +221,7 @@ func (f *FTSOSystem) Current(hash common.Hash) (uint64, error) {
 		Execute(CurrentEpoch).
 		Decode(&epoch)
 	if err != nil {
-		return 0, fmt.Errorf("could not get current epoch: %w", err)
+		return 0, fmt.Errorf("could not execute current epoch retrieval: %w", err)
 	}
 
 	return epoch.Uint64(), nil
@@ -252,7 +247,7 @@ func (f *FTSOSystem) Details(epoch uint64) (EpochDetails, error) {
 		Execute(EpochSeconds).
 		Decode(&seconds)
 	if err != nil {
-		return EpochDetails{}, fmt.Errorf("could not get epoch seconds (hash: %x): %w", hash, err)
+		return EpochDetails{}, fmt.Errorf("could not execute epoch seconds retrieval (hash: %x): %w", hash, err)
 	}
 
 	var powerHeight, startHeight, startTime *big.Int
@@ -260,7 +255,7 @@ func (f *FTSOSystem) Details(epoch uint64) (EpochDetails, error) {
 		Execute(RewardEpoch, big.NewInt(0).SetUint64(epoch)).
 		Decode(&powerHeight, &startHeight, &startTime)
 	if err != nil {
-		return EpochDetails{}, fmt.Errorf("could not get epoch info (hash: %x): %w", hash, err)
+		return EpochDetails{}, fmt.Errorf("could not execute epoch info retrieval (hash: %x): %w", hash, err)
 	}
 
 	info := EpochDetails{
