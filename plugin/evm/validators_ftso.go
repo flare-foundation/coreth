@@ -30,6 +30,7 @@ func WithRootDegree(degree uint) FTSOOption {
 }
 
 type FTSO interface {
+	Current(hash common.Hash) (uint64, error)
 	Details(epoch uint64) (EpochDetails, error)
 	Snapshot(epoch uint64) (Snapshot, error)
 }

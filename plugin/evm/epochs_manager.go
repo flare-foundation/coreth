@@ -5,6 +5,8 @@ package evm
 
 import (
 	"fmt"
+
+	"github.com/ethereum/go-ethereum/common"
 )
 
 type Epochs interface {
@@ -19,18 +21,30 @@ type EpochDetails struct {
 }
 
 type EpochsManager struct {
+	ftso   FTSO
 	epochs Epochs
 	last   uint64
 }
 
-func NewEpochsManager(epochs Epochs) *EpochsManager {
+func NewEpochsManager(ftso FTSO, epochs Epochs) *EpochsManager {
 
 	e := EpochsManager{
+		ftso:   ftso,
 		epochs: epochs,
 		last:   0,
 	}
 
 	return &e
+}
+
+func (e *EpochsManager) ByHash(hash common.Hash) (uint64, error) {
+
+	epoch, err := e.ftso.Current(hash)
+	if err != nil {
+		return 0, fmt.Errorf("could not get current epoch: %w", err)
+	}
+
+	return epoch, nil
 }
 
 func (e *EpochsManager) ByTimestamp(timestamp uint64) (uint64, error) {
