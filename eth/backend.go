@@ -117,7 +117,6 @@ func New(
 	settings Settings,
 	lastAcceptedHash common.Hash,
 	clock *mockable.Clock,
-	validators FlareValidators,
 ) (*Ethereum, error) {
 	if chainDb == nil {
 		return nil, errors.New("chainDb cannot be nil")
@@ -217,7 +216,6 @@ func New(
 		extRPCEnabled:       stack.Config().ExtRPCEnabled(),
 		allowUnprotectedTxs: config.AllowUnprotectedTxs,
 		eth:                 eth,
-		flare:               validators,
 	}
 	if config.AllowUnprotectedTxs {
 		log.Info("Unprotected transactions allowed")

@@ -52,6 +52,9 @@ type Config struct {
 	CorethAdminAPIEnabled bool   `json:"coreth-admin-api-enabled"`
 	CorethAdminAPIDir     string `json:"coreth-admin-api-dir"`
 
+	// Flare APIs
+	FlareAPIEnabled bool `json:"flare-api-enabled"`
+
 	// EnabledEthAPIs is a list of Ethereum services that should be enabled
 	// If none is specified, then we use the default list [defaultEnabledAPIs]
 	EnabledEthAPIs []string `json:"eth-apis"`

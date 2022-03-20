@@ -65,7 +65,6 @@ func newTestChain(name string, config *eth.Config,
 		},
 		common.Hash{},
 		&mockable.Clock{},
-		nil, // TODO
 	)
 	if err != nil {
 		t.Fatal(err)

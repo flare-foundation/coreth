@@ -369,6 +369,28 @@ func (vm *VM) Initialize(
 	// TODO: read size from settings
 	vm.mempool = NewMempool(ctx.AVAXAssetID, defaultMempoolSize)
 
+	// Attempt to load last accepted block to determine if it is necessary to
+	// initialize state with the genesis block.
+	lastAcceptedBytes, lastAcceptedErr := vm.acceptedBlockDB.Get(lastAcceptedKey)
+	var lastAcceptedHash common.Hash
+	switch {
+	case lastAcceptedErr == database.ErrNotFound:
+		// Set [lastAcceptedHash] to the genesis block hash.
+		lastAcceptedHash = ethConfig.Genesis.ToBlock(nil).Hash()
+	case lastAcceptedErr != nil:
+		return fmt.Errorf("failed to get last accepted block ID due to: %w", lastAcceptedErr)
+	case len(lastAcceptedBytes) != common.HashLength:
+		return fmt.Errorf("last accepted bytes should have been length %d, but found %d", common.HashLength, len(lastAcceptedBytes))
+	default:
+		lastAcceptedHash = common.BytesToHash(lastAcceptedBytes)
+	}
+	ethChain, err := coreth.NewETHChain(&ethConfig, &nodecfg, vm.chaindb, vm.config.EthBackendSettings(), vm.createConsensusCallbacks(), lastAcceptedHash, &vm.clock)
+	if err != nil {
+		return err
+	}
+	vm.chain = ethChain
+	lastAccepted := vm.chain.LastAcceptedBlock()
+
 	// Load the default validators for the given chain ID.
 	defaultValidators, err := getDefaultValidators(g.Config.ChainID)
 	if err != nil {
@@ -415,28 +437,6 @@ func (vm *VM) Initialize(
 	// Initialize the validators manager, which is our interface between the EVM
 	// implementation and the Flare logic.
 	vm.validators = NewValidatorsManager(defaultValidators, cachedFTSOValidators, cachedNormalizedActiveValidators)
-
-	// Attempt to load last accepted block to determine if it is necessary to
-	// initialize state with the genesis block.
-	lastAcceptedBytes, lastAcceptedErr := vm.acceptedBlockDB.Get(lastAcceptedKey)
-	var lastAcceptedHash common.Hash
-	switch {
-	case lastAcceptedErr == database.ErrNotFound:
-		// Set [lastAcceptedHash] to the genesis block hash.
-		lastAcceptedHash = ethConfig.Genesis.ToBlock(nil).Hash()
-	case lastAcceptedErr != nil:
-		return fmt.Errorf("failed to get last accepted block ID due to: %w", lastAcceptedErr)
-	case len(lastAcceptedBytes) != common.HashLength:
-		return fmt.Errorf("last accepted bytes should have been length %d, but found %d", common.HashLength, len(lastAcceptedBytes))
-	default:
-		lastAcceptedHash = common.BytesToHash(lastAcceptedBytes)
-	}
-	ethChain, err := coreth.NewETHChain(&ethConfig, &nodecfg, vm.chaindb, vm.config.EthBackendSettings(), vm.createConsensusCallbacks(), lastAcceptedHash, &vm.clock, vm.validators)
-	if err != nil {
-		return err
-	}
-	vm.chain = ethChain
-	lastAccepted := vm.chain.LastAcceptedBlock()
 
 	vm.atomicTxRepository, err = NewAtomicTxRepository(vm.db, vm.codec, lastAccepted.NumberU64())
 	if err != nil {
@@ -966,6 +966,13 @@ func (vm *VM) CreateHandlers() (map[string]*commonEng.HTTPHandler, error) {
 			return nil, err
 		}
 		enabledAPIs = append(enabledAPIs, "snowman")
+	}
+
+	if vm.config.FlareAPIEnabled {
+		if err := handler.RegisterName("flare", &FlareAPI{vm}); err != nil {
+			return nil, err
+		}
+		enabledAPIs = append(enabledAPIs, "flare")
 	}
 
 	log.Info(fmt.Sprintf("Enabled APIs: %s", strings.Join(enabledAPIs, ", ")))

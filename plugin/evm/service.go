@@ -506,3 +506,45 @@ func (service *AvaxAPI) GetAtomicTx(r *http.Request, args *api.GetTxArgs, reply 
 	}
 	return nil
 }
+
+type FlareAPI struct {
+	vm *VM
+}
+
+type EpochArgs struct {
+	Epoch uint64 `json:"epoch"`
+}
+
+type ValidatorsReply struct {
+	Validators map[ids.ShortID]uint64 `json:"validators"`
+}
+
+func (api *FlareAPI) DefaultValidators(_ *http.Request, args *struct{}, reply *ValidatorsReply) error {
+	validators, err := api.vm.validators.DefaultValidators()
+	if err != nil {
+		return fmt.Errorf("could not get default validators: %w", err)
+	}
+	reply.Validators = validators
+	return nil
+}
+
+func (api *FlareAPI) FTSOValidators(_ *http.Request, args *EpochArgs, reply *ValidatorsReply) error {
+	validators, err := api.vm.validators.FTSOValidators(args.Epoch)
+	if err != nil {
+		return fmt.Errorf("could not get default validators: %w", err)
+	}
+	reply.Validators = validators
+	return nil
+}
+
+func (api *FlareAPI) ActiveValidators(_ *http.Request, args *EpochArgs, reply *ValidatorsReply) error {
+	validators, err := api.vm.validators.ActiveValidators(args.Epoch)
+	if errors.Is(err, errFTSONotDeployed) || errors.Is(err, errFTSONotActive) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("could not get default validators: %w", err)
+	}
+	reply.Validators = validators
+	return nil
+}

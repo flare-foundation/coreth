@@ -108,7 +108,6 @@ func TestMulticoin(t *testing.T) {
 		new(dummy.ConsensusCallbacks),
 		common.Hash{},
 		&mockable.Clock{},
-		nil, // TODO
 	)
 	if err != nil {
 		t.Fatal(err)

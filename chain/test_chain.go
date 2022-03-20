@@ -90,7 +90,6 @@ func NewDefaultChain(t *testing.T) (*ETHChain, chan core.NewTxPoolHeadEvent, <-c
 		new(dummy.ConsensusCallbacks),
 		common.Hash{},
 		&mockable.Clock{},
-		nil, // TODO
 	)
 	if err != nil {
 		t.Fatal(err)
