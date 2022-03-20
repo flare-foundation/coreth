@@ -212,6 +212,26 @@ func (f *FTSOSystem) Contracts(hash common.Hash) (FTSOContracts, error) {
 	return contracts, nil
 }
 
+func (f *FTSOSystem) Current(hash common.Hash) (uint64, error) {
+
+	contracts, err := f.Contracts(hash)
+	if err != nil {
+		return 0, fmt.Errorf("could not get contracts: %w", err)
+	}
+
+	var epoch *big.Int
+	err = BindEVM(f.blockchain).
+		AtBlock(hash).
+		OnContract(contracts.Manager).
+		Execute(CurrentEpoch).
+		Decode(&epoch)
+	if err != nil {
+		return 0, fmt.Errorf("could not get current epoch: %w", err)
+	}
+
+	return epoch.Uint64(), nil
+}
+
 func (f *FTSOSystem) Details(epoch uint64) (EpochDetails, error) {
 
 	header := f.blockchain.CurrentHeader()
