@@ -214,12 +214,12 @@ func (f *FTSOSystem) Contracts(hash common.Hash) (FTSOContracts, error) {
 
 func (f *FTSOSystem) Details(epoch uint64) (EpochDetails, error) {
 
-	block := f.blockchain.LastAcceptedBlock()
-	if block == nil {
-		return EpochDetails{}, fmt.Errorf("no last accepted block")
+	header := f.blockchain.CurrentHeader()
+	if header == nil {
+		return EpochDetails{}, fmt.Errorf("no current header")
 	}
 
-	hash := block.Hash()
+	hash := header.Hash()
 	contracts, err := f.Contracts(hash)
 	if err != nil {
 		return EpochDetails{}, fmt.Errorf("could not get contracts (hash: %x): %w", hash, err)
