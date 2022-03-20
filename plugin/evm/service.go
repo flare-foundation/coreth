@@ -511,14 +511,34 @@ type FlareAPI struct {
 	vm *VM
 }
 
-func (api *FlareAPI) DefaultValidators(_ context.Context) (map[ids.ShortID]uint64, error) {
-	return api.vm.validators.DefaultValidators()
+func (api *FlareAPI) DefaultValidators(_ context.Context) (map[string]uint64, error) {
+	validators, err := api.vm.validators.DefaultValidators()
+	if err != nil {
+		return nil, fmt.Errorf("could not get default validators: %w", err)
+	}
+	return toJSON(validators), nil
 }
 
-func (api *FlareAPI) FTSOValidators(_ context.Context, epoch uint64) (map[ids.ShortID]uint64, error) {
-	return api.vm.validators.FTSOValidators(epoch)
+func (api *FlareAPI) FTSOValidators(_ context.Context, epoch uint64) (map[string]uint64, error) {
+	validators, err := api.vm.validators.FTSOValidators(epoch)
+	if err != nil {
+		return nil, fmt.Errorf("could not get default validators: %w", err)
+	}
+	return toJSON(validators), nil
 }
 
-func (api *FlareAPI) ActiveValidators(_ context.Context, epoch uint64) (map[ids.ShortID]uint64, error) {
-	return api.vm.validators.ActiveValidators(epoch)
+func (api *FlareAPI) ActiveValidators(_ context.Context, epoch uint64) (map[string]uint64, error) {
+	validators, err := api.vm.validators.ActiveValidators(epoch)
+	if err != nil {
+		return nil, fmt.Errorf("could not get default validators: %w", err)
+	}
+	return toJSON(validators), nil
+}
+
+func toJSON(validators map[ids.ShortID]uint64) map[string]uint64 {
+	json := make(map[string]uint64, len(validators))
+	for validator, weight := range validators {
+		json[validator.Hex()] = weight
+	}
+	return json
 }
