@@ -2071,3 +2071,28 @@ func toHexSlice(b [][]byte) []string {
 	}
 	return r
 }
+
+// FlareValidatorsAPI offers validators.
+type FlareValidatorsAPI struct {
+	b Backend
+}
+
+func NewFlareValidatorsAPI(b Backend) *FlareValidatorsAPI {
+	return &FlareValidatorsAPI{b: b}
+}
+
+func (f *FlareValidatorsAPI) DefaultValidators(ctx context.Context) (map[ids.ShortID]uint64, error) {
+	validators, err := f.b.DefaultValidators(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("could not get default validators: %w", err)
+	}
+	return validators, nil
+}
+
+func (f *FlareValidatorsAPI) FTSOValidators(ctx context.Context, epoch uint64) (map[ids.ShortID]uint64, error) {
+	return f.b.FTSOValidators(ctx, epoch)
+}
+
+func (f *FlareValidatorsAPI) ActiveValidators(ctx context.Context, epoch uint64) (map[ids.ShortID]uint64, error) {
+	return f.b.ActiveValidators(ctx, epoch)
+}

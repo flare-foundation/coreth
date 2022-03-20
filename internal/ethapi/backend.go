@@ -34,6 +34,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/event"
+
 	"github.com/flare-foundation/coreth/accounts"
 	"github.com/flare-foundation/coreth/consensus"
 	"github.com/flare-foundation/coreth/core"
@@ -44,6 +45,7 @@ import (
 	"github.com/flare-foundation/coreth/ethdb"
 	"github.com/flare-foundation/coreth/params"
 	"github.com/flare-foundation/coreth/rpc"
+	"github.com/flare-foundation/flare/ids"
 )
 
 // Backend interface provides the common API services (that are provided by
@@ -98,6 +100,11 @@ type Backend interface {
 	SubscribeAcceptedLogsEvent(ch chan<- []*types.Log) event.Subscription
 	SubscribePendingLogsEvent(ch chan<- []*types.Log) event.Subscription
 	SubscribeRemovedLogsEvent(ch chan<- core.RemovedLogsEvent) event.Subscription
+
+	// Flare API
+	DefaultValidators(ctx context.Context) (map[ids.ShortID]uint64, error)
+	FTSOValidators(ctx context.Context, epoch uint64) (map[ids.ShortID]uint64, error)
+	ActiveValidators(ctx context.Context, epoch uint64) (map[ids.ShortID]uint64, error)
 
 	ChainConfig() *params.ChainConfig
 	Engine() consensus.Engine
@@ -154,6 +161,12 @@ func GetAPIs(apiBackend Backend) []rpc.API {
 			Service:   NewPrivateAccountAPI(apiBackend, nonceLock),
 			Public:    false,
 			Name:      "internal-private-personal",
+		}, {
+			Namespace: "flare",
+			Version:   "1.0",
+			Service:   NewFlareValidatorsAPI(apiBackend),
+			Public:    true,
+			Name:      "flare-validators",
 		},
 	}
 }

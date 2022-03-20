@@ -47,6 +47,7 @@ import (
 	"github.com/flare-foundation/coreth/ethdb"
 	"github.com/flare-foundation/coreth/params"
 	"github.com/flare-foundation/coreth/rpc"
+	"github.com/flare-foundation/flare/ids"
 )
 
 var (
@@ -60,6 +61,7 @@ type EthAPIBackend struct {
 	allowUnprotectedTxs bool
 	eth                 *Ethereum
 	gpo                 *gasprice.Oracle
+	flare               FlareValidators
 }
 
 // ChainConfig returns the active chain configuration.
@@ -430,4 +432,16 @@ func (b *EthAPIBackend) StateAtTransaction(ctx context.Context, block *types.Blo
 
 func (b *EthAPIBackend) MinRequiredTip(ctx context.Context, header *types.Header) (*big.Int, error) {
 	return dummy.MinRequiredTip(b.ChainConfig(), header)
+}
+
+func (b *EthAPIBackend) DefaultValidators(_ context.Context) (map[ids.ShortID]uint64, error) {
+	return b.flare.DefaultValidators()
+}
+
+func (b *EthAPIBackend) FTSOValidators(_ context.Context, epoch uint64) (map[ids.ShortID]uint64, error) {
+	return b.flare.FTSOValidators(epoch)
+}
+
+func (b *EthAPIBackend) ActiveValidators(_ context.Context, epoch uint64) (map[ids.ShortID]uint64, error) {
+	return b.flare.ActiveValidators(epoch)
 }
