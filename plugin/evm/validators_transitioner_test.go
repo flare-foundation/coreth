@@ -9,6 +9,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestWithMinSteps(t *testing.T) {
+	wantSteps := uint(42)
+
+	cfg := TransitionConfig{}
+	WithMinSteps(wantSteps)(&cfg)
+
+	assert.Equal(t, wantSteps, cfg.MinSteps)
+}
+
 func TestFindThresholds(t *testing.T) {
 
 	tests := []struct {

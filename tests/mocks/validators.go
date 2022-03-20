@@ -1,0 +1,114 @@
+package mocks
+
+import (
+	"math/rand"
+
+	"github.com/flare-foundation/flare/ids"
+)
+
+var (
+	TestIdsList = []ids.ShortID{
+		ids.ShortID([20]byte{202, 22, 105, 80, 240, 156, 96, 235, 127, 79, 82, 60, 159, 12, 172, 216, 171, 131, 235, 63}),
+		ids.ShortID([20]byte{182, 115, 39, 234, 78, 181, 63, 96, 108, 42, 134, 160, 148, 157, 103, 198, 77, 146, 118, 200}),
+		ids.ShortID([20]byte{20, 206, 223, 250, 40, 74, 158, 159, 174, 134, 44, 20, 207, 134, 220, 231, 63, 247, 84, 240}),
+		ids.ShortID([20]byte{231, 37, 78, 169, 39, 173, 150, 37, 20, 7, 91, 212, 235, 6, 235, 74, 120, 22, 233, 150}),
+		ids.ShortID([20]byte{236, 230, 116, 165, 56, 37, 35, 211, 216, 60, 90, 243, 59, 36, 173, 140, 109, 252, 169, 32}),
+	}
+
+	TestWeightsList = []uint64{
+		6185718675989118760,
+		6465383072520688749,
+		515007957320493220,
+		9599604527249266409,
+		3417212044008417831,
+	}
+)
+
+// TestValidatorsWeightsData returns test validators data with ids.ShotIDs and weights.
+func TestValidatorsWeightsData() map[ids.ShortID]uint64 {
+	testValidators := map[ids.ShortID]uint64{}
+	for i := 0; i < len(TestIdsList); i++ {
+		testValidators[TestIdsList[i]] = TestWeightsList[i]
+	}
+
+	return testValidators
+}
+
+// ValidatorsTestData represents a test object that keeps records
+// of validators ids and corresponding weights.
+type ValidatorsTestData map[interface{}]map[ids.ShortID]uint64
+
+func (v ValidatorsTestData) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, error) {
+	if val, ok := v[epoch]; ok {
+		return val, nil
+	}
+
+	return map[ids.ShortID]uint64{}, nil
+}
+
+// Duplicate creates a copy of ValidatorsTestData object.
+func (v ValidatorsTestData) Duplicate() ValidatorsTestData {
+	var copy = ValidatorsTestData{}
+	for i, v := range v {
+		copy[i] = map[ids.ShortID]uint64{}
+		for ii, vv := range v {
+			copy[i][ii] = vv
+		}
+	}
+
+	return copy
+}
+
+// NewValidatorsTestData populates `ValidatorsTestData` with random values for a single epoch.
+func NewValidatorsTestData(numValidators int) ValidatorsTestData {
+	testData := ValidatorsTestData{}
+
+	for i := 0; i < numValidators; i++ {
+		testData[uint64(0)] = map[ids.ShortID]uint64{
+			RandID(): rand.Uint64(),
+		}
+	}
+	return testData
+}
+
+// NewValidatorsTestDataByEpochs creates random ValidatorsTestData separated by epochs.
+// The function takes the number of epochs to create starting with 0th.
+func NewValidatorsTestDataByEpochs(numValidators, epochs int) ValidatorsTestData {
+	data := ValidatorsTestData{}
+
+	if numValidators == 0 {
+		return data
+	}
+	if epochs == 0 {
+		epochs = 1
+	}
+
+	if epochs > numValidators {
+		epochs = numValidators
+	}
+
+	rem := numValidators % epochs
+	cuts := (numValidators - rem) / epochs
+
+	for i := 0; i < epochs; i++ {
+		data[uint64(i)] = map[ids.ShortID]uint64{}
+		for ci := 0; ci < cuts; ci++ {
+			data[uint64(i)][RandID()] = rand.Uint64()
+		}
+		if i == epochs-1 {
+			for ri := 0; ri < rem; ri++ {
+				data[uint64(i)][RandID()] = rand.Uint64()
+			}
+		}
+	}
+
+	return data
+}
+
+// RandID creates a new slice of random bytes used as ids.ShortID.
+func RandID() ids.ShortID {
+	id := ids.ShortID{}
+	rand.Read(id[:])
+
+	return id
+}
