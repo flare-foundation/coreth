@@ -55,6 +55,7 @@ import (
 	"github.com/flare-foundation/coreth/core"
 	"github.com/flare-foundation/coreth/core/state"
 	"github.com/flare-foundation/coreth/core/types"
+	vmerr "github.com/flare-foundation/coreth/core/vm"
 	"github.com/flare-foundation/coreth/eth/ethconfig"
 	"github.com/flare-foundation/coreth/metrics/prometheus"
 	"github.com/flare-foundation/coreth/node"
@@ -428,7 +429,7 @@ func (vm *VM) Initialize(
 	cachedEpochs := NewEpochsCache(ftso,
 		WithCacheSize(16),
 	)
-	vm.epochs = NewEpochsManager(cachedEpochs)
+	vm.epochs = NewEpochsManager(ftso, cachedEpochs)
 
 	// Initialize the FTSO validator retriever, which retrieves validators for the
 	// FTSO data providers, and wrap it in a cache to avoid unnecessary retrievals.
@@ -1542,6 +1543,9 @@ func (vm *VM) GetValidators(blockID ids.ID) (validators.Set, error) {
 	epoch, err := vm.epochs.ByTimestamp(header.Time)
 	if errors.Is(err, errFTSONotDeployed) || errors.Is(err, errFTSONotActive) {
 		return toSet(vm.validators.DefaultValidators())
+	}
+	if errors.Is(err, vmerr.ErrExecutionReverted) {
+		epoch, err = vm.epochs.ByHash(hash)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("could not get epoch (timestamp: %d): %w", header.Time, err)
