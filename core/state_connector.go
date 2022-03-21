@@ -99,15 +99,6 @@ func FinaliseRoundSelector(chainID *big.Int, blockTime *big.Int) []byte {
 }
 
 func GetDefaultAttestors(chainID *big.Int) []common.Address {
-	defaultAttestorList := os.Getenv(defaultAttestorEnv)
-	if defaultAttestorList != "" {
-		defaultAttestorEntries := strings.Split(defaultAttestorList, ",")
-		defaultAttestors := make([]common.Address, 0, len(defaultAttestorEntries))
-		for _, defaultAttestorEntry := range defaultAttestorEntries {
-			defaultAttestors = append(defaultAttestors, common.HexToAddress(defaultAttestorEntry))
-		}
-		return defaultAttestors
-	}
 	switch {
 	case chainID.Cmp(costonChainID) == 0:
 		return costonDefaultAttestors
@@ -116,20 +107,28 @@ func GetDefaultAttestors(chainID *big.Int) []common.Address {
 	case chainID.Cmp(flareChainID) == 0:
 		return flareDefaultAttestors
 	default:
-		return nil
+		var defaultAttestors []common.Address
+		defaultAttestorList := os.Getenv(defaultAttestorEnv)
+		if defaultAttestorList != "" {
+			defaultAttestorEntries := strings.Split(defaultAttestorList, ",")
+			for _, defaultAttestorEntry := range defaultAttestorEntries {
+				defaultAttestors = append(defaultAttestors, common.HexToAddress(defaultAttestorEntry))
+			}
+		}
+		return defaultAttestors
 	}
 }
 
 func GetLocalAttestors() []common.Address {
+	var localAttestors []common.Address
 	localAttestorList := os.Getenv(localAttestorEnv)
 	if localAttestorList != "" {
 		localAttestorEntries := strings.Split(localAttestorList, ",")
-		localAttestors := make([]common.Address, 0, len(localAttestorEntries))
 		for _, localAttestorEntry := range localAttestorEntries {
 			localAttestors = append(localAttestors, common.HexToAddress(localAttestorEntry))
 		}
 	}
-	return nil
+	return localAttestors
 }
 
 func (st *StateTransition) GetAttestation(attestor common.Address, instructions []byte) (string, error) {
