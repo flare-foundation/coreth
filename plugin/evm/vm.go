@@ -218,8 +218,8 @@ type VM struct {
 
 	bootstrapped bool
 
-	validators *ValidatorsManager
-	epochs     *EpochsManager
+	ftso       FTSO
+	validators Validators
 }
 
 // Codec implements the secp256k1fx interface
@@ -404,14 +404,6 @@ func (vm *VM) Initialize(
 	if err != nil {
 		return fmt.Errorf("could not initialize FTSO system: %w", err)
 	}
-
-	// Initialize an epochs cache on top of the FTSO, to avoid retrieving epochs
-	// data unnecessarily, and inject it into the epochs manager, which is responsible
-	// for mapping block timestamps to epochs.
-	cachedEpochs := NewEpochsCache(ftso,
-		WithCacheSize(16),
-	)
-	vm.epochs = NewEpochsManager(ftso, cachedEpochs)
 
 	// Initialize the FTSO validator retriever, which retrieves validators for the
 	// FTSO data providers, and wrap it in a cache to avoid unnecessary retrievals.
@@ -1510,7 +1502,7 @@ func (vm *VM) GetValidators(blockID ids.ID) (validators.Set, error) {
 	// If the hard fork is active, we try to map the header to an FTSO rewards epoch.
 	// If the FTSO is not yet deployed, or not yet active, we simply go ahead with an
 	// epoch value of zero as well.
-	epoch, err := vm.epochs.ByHash(hash)
+	epoch, err := vm.ftso.Current(hash)
 	if errors.Is(err, errFTSONotDeployed) || errors.Is(err, errFTSONotActive) {
 		vm.ctx.Log.Debug("FTSO not active, using default validators")
 		return toSet(vm.validators.DefaultValidators())

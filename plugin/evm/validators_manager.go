@@ -9,6 +9,12 @@ import (
 	"github.com/flare-foundation/flare/ids"
 )
 
+type Validators interface {
+	DefaultValidators() (map[ids.ShortID]uint64, error)
+	FTSOValidators(epoch uint64) (map[ids.ShortID]uint64, error)
+	ActiveValidators(epoch uint64) (map[ids.ShortID]uint64, error)
+}
+
 type ValidatorRetriever interface {
 	ByEpoch(epoch uint64) (map[ids.ShortID]uint64, error)
 }
