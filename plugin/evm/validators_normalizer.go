@@ -8,20 +8,23 @@ import (
 	"math"
 
 	"github.com/flare-foundation/flare/ids"
+	"github.com/flare-foundation/flare/utils/logging"
 )
 
 // ValidatorsNormalizer is responsible for normalizing validators, so that their
 // weights come out to the same total, irrespective of their original weights or
 // how many validators are in a set.
 type ValidatorsNormalizer struct {
+	log        logging.Logger
 	validators ValidatorRetriever
 }
 
 // NewValidatorsNormalizer wraps a new validators retriever in the normalizer, making
 // sure that all sets retrieved from the wrapper retriever have the same total weight.
-func NewValidatorsNormalizer(validators ValidatorRetriever) *ValidatorsNormalizer {
+func NewValidatorsNormalizer(log logging.Logger, validators ValidatorRetriever) *ValidatorsNormalizer {
 
 	v := ValidatorsNormalizer{
+		log:        log,
 		validators: validators,
 	}
 
@@ -46,11 +49,15 @@ func (v *ValidatorsNormalizer) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, er
 		totalWeight += weight
 	}
 
+	v.log.Debug("normalizing weight from %d to %d", totalWeight, math.MaxInt32)
+
 	ratio := math.MaxInt64 / totalWeight
 	normalized := make(map[ids.ShortID]uint64, len(validators))
 	for validator, weight := range validators {
 		normalized[validator] = weight * ratio
 	}
+
+	v.log.Debug("new normalized validator set: %#v", normalized)
 
 	return normalized, nil
 }
