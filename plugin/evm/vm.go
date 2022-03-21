@@ -218,21 +218,8 @@ type VM struct {
 
 	bootstrapped bool
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 	ftso       FTSO
 	validators Validators
-=======
-	validators *ValidatorsManager
-<<<<<<< HEAD
->>>>>>> 639a8dc5 (Add support to fetch FTSO validator set (#12))
-=======
-	epochs     *EpochsManager
->>>>>>> aa1fa58c (Add API to retrieve validators info (#20))
-=======
-	ftso       FTSO
-	validators Validators
->>>>>>> 3e283095 (Remove mapping of timestamps to epochs)
 }
 
 // Codec implements the secp256k1fx interface
@@ -475,9 +462,13 @@ func (vm *VM) Initialize(
 	// Initialize the validators manager, which is our interface between the EVM
 	// implementation and the Flare logic.
 <<<<<<< HEAD
+<<<<<<< HEAD
 	vm.ftso = ftso
 =======
 >>>>>>> aa1fa58c (Add API to retrieve validators info (#20))
+=======
+	vm.ftso = ftso
+>>>>>>> 69b513c5 (Fix FTSO nil reference)
 	vm.validators = NewValidatorsManager(defaultValidators, cachedFTSOValidators, cachedNormalizedActiveValidators)
 
 	vm.atomicTxRepository, err = NewAtomicTxRepository(vm.db, vm.codec, lastAccepted.NumberU64())
