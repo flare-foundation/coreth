@@ -428,6 +428,7 @@ func (vm *VM) Initialize(
 
 	// Initialize the validators manager, which is our interface between the EVM
 	// implementation and the Flare logic.
+	vm.ftso = ftso
 	vm.validators = NewValidatorsManager(defaultValidators, cachedFTSOValidators, cachedNormalizedActiveValidators)
 
 	vm.atomicTxRepository, err = NewAtomicTxRepository(vm.db, vm.codec, lastAccepted.NumberU64())
