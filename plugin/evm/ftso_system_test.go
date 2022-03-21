@@ -17,7 +17,7 @@ import (
 func TestFTSOSystem_Contracts(t *testing.T) {
 	initTestContracts(t)
 
-	t.Run("common case", func(t *testing.T) {
+	t.Run("nominal case", func(t *testing.T) {
 		auth, be := simulatedBlockchain(t)
 		defer be.Close()
 
@@ -195,7 +195,7 @@ func TestFTSOSystem_Details(t *testing.T) {
 func TestFTSOSystem_Snapshot(t *testing.T) {
 	initTestContracts(t)
 
-	t.Run("common case", func(t *testing.T) {
+	t.Run("nominal case", func(t *testing.T) {
 		auth, be := simulatedBlockchain(t)
 		defer be.Close()
 
