@@ -26,14 +26,16 @@ var (
 	flareChainID    = new(big.Int).SetUint64(14) // https://github.com/ethereum-lists/chains/blob/master/_data/chains/eip155-14.json
 
 	costonActivationTime   = big.NewInt(time.Date(2022, time.February, 25, 17, 0, 0, 0, time.UTC).Unix())
-	songbirdActivationTime = big.NewInt(time.Date(2200, time.January, 1, 0, 0, 0, 0, time.UTC).Unix())
+	songbirdActivationTime = big.NewInt(time.Date(2022, time.January, 28, 14, 0, 0, 0, time.UTC).Unix())
 	flareActivationTime    = big.NewInt(time.Date(2200, time.January, 1, 0, 0, 0, 0, time.UTC).Unix())
 
 	costonDefaultAttestors = []common.Address{
 		common.HexToAddress("0x3a6e101103ec3d9267d08f484a6b70e1440a8255"),
 	}
-	songbirdDefaultAttestors = []common.Address{}
-	flareDefaultAttestors    = []common.Address{}
+	songbirdDefaultAttestors = []common.Address{
+		common.HexToAddress("0x0c19f3B4927abFc596353B0f9Ddad5D817736F70"),
+	}
+	flareDefaultAttestors = []common.Address{}
 )
 
 type AttestationVotes struct {
@@ -99,6 +101,7 @@ func FinaliseRoundSelector(chainID *big.Int, blockTime *big.Int) []byte {
 }
 
 func GetDefaultAttestors(chainID *big.Int) []common.Address {
+
 	switch {
 	case chainID.Cmp(costonChainID) == 0:
 		return costonDefaultAttestors
@@ -106,20 +109,22 @@ func GetDefaultAttestors(chainID *big.Int) []common.Address {
 		return songbirdDefaultAttestors
 	case chainID.Cmp(flareChainID) == 0:
 		return flareDefaultAttestors
-	default:
-		var defaultAttestors []common.Address
-		defaultAttestorList := os.Getenv(defaultAttestorEnv)
-		if defaultAttestorList != "" {
-			defaultAttestorEntries := strings.Split(defaultAttestorList, ",")
-			for _, defaultAttestorEntry := range defaultAttestorEntries {
-				defaultAttestors = append(defaultAttestors, common.HexToAddress(defaultAttestorEntry))
-			}
-		}
-		return defaultAttestors
 	}
+
+	var defaultAttestors []common.Address
+	defaultAttestorList := os.Getenv(defaultAttestorEnv)
+	if defaultAttestorList != "" {
+		defaultAttestorEntries := strings.Split(defaultAttestorList, ",")
+		for _, defaultAttestorEntry := range defaultAttestorEntries {
+			defaultAttestors = append(defaultAttestors, common.HexToAddress(defaultAttestorEntry))
+		}
+	}
+
+	return defaultAttestors
 }
 
 func GetLocalAttestors() []common.Address {
+
 	var localAttestors []common.Address
 	localAttestorList := os.Getenv(localAttestorEnv)
 	if localAttestorList != "" {
@@ -128,6 +133,7 @@ func GetLocalAttestors() []common.Address {
 			localAttestors = append(localAttestors, common.HexToAddress(localAttestorEntry))
 		}
 	}
+
 	return localAttestors
 }
 
