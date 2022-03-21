@@ -40,7 +40,7 @@ func WithRatioMultiplier(multiplier float64) FTSOOption {
 
 type FTSO interface {
 	Current(hash common.Hash) (uint64, error)
-	Details(epoch uint64) (EpochDetails, error)
+	Details(epoch uint64) (FTSOEpoch, error)
 	Snapshot(epoch uint64) (Snapshot, error)
 }
 
