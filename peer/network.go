@@ -10,16 +10,17 @@ import (
 	"sync"
 	"time"
 
-	"github.com/flare-foundation/coreth/plugin/evm/message"
-
-	"github.com/flare-foundation/flare/snow/validators"
+	"golang.org/x/sync/semaphore"
 
 	"github.com/ethereum/go-ethereum/log"
+
 	"github.com/flare-foundation/flare/codec"
 	"github.com/flare-foundation/flare/ids"
 	"github.com/flare-foundation/flare/snow/engine/common"
+	"github.com/flare-foundation/flare/snow/validation"
 	"github.com/flare-foundation/flare/version"
-	"golang.org/x/sync/semaphore"
+
+	"github.com/flare-foundation/coreth/plugin/evm/message"
 )
 
 // Minimum amount of time to handle a request
@@ -28,12 +29,12 @@ const minRequestHandlingDuration = 100 * time.Millisecond
 var (
 	errAcquiringSemaphore                      = errors.New("error acquiring semaphore")
 	_                     Network              = &network{}
-	_                     validators.Connector = &network{}
+	_                     validation.Connector = &network{}
 	_                     common.AppHandler    = &network{}
 )
 
 type Network interface {
-	validators.Connector
+	validation.Connector
 	common.AppHandler
 
 	// RequestAny synchronously sends request to the first connected peer that matches the specified minVersion in
