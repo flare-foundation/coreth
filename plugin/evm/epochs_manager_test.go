@@ -22,6 +22,8 @@ func TestByTimestamp(t *testing.T) {
 	epochs := fakeEpochs(5)
 
 	t.Run("nominal case", func(t *testing.T) {
+		t.Parallel()
+
 		callsCount := 0
 		mock := &testEpochs{
 			DetailsFunc: func(epoch uint64) (EpochDetails, error) {
@@ -52,6 +54,8 @@ func TestByTimestamp(t *testing.T) {
 	})
 
 	t.Run("request first epoch", func(t *testing.T) {
+		t.Parallel()
+
 		callsCount := 0
 		mock := &testEpochs{
 			DetailsFunc: func(epoch uint64) (EpochDetails, error) {
@@ -70,6 +74,8 @@ func TestByTimestamp(t *testing.T) {
 	})
 
 	t.Run("request last epoch", func(t *testing.T) {
+		t.Parallel()
+
 		callsCount := 0
 		mock := &testEpochs{
 			DetailsFunc: func(epoch uint64) (EpochDetails, error) {
@@ -88,6 +94,8 @@ func TestByTimestamp(t *testing.T) {
 	})
 
 	t.Run("request between first and second epoch", func(t *testing.T) {
+		t.Parallel()
+
 		callsCount := 0
 		mock := &testEpochs{
 			DetailsFunc: func(epoch uint64) (EpochDetails, error) {
@@ -106,6 +114,8 @@ func TestByTimestamp(t *testing.T) {
 	})
 
 	t.Run("handles failure to retrieve epoch", func(t *testing.T) {
+		t.Parallel()
+
 		mock := &testEpochs{
 			DetailsFunc: func(epoch uint64) (EpochDetails, error) {
 					return EpochDetails{}, fmt.Errorf("dummy error")
