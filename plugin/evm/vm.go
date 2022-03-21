@@ -35,7 +35,7 @@ import (
 	"github.com/flare-foundation/flare/snow/choices"
 	"github.com/flare-foundation/flare/snow/consensus/snowman"
 	"github.com/flare-foundation/flare/snow/engine/snowman/block"
-	"github.com/flare-foundation/flare/snow/validators"
+	"github.com/flare-foundation/flare/snow/validation"
 	"github.com/flare-foundation/flare/utils/constants"
 	"github.com/flare-foundation/flare/utils/crypto"
 	"github.com/flare-foundation/flare/utils/formatting"
@@ -1531,6 +1531,49 @@ func (vm *VM) repairAtomicRepositoryForBonusBlockTxs(
 	return vm.db.Commit()
 }
 
-func (vm *VM) GetValidators(blockID ids.ID) (validators.Set, error) {
-	return vm.validators.ByBlock(common.Hash(blockID))
+func (vm *VM) GetValidators(blockID ids.ID) (validation.Set, error) {
+
+	hash := common.Hash(blockID)
+	blockchain := vm.chain.BlockChain()
+
+	header := blockchain.GetHeaderByHash(hash)
+	if header == nil {
+		return nil, fmt.Errorf("unknown block (hash: %x)", hash)
+	}
+
+	// If the hard fork was not active at the given block yet, we simply return the
+	// default validator set, which corresponds to what we had before the upgrade.
+	if !blockchain.Config().IsFlareHardFork1(big.NewInt(0).SetUint64(header.Time)) {
+		vm.ctx.Log.Debug("hard fork not active, using default validators")
+		return toSet(vm.validators.DefaultValidators())
+	}
+
+	// If the hard fork is active, we try to map the header to an FTSO rewards epoch.
+	// If the FTSO is not yet deployed, or not yet active, we simply go ahead with an
+	// epoch value of zero as well.
+	epoch, err := vm.ftso.Current(hash)
+	if errors.Is(err, errFTSONotDeployed) || errors.Is(err, errFTSONotActive) {
+		vm.ctx.Log.Debug("FTSO not active, using default validators")
+		return toSet(vm.validators.DefaultValidators())
+	}
+	if err != nil {
+		return nil, fmt.Errorf("could not get epoch (timestamp: %d): %w", header.Time, err)
+	}
+
+	vm.ctx.Log.Debug("hard fork and FTSO active, using active validators")
+	return toSet(vm.validators.ActiveValidators(epoch))
+}
+
+func toSet(validatorMap map[ids.ShortID]uint64, err error) (validation.Set, error) {
+	if err != nil {
+		return nil, err
+	}
+	set := validation.NewSet()
+	for validator, weight := range validatorMap {
+		err := set.AddWeight(validator, weight)
+		if err != nil {
+			return nil, fmt.Errorf("could not add weight: %w", err)
+		}
+	}
+	return set, nil
 }
