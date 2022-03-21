@@ -35,7 +35,7 @@ import (
 	"github.com/flare-foundation/flare/snow/choices"
 	"github.com/flare-foundation/flare/snow/consensus/snowman"
 	"github.com/flare-foundation/flare/snow/engine/snowman/block"
-	"github.com/flare-foundation/flare/snow/validators"
+	"github.com/flare-foundation/flare/snow/validation"
 	"github.com/flare-foundation/flare/utils/constants"
 	"github.com/flare-foundation/flare/utils/crypto"
 	"github.com/flare-foundation/flare/utils/formatting"
@@ -1483,7 +1483,7 @@ func (vm *VM) repairAtomicRepositoryForBonusBlockTxs(
 	return vm.db.Commit()
 }
 
-func (vm *VM) GetValidators(blockID ids.ID) (validators.Set, error) {
+func (vm *VM) GetValidators(blockID ids.ID) (validation.Set, error) {
 
 	hash := common.Hash(blockID)
 	blockchain := vm.chain.BlockChain()
@@ -1516,11 +1516,11 @@ func (vm *VM) GetValidators(blockID ids.ID) (validators.Set, error) {
 	return toSet(vm.validators.ActiveValidators(epoch))
 }
 
-func toSet(validatorMap map[ids.ShortID]uint64, err error) (validators.Set, error) {
+func toSet(validatorMap map[ids.ShortID]uint64, err error) (validation.Set, error) {
 	if err != nil {
 		return nil, err
 	}
-	set := validators.NewSet()
+	set := validation.NewSet()
 	for validator, weight := range validatorMap {
 		err := set.AddWeight(validator, weight)
 		if err != nil {
