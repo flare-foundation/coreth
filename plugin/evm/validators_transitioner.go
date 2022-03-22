@@ -9,6 +9,7 @@ import (
 	"sort"
 
 	"github.com/flare-foundation/flare/ids"
+	lru "github.com/hashicorp/golang-lru"
 )
 
 // ValidatorsTransitioner transitions validators from a static set of validators
@@ -16,15 +17,23 @@ import (
 type ValidatorsTransitioner struct {
 	validators map[ids.ShortID]uint64
 	providers  ValidatorRetriever
+	cache      *lru.Cache
 }
 
 // NewValidatorsTransitioner creates a transition from the given default validators
 // to the validators retrieved from the given FTSO validators retriever.
-func NewValidatorsTransitioner(validators map[ids.ShortID]uint64, providers ValidatorRetriever) *ValidatorsTransitioner {
+func NewValidatorsTransitioner(validators map[ids.ShortID]uint64, providers ValidatorRetriever, options ...CacheOption) *ValidatorsTransitioner {
 
+	cfg := DefaultCacheConfig
+	for _, opt := range options {
+		opt(&cfg)
+	}
+
+	cache, _ := lru.New(int(cfg.CacheSize))
 	v := ValidatorsTransitioner{
 		validators: validators,
 		providers:  providers,
+		cache:      cache,
 	}
 
 	return &v
@@ -58,13 +67,24 @@ func (v *ValidatorsTransitioner) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, 
 		return v.validators, nil
 	}
 
-	// At this point, some providers are available. We have to decide how many default
-	// validators to keep. First, we check how many default validators were included
-	// in the last epoch.
-	previous, err := v.ByEpoch(epoch - 1)
-	if err != nil {
-		return nil, fmt.Errorf("could not retrieve active validators for previous epoch: %w", err)
+	// At this point, we should start including some FTSO validators in the active
+	// validator set. This depends on how many we included in the previous set, so
+	// we recurse. The cache is there to avoid recursing all the way back to the
+	// first transition on later requests.
+	var previous map[ids.ShortID]uint64
+	entry, ok := v.cache.Get(epoch - 1)
+	if ok {
+		previous = entry.(map[ids.ShortID]uint64)
+	} else {
+		previous, err = v.ByEpoch(epoch - 1)
+		if err != nil {
+			return nil, fmt.Errorf("could not retrieve active validators for previous epoch: %w", err)
+		}
+		v.cache.Add(epoch-1, previous)
 	}
+
+	// We compute the number of default validators included in the active validators
+	// from the last epoch.
 	include := 0
 	for validator := range previous {
 		_, ok := v.validators[validator]
@@ -73,20 +93,20 @@ func (v *ValidatorsTransitioner) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, 
 		}
 	}
 
-	// If there were no default validators in the previous set, we don't need any
-	// now either.
+	// If there were no default validators in the previous active validators, we
+	// have completed the transition to FTSO validators.
 	if include == 0 {
 		return providers, nil
 	}
 
-	// If we have enough FTSO validators to fill one more spot, diminish by one
-	// the default validators we will include.
+	// If the number of available FTSO validators is big enough to replace an
+	// additional default validator, we include one default validator less.
 	if len(providers) > len(v.validators)-include {
 		include--
 	}
 
-	// We have to sort the default validators deterministically, so that we pick
-	// the same ones across nodes.
+	// In order to always select the same default validators, we sort their IDs
+	// deterministically, and then cut off at the number we should still include.
 	validators := make([]ids.ShortID, 0, len(v.validators))
 	for validator := range v.validators {
 		validators = append(validators, validator)
@@ -94,8 +114,6 @@ func (v *ValidatorsTransitioner) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, 
 	sort.Slice(validators, func(i int, j int) bool {
 		return bytes.Compare(validators[i][:], validators[j][:]) < 0
 	})
-
-	// Then we can limit the number to what was determined earlier.
 	validators = validators[:include]
 
 	// Next, we try to make sure that the default validators have proportionally
@@ -107,7 +125,7 @@ func (v *ValidatorsTransitioner) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, 
 	providerWeight /= uint64((len(v.validators) - include))
 
 	// Finally, we add the selected default validators to the set of the validators
-	// with the weights we have calculated.
+	// with the average weight we have calculated.
 	active := make(map[ids.ShortID]uint64, len(providers)+len(validators))
 	for provider, weight := range providers {
 		active[provider] = weight
