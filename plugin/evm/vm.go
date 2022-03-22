@@ -405,8 +405,6 @@ func (vm *VM) Initialize(
 		return fmt.Errorf("could not initialize FTSO system: %w", err)
 	}
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 	// Initialize the FTSO validator retriever, which retrieves validators for the
 	// FTSO data providers, and wrap it in a cache to avoid unnecessary retrievals.
 	ftsoValidators := NewValidatorsFTSO(ctx.Log, blockchain, ftso,
@@ -414,61 +412,23 @@ func (vm *VM) Initialize(
 	)
 	cachedFTSOValidators := NewValidatorsCache(ftsoValidators,
 		WithCacheSize(uint(len(defaultValidators))),
-=======
-	// Initialize an epochs cache on top of the FTSO, to avoid retrieving epochs
-	// data unnecessarily, and inject it into the epochs manager, which is responsible
-	// for mapping block timestamps to epochs.
-	cachedEpochs := NewEpochsCache(ftso,
-		WithCacheSize(16),
-	)
-	vm.epochs = NewEpochsManager(ftso, cachedEpochs)
-
-=======
->>>>>>> 3e283095 (Remove mapping of timestamps to epochs)
-	// Initialize the FTSO validator retriever, which retrieves validators for the
-	// FTSO data providers, and wrap it in a cache to avoid unnecessary retrievals.
-	ftsoValidators := NewValidatorsFTSO(ctx.Log, blockchain, ftso,
-		WithRootDegree(4),
-	)
-	cachedFTSOValidators := NewValidatorsCache(ftsoValidators,
-		WithCacheSize(12),
->>>>>>> aa1fa58c (Add API to retrieve validators info (#20))
 	)
 
 	// Initialize the validator transitioner, which is responsible for smoothly
 	// transitioning validators from the default set to the FTSO set, wrap it in
 	// a normalizer to have uniform weights across epochs, and wrap it in a cache
 	// to avoid unnecessary recomputation.
-<<<<<<< HEAD
 	activeValidators := NewValidatorsTransitioner(defaultValidators, cachedFTSOValidators,
-<<<<<<< HEAD
 		WithCacheSize(uint(len(defaultValidators))),
 	)
 	normalizedActiveValidators := NewValidatorsNormalizer(ctx.Log, activeValidators)
 	cachedNormalizedActiveValidators := NewValidatorsCache(normalizedActiveValidators,
 		WithCacheSize(uint(len(defaultValidators))),
-=======
-=======
-	activeValidators := NewValidatorsTransitioner(ctx.Log, defaultValidators, cachedFTSOValidators,
->>>>>>> 302db6d5 (Improve logging on validator change)
-		WithMinSteps(4),
-	)
-	normalizedActiveValidators := NewValidatorsNormalizer(ctx.Log, activeValidators)
-	cachedNormalizedActiveValidators := NewValidatorsCache(normalizedActiveValidators,
-		WithCacheSize(8),
->>>>>>> aa1fa58c (Add API to retrieve validators info (#20))
 	)
 
 	// Initialize the validators manager, which is our interface between the EVM
 	// implementation and the Flare logic.
-<<<<<<< HEAD
-<<<<<<< HEAD
 	vm.ftso = ftso
-=======
->>>>>>> aa1fa58c (Add API to retrieve validators info (#20))
-=======
-	vm.ftso = ftso
->>>>>>> 69b513c5 (Fix FTSO nil reference)
 	vm.validators = NewValidatorsManager(defaultValidators, cachedFTSOValidators, cachedNormalizedActiveValidators)
 
 	vm.atomicTxRepository, err = NewAtomicTxRepository(vm.db, vm.codec, lastAccepted.NumberU64())
