@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"strings"
@@ -18,6 +19,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/flare-foundation/flare/api/keystore"
 	"github.com/flare-foundation/flare/chains/atomic"
@@ -25,7 +27,6 @@ import (
 	"github.com/flare-foundation/flare/database/prefixdb"
 	"github.com/flare-foundation/flare/ids"
 	"github.com/flare-foundation/flare/snow"
-	"github.com/flare-foundation/flare/snow/choices"
 	"github.com/flare-foundation/flare/utils/constants"
 	"github.com/flare-foundation/flare/utils/crypto"
 	"github.com/flare-foundation/flare/utils/formatting"
@@ -35,10 +36,12 @@ import (
 	"github.com/flare-foundation/flare/vms/components/avax"
 	"github.com/flare-foundation/flare/vms/secp256k1fx"
 
+	"github.com/flare-foundation/flare/snow/choices"
 	engCommon "github.com/flare-foundation/flare/snow/engine/common"
 
 	"github.com/flare-foundation/coreth/core"
 	"github.com/flare-foundation/coreth/params"
+	"github.com/flare-foundation/coreth/tests/mocks"
 )
 
 var (
@@ -476,4 +479,54 @@ func TestConfigureLogLevel(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestToSet(t *testing.T) {
+	var (
+		idsList []ids.ShortID
+		weights []uint64
+	)
+	for i := 0; i < 3; i++ {
+		weight := rand.Uint64()
+		weights = append(weights, weight)
+
+		id := mocks.RandID()
+		idsList = append(idsList, id)
+	}
+
+	validators := map[ids.ShortID]uint64{
+		idsList[0]: weights[0],
+		idsList[1]: weights[1],
+		idsList[2]: weights[2],
+	}
+
+	t.Run("nominal case", func(t *testing.T) {
+		set, err := toSet(validators, nil)
+		require.NoError(t, err)
+
+		assert.True(t, set.Contains(idsList[0]))
+		assert.True(t, set.Contains(idsList[1]))
+		assert.True(t, set.Contains(idsList[2]))
+
+		weight, ok := set.GetWeight(idsList[0])
+		assert.Equal(t, weight, weights[0])
+		assert.Equal(t, ok, true)
+
+		weight, ok = set.GetWeight(idsList[1])
+		assert.Equal(t, weight, weights[1])
+		assert.Equal(t, ok, true)
+
+		weight, ok = set.GetWeight(idsList[2])
+		assert.Equal(t, weight, weights[2])
+		assert.Equal(t, ok, true)
+
+		assert.Len(t, set, len(validators))
+	})
+
+	t.Run("handles given error", func(t *testing.T) {
+		testError := errors.New("test error")
+		_, err := toSet(validators, testError)
+
+		assert.Equal(t, err, testError)
+	})
 }
