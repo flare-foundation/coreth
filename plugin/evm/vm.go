@@ -418,9 +418,7 @@ func (vm *VM) Initialize(
 	// transitioning validators from the default set to the FTSO set, wrap it in
 	// a normalizer to have uniform weights across epochs, and wrap it in a cache
 	// to avoid unnecessary recomputation.
-	activeValidators := NewValidatorsTransitioner(ctx.Log, defaultValidators, cachedFTSOValidators,
-		WithMinSteps(4),
-	)
+	activeValidators := NewValidatorsTransitioner(defaultValidators, cachedFTSOValidators)
 	normalizedActiveValidators := NewValidatorsNormalizer(ctx.Log, activeValidators)
 	cachedNormalizedActiveValidators := NewValidatorsCache(normalizedActiveValidators,
 		WithCacheSize(8),
