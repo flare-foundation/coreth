@@ -11,7 +11,7 @@ import (
 	"github.com/flare-foundation/flare/ids"
 )
 
-var DefaultRetrieverCacheConfig = CacheConfig{
+var DefaultCacheConfig = CacheConfig{
 	CacheSize: 8,
 }
 
@@ -38,7 +38,7 @@ type ValidatorsCache struct {
 // configured  number of cache slots.
 func NewValidatorsCache(validators ValidatorRetriever, opts ...CacheOption) *ValidatorsCache {
 
-	cfg := DefaultRetrieverCacheConfig
+	cfg := DefaultCacheConfig
 	for _, opt := range opts {
 		opt(&cfg)
 	}
