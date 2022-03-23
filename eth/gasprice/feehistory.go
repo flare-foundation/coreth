@@ -40,6 +40,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	_ "github.com/flare-foundation/coreth/consensus/misc"
 	"github.com/flare-foundation/coreth/core/types"
+	"github.com/flare-foundation/coreth/params"
 	"github.com/flare-foundation/coreth/rpc"
 )
 
@@ -107,8 +108,18 @@ func (oracle *Oracle) processBlock(bf *blockFees, percentiles []float64) {
 		return
 	}
 
+	// exclude transactions sent to the price submitter to avoid skewing the price
+	// estimations for normal users
+	var transactions types.Transactions
+	for _, tx := range bf.block.Transactions() {
+		if tx.To() != nil && *tx.To() == params.SubmitterAddress {
+			continue
+		}
+		transactions = append(transactions, tx)
+	}
+
 	bf.results.reward = make([]*big.Int, len(percentiles))
-	if len(bf.block.Transactions()) == 0 {
+	if len(transactions) == 0 {
 		// return an all zero row if there are no transactions to gather data from
 		for i := range bf.results.reward {
 			bf.results.reward[i] = new(big.Int)
@@ -116,8 +127,8 @@ func (oracle *Oracle) processBlock(bf *blockFees, percentiles []float64) {
 		return
 	}
 
-	sorter := make(sortGasAndReward, len(bf.block.Transactions()))
-	for i, tx := range bf.block.Transactions() {
+	sorter := make(sortGasAndReward, len(transactions))
+	for i, tx := range transactions {
 		reward, _ := tx.EffectiveGasTip(bf.block.BaseFee())
 		sorter[i] = txGasAndReward{gasUsed: bf.receipts[i].GasUsed, reward: reward}
 	}
@@ -128,7 +139,7 @@ func (oracle *Oracle) processBlock(bf *blockFees, percentiles []float64) {
 
 	for i, p := range percentiles {
 		thresholdGasUsed := uint64(float64(bf.block.GasUsed()) * p / 100)
-		for sumGasUsed < thresholdGasUsed && txIndex < len(bf.block.Transactions())-1 {
+		for sumGasUsed < thresholdGasUsed && txIndex < len(transactions)-1 {
 			txIndex++
 			sumGasUsed += sorter[txIndex].gasUsed
 		}
