@@ -35,14 +35,15 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// Avalanche ChainIDs
 var (
-	// CostonChainID ...
-	CostonChainID = big.NewInt(16)
-	// SongbirdChainID ...
-	SongbirdChainID = big.NewInt(19)
-	// FlareChainID ...
-	FlareChainID = big.NewInt(14)
+	// Flare Chain IDs.
+	CostonChainID   = big.NewInt(16) // https://github.com/ethereum-lists/chains/blob/master/_data/chains/eip155-16.json
+	SongbirdChainID = big.NewInt(19) // https://github.com/ethereum-lists/chains/blob/master/_data/chains/eip155-19.json
+	FlareChainID    = big.NewInt(14) // https://github.com/ethereum-lists/chains/blob/master/_data/chains/eip155-14.json
+
+	// Flare core contract addresses.
+	SubmitterAddress  = common.HexToAddress("0x1000000000000000000000000000000000000003")
+	ValidationAddress = common.HexToAddress("0x1000000000000000000000000000000000000004")
 
 	errNonGenesisForkByHeight = errors.New("coreth only supports forking by height at the genesis block")
 )
