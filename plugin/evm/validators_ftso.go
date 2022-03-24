@@ -9,9 +9,10 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/flare-foundation/coreth/core"
 	"github.com/flare-foundation/flare/ids"
 	"github.com/flare-foundation/flare/utils/logging"
+
+	"github.com/flare-foundation/coreth/core"
 )
 
 var DefaultFTSOConfig = FTSOConfig{
@@ -79,8 +80,6 @@ func NewValidatorsFTSO(log logging.Logger, blockchain *core.BlockChain, ftso FTS
 
 func (v *ValidatorsFTSO) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, error) {
 
-	validators := make(map[ids.ShortID]uint64)
-
 	snap, err := v.ftso.Snapshot(epoch)
 	if err != nil {
 		return nil, fmt.Errorf("could not get FTSO snapshot: %w", err)
@@ -91,6 +90,7 @@ func (v *ValidatorsFTSO) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, error) {
 		return nil, fmt.Errorf("could not get FTSO providers: %w", err)
 	}
 
+	validators := make(map[ids.ShortID]uint64)
 	for _, provider := range providers {
 
 		validator, err := snap.Validator(provider)

@@ -8,8 +8,9 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/flare-foundation/flare/ids"
 	lru "github.com/hashicorp/golang-lru"
+
+	"github.com/flare-foundation/flare/ids"
 )
 
 // ValidatorsTransitioner transitions validators from a static set of validators
@@ -48,7 +49,7 @@ func (v *ValidatorsTransitioner) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, 
 
 	// We need to get the FTSO providers for the previous epoch, so we need to
 	// check we are not at epoch zero.
-	if epoch < 1 {
+	if epoch == 0 {
 		return v.validators, nil
 	}
 
@@ -60,7 +61,7 @@ func (v *ValidatorsTransitioner) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, 
 		return nil, fmt.Errorf("could not retrieve FTSO validators for previous epoch: %w", err)
 	}
 
-	// If there are non, we return the default validator set. This is an important
+	// If there are none, we return the default validator set. This is an important
 	// point, as this is where we leave the recursion, where we decide how many
 	// default validators to keep.
 	if len(providers) == 0 {
@@ -122,7 +123,7 @@ func (v *ValidatorsTransitioner) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, 
 	for _, weight := range providers {
 		providerWeight += weight
 	}
-	providerWeight /= uint64((len(v.validators) - include))
+	providerWeight /= uint64(len(v.validators) - include)
 
 	// Finally, we add the selected default validators to the set of the validators
 	// with the average weight we have calculated.
