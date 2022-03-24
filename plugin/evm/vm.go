@@ -16,34 +16,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/flare-foundation/coreth/plugin/evm/message"
-
-	coreth "github.com/flare-foundation/coreth/chain"
-	"github.com/flare-foundation/coreth/consensus/dummy"
-	"github.com/flare-foundation/coreth/core"
-	"github.com/flare-foundation/coreth/core/state"
-	"github.com/flare-foundation/coreth/core/types"
-	"github.com/flare-foundation/coreth/eth/ethconfig"
-	"github.com/flare-foundation/coreth/metrics/prometheus"
-	"github.com/flare-foundation/coreth/node"
-	"github.com/flare-foundation/coreth/params"
-	"github.com/flare-foundation/coreth/peer"
-	"github.com/flare-foundation/coreth/rpc"
-
-	// Force-load tracer engine to trigger registration
-	//
-	// We must import this package (not referenced elsewhere) so that the native "callTracer"
-	// is added to a map of client-accessible tracers. In geth, this is done
-	// inside of cmd/geth.
-	_ "github.com/flare-foundation/coreth/eth/tracers/js"
-	_ "github.com/flare-foundation/coreth/eth/tracers/native"
+	avalancheRPC "github.com/gorilla/rpc/v2"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/ethereum/go-ethereum/rlp"
-
-	avalancheRPC "github.com/gorilla/rpc/v2"
 
 	"github.com/flare-foundation/flare/cache"
 	"github.com/flare-foundation/flare/codec"
@@ -57,6 +35,7 @@ import (
 	"github.com/flare-foundation/flare/snow/choices"
 	"github.com/flare-foundation/flare/snow/consensus/snowman"
 	"github.com/flare-foundation/flare/snow/engine/snowman/block"
+	"github.com/flare-foundation/flare/snow/validation"
 	"github.com/flare-foundation/flare/utils/constants"
 	"github.com/flare-foundation/flare/utils/crypto"
 	"github.com/flare-foundation/flare/utils/formatting"
@@ -70,8 +49,29 @@ import (
 	"github.com/flare-foundation/flare/vms/secp256k1fx"
 
 	commonEng "github.com/flare-foundation/flare/snow/engine/common"
-
 	avalancheJSON "github.com/flare-foundation/flare/utils/json"
+
+	"github.com/flare-foundation/coreth/consensus/dummy"
+	"github.com/flare-foundation/coreth/core"
+	"github.com/flare-foundation/coreth/core/state"
+	"github.com/flare-foundation/coreth/core/types"
+	"github.com/flare-foundation/coreth/eth/ethconfig"
+	"github.com/flare-foundation/coreth/metrics/prometheus"
+	"github.com/flare-foundation/coreth/node"
+	"github.com/flare-foundation/coreth/params"
+	"github.com/flare-foundation/coreth/peer"
+	"github.com/flare-foundation/coreth/plugin/evm/message"
+	"github.com/flare-foundation/coreth/rpc"
+
+	coreth "github.com/flare-foundation/coreth/chain"
+
+	// Force-load tracer engine to trigger registration
+	//
+	// We must import this package (not referenced elsewhere) so that the native "callTracer"
+	// is added to a map of client-accessible tracers. In geth, this is done
+	// inside of cmd/geth.
+	_ "github.com/flare-foundation/coreth/eth/tracers/js"
+	_ "github.com/flare-foundation/coreth/eth/tracers/native"
 )
 
 const (
@@ -132,16 +132,7 @@ var (
 	errInvalidBlock                   = errors.New("invalid block")
 	errInvalidAddr                    = errors.New("invalid hex address")
 	errInsufficientAtomicTxFee        = errors.New("atomic tx fee too low for atomic mempool")
-	errAssetIDMismatch                = errors.New("asset IDs in the input don't match the utxo")
-	errNoImportInputs                 = errors.New("tx has no imported inputs")
-	errInputsNotSortedUnique          = errors.New("inputs not sorted and unique")
-	errPublicKeySignatureMismatch     = errors.New("signature doesn't match public key")
-	errWrongChainID                   = errors.New("tx has wrong chain ID")
 	errInsufficientFunds              = errors.New("insufficient funds")
-	errNoExportOutputs                = errors.New("tx has no export outputs")
-	errOutputsNotSorted               = errors.New("tx outputs not sorted")
-	errOutputsNotSortedUnique         = errors.New("outputs not sorted and unique")
-	errOverflowExport                 = errors.New("overflow when computing export amount + txFee")
 	errInvalidNonce                   = errors.New("invalid nonce")
 	errConflictingAtomicInputs        = errors.New("invalid block due to conflicting atomic inputs")
 	errUnclesUnsupported              = errors.New("uncles unsupported")
@@ -153,8 +144,6 @@ var (
 	errInvalidMixDigest               = errors.New("invalid mix digest")
 	errInvalidExtDataHash             = errors.New("invalid extra data hash")
 	errHeaderExtraDataTooBig          = errors.New("header extra data too big")
-	errInsufficientFundsForFee        = errors.New("insufficient AVAX funds to pay transaction fee")
-	errNoEVMOutputs                   = errors.New("tx has no EVM outputs")
 	errNilBaseFeeApricotPhase3        = errors.New("nil base fee is invalid after apricotPhase3")
 	errNilExtDataGasUsedApricotPhase4 = errors.New("nil extDataGasUsed is invalid after apricotPhase4")
 	errNilBlockGasCostApricotPhase4   = errors.New("nil blockGasCost is invalid after apricotPhase4")
@@ -228,6 +217,9 @@ type VM struct {
 	networkCodec codec.Manager
 
 	bootstrapped bool
+
+	ftso       FTSO
+	validators Validators
 }
 
 // Codec implements the secp256k1fx interface
@@ -399,6 +391,46 @@ func (vm *VM) Initialize(
 	vm.chain = ethChain
 	lastAccepted := vm.chain.LastAcceptedBlock()
 
+	// Load the default validators for the given chain ID.
+	defaultValidators, err := getDefaultValidators(g.Config.ChainID)
+	if err != nil {
+		return fmt.Errorf("could not initialize default validators: %w", err)
+	}
+
+	// Initialize the FTSO system, which is responsible for all of our interactions
+	// with the FTSO smart contracts running at the EVM level.
+	blockchain := vm.chain.BlockChain()
+	ftso, err := NewFTSOSystem(blockchain, params.SubmitterAddress, params.ValidationAddress)
+	if err != nil {
+		return fmt.Errorf("could not initialize FTSO system: %w", err)
+	}
+
+	// Initialize the FTSO validator retriever, which retrieves validators for the
+	// FTSO data providers, and wrap it in a cache to avoid unnecessary retrievals.
+	ftsoValidators := NewValidatorsFTSO(ctx.Log, blockchain, ftso,
+		WithRootDegree(4),
+	)
+	cachedFTSOValidators := NewValidatorsCache(ftsoValidators,
+		WithCacheSize(uint(len(defaultValidators))),
+	)
+
+	// Initialize the validator transitioner, which is responsible for smoothly
+	// transitioning validators from the default set to the FTSO set, wrap it in
+	// a normalizer to have uniform weights across epochs, and wrap it in a cache
+	// to avoid unnecessary recomputation.
+	activeValidators := NewValidatorsTransitioner(defaultValidators, cachedFTSOValidators,
+		WithCacheSize(uint(len(defaultValidators))),
+	)
+	normalizedActiveValidators := NewValidatorsNormalizer(ctx.Log, activeValidators)
+	cachedNormalizedActiveValidators := NewValidatorsCache(normalizedActiveValidators,
+		WithCacheSize(uint(len(defaultValidators))),
+	)
+
+	// Initialize the validators manager, which is our interface between the EVM
+	// implementation and the Flare logic.
+	vm.ftso = ftso
+	vm.validators = NewValidatorsManager(defaultValidators, cachedFTSOValidators, cachedNormalizedActiveValidators)
+
 	vm.atomicTxRepository, err = NewAtomicTxRepository(vm.db, vm.codec, lastAccepted.NumberU64())
 	if err != nil {
 		return fmt.Errorf("failed to create atomic repository: %w", err)
@@ -515,7 +547,7 @@ func (vm *VM) preBatchOnFinalizeAndAssemble(header *types.Header, state *state.S
 		// Note: snapshot is taken inside the loop because you cannot revert to the same snapshot more than
 		// once.
 		snapshot := state.Snapshot()
-		rules := vm.chainConfig.AvalancheRules(header.Number, new(big.Int).SetUint64(header.Time))
+		rules := vm.chainConfig.FlareRules(header.Number, new(big.Int).SetUint64(header.Time))
 		if err := vm.verifyTx(tx, header.ParentHash, header.BaseFee, state, rules); err != nil {
 			// Discard the transaction from the mempool on failed verification.
 			vm.mempool.DiscardCurrentTx(tx.ID())
@@ -555,7 +587,7 @@ func (vm *VM) postBatchOnFinalizeAndAssemble(header *types.Header, state *state.
 		batchAtomicUTXOs  ids.Set
 		batchContribution *big.Int = new(big.Int).Set(common.Big0)
 		batchGasUsed      *big.Int = new(big.Int).Set(common.Big0)
-		rules                      = vm.chainConfig.AvalancheRules(header.Number, new(big.Int).SetUint64(header.Time))
+		rules                      = vm.chainConfig.FlareRules(header.Number, new(big.Int).SetUint64(header.Time))
 	)
 
 	for {
@@ -929,6 +961,13 @@ func (vm *VM) CreateHandlers() (map[string]*commonEng.HTTPHandler, error) {
 		enabledAPIs = append(enabledAPIs, "snowman")
 	}
 
+	if vm.config.FlareAPIEnabled {
+		if err := handler.RegisterName("flare", &FlareAPI{vm}); err != nil {
+			return nil, err
+		}
+		enabledAPIs = append(enabledAPIs, "flare")
+	}
+
 	log.Info(fmt.Sprintf("Enabled APIs: %s", strings.Join(enabledAPIs, ", ")))
 	apis[ethRPCEndpoint] = &commonEng.HTTPHandler{
 		LockOptions: commonEng.NoLock,
@@ -964,47 +1003,6 @@ func (vm *VM) CreateStaticHandlers() (map[string]*commonEng.HTTPHandler, error) 
  *********************************** Helpers **********************************
  ******************************************************************************
  */
-
-// conflicts returns an error if [inputs] conflicts with any of the atomic inputs contained in [ancestor]
-// or any of its ancestor blocks going back to the last accepted block in its ancestry. If [ancestor] is
-// accepted, then nil will be returned immediately.
-// If the ancestry of [ancestor] cannot be fetched, then [errRejectedParent] may be returned.
-func (vm *VM) conflicts(inputs ids.Set, ancestor *Block) error {
-	for ancestor.Status() != choices.Accepted {
-		// If any of the atomic transactions in the ancestor conflict with [inputs]
-		// return an error.
-		for _, atomicTx := range ancestor.atomicTxs {
-			if inputs.Overlaps(atomicTx.InputUTXOs()) {
-				return errConflictingAtomicInputs
-			}
-		}
-
-		// Move up the chain.
-		nextAncestorID := ancestor.Parent()
-		// If the ancestor is unknown, then the parent failed
-		// verification when it was called.
-		// If the ancestor is rejected, then this block shouldn't be
-		// inserted into the canonical chain because the parent is
-		// will be missing.
-		// If the ancestor is processing, then the block may have
-		// been verified.
-		nextAncestorIntf, err := vm.GetBlockInternal(nextAncestorID)
-		if err != nil {
-			return errRejectedParent
-		}
-
-		if blkStatus := nextAncestorIntf.Status(); blkStatus == choices.Unknown || blkStatus == choices.Rejected {
-			return errRejectedParent
-		}
-		nextAncestor, ok := nextAncestorIntf.(*Block)
-		if !ok {
-			return fmt.Errorf("ancestor block %s had unexpected type %T", nextAncestor.ID(), nextAncestorIntf)
-		}
-		ancestor = nextAncestor
-	}
-
-	return nil
-}
 
 // getAtomicTx returns the requested transaction, status, and height.
 // If the status is Unknown, then the returned transaction will be nil.
@@ -1353,7 +1351,7 @@ func (vm *VM) GetCurrentNonce(address common.Address) (uint64, error) {
 // currentRules returns the chain rules for the current block.
 func (vm *VM) currentRules() params.Rules {
 	header := vm.chain.APIBackend().CurrentHeader()
-	return vm.chainConfig.AvalancheRules(header.Number, big.NewInt(int64(header.Time)))
+	return vm.chainConfig.FlareRules(header.Number, big.NewInt(int64(header.Time)))
 }
 
 // getBlockValidator returns the block validator that should be used for a block that
@@ -1483,4 +1481,51 @@ func (vm *VM) repairAtomicRepositoryForBonusBlockTxs(
 	}
 	log.Info("repairAtomicRepositoryForBonusBlockTxs complete", "repairedEntries", repairedEntries)
 	return vm.db.Commit()
+}
+
+func (vm *VM) GetValidators(blockID ids.ID) (validation.Set, error) {
+
+	hash := common.Hash(blockID)
+	blockchain := vm.chain.BlockChain()
+
+	header := blockchain.GetHeaderByHash(hash)
+	if header == nil {
+		return nil, fmt.Errorf("unknown block (hash: %x)", hash)
+	}
+
+	// If the hard fork was not active at the given block yet, we simply return the
+	// default validator set, which corresponds to what we had before the upgrade.
+	if !blockchain.Config().IsFlareHardFork1(big.NewInt(0).SetUint64(header.Time)) {
+		vm.ctx.Log.Debug("hard fork not active, using default validators")
+		return toSet(vm.validators.DefaultValidators())
+	}
+
+	// If the hard fork is active, we try to map the header to an FTSO rewards epoch.
+	// If the FTSO is not yet deployed, or not yet active, we simply go ahead with an
+	// epoch value of zero as well.
+	epoch, err := vm.ftso.Current(hash)
+	if errors.Is(err, errFTSONotDeployed) || errors.Is(err, errFTSONotActive) {
+		vm.ctx.Log.Debug("FTSO not active, using default validators")
+		return toSet(vm.validators.DefaultValidators())
+	}
+	if err != nil {
+		return nil, fmt.Errorf("could not get epoch (timestamp: %d): %w", header.Time, err)
+	}
+
+	vm.ctx.Log.Debug("hard fork and FTSO active, using active validators")
+	return toSet(vm.validators.ActiveValidators(epoch))
+}
+
+func toSet(validatorMap map[ids.ShortID]uint64, err error) (validation.Set, error) {
+	if err != nil {
+		return nil, err
+	}
+	set := validation.NewSet()
+	for validator, weight := range validatorMap {
+		err := set.AddWeight(validator, weight)
+		if err != nil {
+			return nil, fmt.Errorf("could not add weight: %w", err)
+		}
+	}
+	return set, nil
 }

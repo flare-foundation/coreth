@@ -23,15 +23,6 @@ import (
 var (
 	bonusBlocks              = ids.Set{}
 	bonusBlockMainnetHeights = make(map[uint64]ids.ID)
-	// first height that processed a TX included on a
-	// bonus block is the canonical height for that TX.
-	canonicalBonusBlocks = []uint64{
-		102928, 103035, 103038, 103114, 103193,
-		103234, 103338, 103444, 103480, 103491,
-		103513, 103533, 103535, 103538, 103541,
-		103546, 103571, 103572, 103619,
-		103287, 103624, 103591,
-	}
 )
 
 func init() {
@@ -228,7 +219,7 @@ func (b *Block) syntacticVerify() (params.Rules, error) {
 	}
 
 	header := b.ethBlock.Header()
-	rules := b.vm.chainConfig.AvalancheRules(header.Number, new(big.Int).SetUint64(header.Time))
+	rules := b.vm.chainConfig.FlareRules(header.Number, new(big.Int).SetUint64(header.Time))
 	return rules, b.vm.getBlockValidator(rules).SyntacticVerify(b)
 }
 

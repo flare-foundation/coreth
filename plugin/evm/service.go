@@ -506,3 +506,39 @@ func (service *AvaxAPI) GetAtomicTx(r *http.Request, args *api.GetTxArgs, reply 
 	}
 	return nil
 }
+
+type FlareAPI struct {
+	vm *VM
+}
+
+func (api *FlareAPI) DefaultValidators(_ context.Context) (map[string]uint64, error) {
+	validators, err := api.vm.validators.DefaultValidators()
+	if err != nil {
+		return nil, fmt.Errorf("could not get default validators: %w", err)
+	}
+	return toJSON(validators), nil
+}
+
+func (api *FlareAPI) FtsoValidators(_ context.Context, epoch uint64) (map[string]uint64, error) {
+	validators, err := api.vm.validators.FTSOValidators(epoch)
+	if err != nil {
+		return nil, fmt.Errorf("could not get FTSO validators (epoch: %d): %w", epoch, err)
+	}
+	return toJSON(validators), nil
+}
+
+func (api *FlareAPI) ActiveValidators(_ context.Context, epoch uint64) (map[string]uint64, error) {
+	validators, err := api.vm.validators.ActiveValidators(epoch)
+	if err != nil {
+		return nil, fmt.Errorf("could not get active validators (epoch: %d): %w", epoch, err)
+	}
+	return toJSON(validators), nil
+}
+
+func toJSON(validators map[ids.ShortID]uint64) map[string]uint64 {
+	json := make(map[string]uint64, len(validators))
+	for validator, weight := range validators {
+		json[validator.PrefixedString(constants.NodeIDPrefix)] = weight
+	}
+	return json
+}

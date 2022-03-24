@@ -15,7 +15,6 @@ import (
 	"github.com/flare-foundation/flare/snow"
 	"github.com/flare-foundation/flare/utils/crypto"
 	"github.com/flare-foundation/flare/vms/components/avax"
-	"github.com/flare-foundation/flare/vms/secp256k1fx"
 )
 
 // UnsignedImportTx is an unsigned ImportTx
@@ -81,17 +80,6 @@ func (vm *VM) newImportTx(
 	to common.Address, // Address of recipient
 	baseFee *big.Int, // fee to use post-AP3
 	keys []*crypto.PrivateKeySECP256K1R, // Keys to import the funds
-) (*Tx, error) {
-	return nil, errImportTxsDisabled
-}
-
-// newImportTx returns a new ImportTx
-func (vm *VM) newImportTxWithUTXOs(
-	chainID ids.ID, // chain to import from
-	to common.Address, // Address of recipient
-	baseFee *big.Int, // fee to use post-AP3
-	kc *secp256k1fx.Keychain, // Keychain to use for signing the atomic UTXOs
-	atomicUTXOs []*avax.UTXO, // UTXOs to spend
 ) (*Tx, error) {
 	return nil, errImportTxsDisabled
 }
