@@ -28,7 +28,7 @@ func TestValidatorsTransitioner_ByEpoch(t *testing.T) {
 		providers := fakeProviders(testEpoch)
 
 		mock := &testValidatorRetriever{
-			ByEpochFunc: func(epoch uint64) (map[ids.ShortID]uint64, error) {
+			ByEpochFunc: func(uint64) (map[ids.ShortID]uint64, error) {
 				calls++
 				return providers, nil
 			},
@@ -47,7 +47,7 @@ func TestValidatorsTransitioner_ByEpoch(t *testing.T) {
 		assert.Equal(t, providers, got)
 		assert.Equal(t, 11, calls)
 
-		mock.ByEpochFunc = func(epoch uint64) (map[ids.ShortID]uint64, error) {
+		mock.ByEpochFunc = func(uint64) (map[ids.ShortID]uint64, error) {
 			calls++
 			return providers, nil
 		}
@@ -62,12 +62,13 @@ func TestValidatorsTransitioner_ByEpoch(t *testing.T) {
 		t.Parallel()
 
 		testEpoch := uint64(10)
+		wantWeight := uint64(45)
 		providers := fakeProviders(testEpoch)
 		// here we give non-nil validators so that the later part of the ByEpoch() function can be reached by control and therefore tested
 		validators := fakeValidators(testEpoch)
 
 		mock := &testValidatorRetriever{
-			ByEpochFunc: func(epoch uint64) (map[ids.ShortID]uint64, error) {
+			ByEpochFunc: func(uint64) (map[ids.ShortID]uint64, error) {
 				return providers, nil
 			},
 		}
@@ -82,7 +83,7 @@ func TestValidatorsTransitioner_ByEpoch(t *testing.T) {
 		for _, u := range got {
 			totalWeight += u
 		}
-		assert.Equal(t, uint64(45), totalWeight)
+		assert.Equal(t, wantWeight, totalWeight)
 	})
 
 	t.Run("epoch less than 1", func(t *testing.T) {
@@ -113,10 +114,11 @@ func TestValidatorsTransitioner_ByEpoch(t *testing.T) {
 				return nil, fmt.Errorf("error in getting valirators by epoch: %d", epoch)
 			},
 		}
+
 		validatorsTransitioner := NewValidatorsTransitioner(nil, mock)
-		providers, err := validatorsTransitioner.ByEpoch(1)
+
+		_, err := validatorsTransitioner.ByEpoch(1)
 		require.Error(t, err)
-		assert.Nil(t, providers)
 	})
 
 	t.Run("case for nil default validators", func(t *testing.T) {
@@ -130,7 +132,9 @@ func TestValidatorsTransitioner_ByEpoch(t *testing.T) {
 				return providers, nil
 			},
 		}
+
 		validatorsTransitioner := NewValidatorsTransitioner(nil, mock)
+
 		got, err := validatorsTransitioner.ByEpoch(epoch)
 		require.NoError(t, err)
 		assert.Equal(t, providers, got)
@@ -140,7 +144,6 @@ func TestValidatorsTransitioner_ByEpoch(t *testing.T) {
 func fakeProviders(epoch uint64) map[ids.ShortID]uint64 {
 
 	providers := make(map[ids.ShortID]uint64)
-
 	for i := 0; i < int(epoch); i++ {
 		providers[ids.ShortID{byte(i)}] = uint64(i)
 	}
@@ -152,7 +155,6 @@ func fakeProviders(epoch uint64) map[ids.ShortID]uint64 {
 func fakeValidators(epoch uint64) map[ids.ShortID]uint64 {
 
 	providers := make(map[ids.ShortID]uint64)
-
 	for i := 0; i < int(epoch); i++ {
 		providers[ids.ShortID{byte(i + int(epoch))}] = uint64(i)
 	}
