@@ -49,7 +49,7 @@ func (v *ValidatorsNormalizer) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, er
 		totalWeight += weight
 	}
 
-	v.log.Debug("normalizing weight from %d to %d", totalWeight, math.MaxInt32)
+	v.log.Debug("normalizing weight from %d to %d", totalWeight, math.MaxInt64)
 
 	ratio := math.MaxInt64 / totalWeight
 	normalized := make(map[ids.ShortID]uint64, len(validators))

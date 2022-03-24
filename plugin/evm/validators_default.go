@@ -6,9 +6,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/flare-foundation/coreth/params"
 	"github.com/flare-foundation/flare/ids"
 	"github.com/flare-foundation/flare/utils/constants"
+
+	"github.com/flare-foundation/coreth/params"
 )
 
 const (

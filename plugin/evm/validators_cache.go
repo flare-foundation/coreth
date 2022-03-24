@@ -35,7 +35,7 @@ type ValidatorsCache struct {
 }
 
 // NewValidatorCache creates a new LRU cache for validator retrieval with the
-// configured  number of cache slots.
+// configured cache size.
 func NewValidatorsCache(validators ValidatorRetriever, opts ...CacheOption) *ValidatorsCache {
 
 	cfg := DefaultCacheConfig

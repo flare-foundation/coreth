@@ -93,5 +93,4 @@ func (e *EVMCall) Execute(method string, params ...interface{}) *EVMReturn {
 	}
 
 	return &EVMReturn{values: values}
-
 }
