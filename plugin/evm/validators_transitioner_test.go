@@ -110,8 +110,8 @@ func TestValidatorsTransitioner_ByEpoch(t *testing.T) {
 		t.Parallel()
 
 		mock := &testValidatorRetriever{
-			ByEpochFunc: func(epoch uint64) (map[ids.ShortID]uint64, error) {
-				return nil, fmt.Errorf("error in getting valirators by epoch: %d", epoch)
+			ByEpochFunc: func(uint64) (map[ids.ShortID]uint64, error) {
+				return nil, fmt.Errorf("dummy error")
 			},
 		}
 
