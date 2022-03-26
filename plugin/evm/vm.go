@@ -515,7 +515,7 @@ func (vm *VM) preBatchOnFinalizeAndAssemble(header *types.Header, state *state.S
 		// Note: snapshot is taken inside the loop because you cannot revert to the same snapshot more than
 		// once.
 		snapshot := state.Snapshot()
-		rules := vm.chainConfig.AvalancheRules(header.Number, new(big.Int).SetUint64(header.Time))
+		rules := vm.chainConfig.FlareRules(header.Number, new(big.Int).SetUint64(header.Time))
 		if err := vm.verifyTx(tx, header.ParentHash, header.BaseFee, state, rules); err != nil {
 			// Discard the transaction from the mempool on failed verification.
 			vm.mempool.DiscardCurrentTx(tx.ID())
@@ -555,7 +555,7 @@ func (vm *VM) postBatchOnFinalizeAndAssemble(header *types.Header, state *state.
 		batchAtomicUTXOs  ids.Set
 		batchContribution *big.Int = new(big.Int).Set(common.Big0)
 		batchGasUsed      *big.Int = new(big.Int).Set(common.Big0)
-		rules                      = vm.chainConfig.AvalancheRules(header.Number, new(big.Int).SetUint64(header.Time))
+		rules                      = vm.chainConfig.FlareRules(header.Number, new(big.Int).SetUint64(header.Time))
 	)
 
 	for {
@@ -1353,7 +1353,7 @@ func (vm *VM) GetCurrentNonce(address common.Address) (uint64, error) {
 // currentRules returns the chain rules for the current block.
 func (vm *VM) currentRules() params.Rules {
 	header := vm.chain.APIBackend().CurrentHeader()
-	return vm.chainConfig.AvalancheRules(header.Number, big.NewInt(int64(header.Time)))
+	return vm.chainConfig.FlareRules(header.Number, big.NewInt(int64(header.Time)))
 }
 
 // getBlockValidator returns the block validator that should be used for a block that

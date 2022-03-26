@@ -487,14 +487,14 @@ func TestTransactionCoding(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		assertEqual(parsedTx, tx)
+		_ = assertEqual(parsedTx, tx)
 
 		// JSON
 		parsedTx, err = encodeDecodeJSON(tx)
 		if err != nil {
 			t.Fatal(err)
 		}
-		assertEqual(parsedTx, tx)
+		_ = assertEqual(parsedTx, tx)
 	}
 }
 

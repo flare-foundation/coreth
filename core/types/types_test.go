@@ -137,7 +137,7 @@ func benchRLP(b *testing.B, encode bool) {
 				b.ReportAllocs()
 				var null = &devnull{}
 				for i := 0; i < b.N; i++ {
-					rlp.Encode(null, tc.obj)
+					_ = rlp.Encode(null, tc.obj)
 				}
 				b.SetBytes(int64(null.len / b.N))
 			})
