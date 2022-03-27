@@ -46,6 +46,7 @@ type FTSO interface {
 }
 
 type Snapshot interface {
+	Cap() (float64, error)
 	Providers() ([]common.Address, error)
 	Validator(provider common.Address) (ids.ShortID, error)
 	Votepower(provider common.Address) (float64, error)
@@ -85,6 +86,11 @@ func (v *ValidatorsFTSO) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, error) {
 		return nil, fmt.Errorf("could not get FTSO snapshot: %w", err)
 	}
 
+	cap, err := snap.Cap()
+	if err != nil {
+		return nil, fmt.Errorf("could not get votepower cap: %w", err)
+	}
+
 	providers, err := snap.Providers()
 	if err != nil {
 		return nil, fmt.Errorf("could not get FTSO providers: %w", err)
@@ -107,8 +113,13 @@ func (v *ValidatorsFTSO) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, error) {
 			return nil, fmt.Errorf("could not get vote power (provider: %s): %w", provider, err)
 		}
 		if votepower == 0 {
-			v.log.Debug("skipping provider %s with validator %s and no votepower", provider.Hex(), validator)
+			v.log.Verbo("skipping provider %s with validator %s and no votepower", provider.Hex(), validator)
 			continue
+		}
+
+		if votepower > cap {
+			v.log.Verbo("capping provider %s at maximum votepower %f", provider.Hex(), cap)
+			votepower = cap
 		}
 
 		rewards, err := snap.Rewards(provider)

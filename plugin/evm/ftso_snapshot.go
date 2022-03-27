@@ -22,6 +22,35 @@ type FTSOSnapshot struct {
 	contracts FTSOContracts
 }
 
+func (f *FTSOSnapshot) Cap() (float64, error) {
+
+	supply := &big.Int{}
+	err := BindEVM(f.system.blockchain).
+		AtBlock(f.start).
+		OnContract(f.contracts.WNAT).
+		Execute(TotalSupply).
+		Decode(&supply)
+	if err != nil {
+		return 0, fmt.Errorf("could not get total supply: %w", err)
+	}
+
+	fraction := &big.Int{}
+	err = BindEVM(f.system.blockchain).
+		AtBlock(f.start).
+		OnContract(f.contracts.Manager).
+		Execute(Settings).
+		Decode(&fraction, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		return 0, fmt.Errorf("could not get votepower threshold fraction: %w", err)
+	}
+
+	capInt := big.NewInt(0).Div(supply, fraction)
+	capFloat := big.NewFloat(0).SetInt(capInt)
+	cap, _ := capFloat.Float64()
+
+	return cap, nil
+}
+
 func (f *FTSOSnapshot) Providers() ([]common.Address, error) {
 
 	var indices []*big.Int
