@@ -34,7 +34,7 @@ type ValidatorsManager struct {
 // block timestamps to FTSO rewards epochs, the given validators as the legacy static
 // validator set, and the given retriever to get the validator set based on FTSO
 // data providers.
-func NewValidatorsManager(defaultValidators map[ids.ShortID]uint64, ftsoValidators ValidatorRetriever, activeValidators ValidatorRetriever, opts ...CacheOption) *ValidatorsManager {
+func NewValidatorsManager(defaultValidators map[ids.ShortID]uint64, ftsoValidators ValidatorRetriever, activeValidators ValidatorRetriever) *ValidatorsManager {
 
 	v := ValidatorsManager{
 		defaultValidators: defaultValidators,
