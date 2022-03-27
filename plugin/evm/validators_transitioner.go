@@ -8,33 +8,46 @@ import (
 	"fmt"
 	"sort"
 
-	lru "github.com/hashicorp/golang-lru"
-
 	"github.com/flare-foundation/flare/ids"
 )
+
+var DefaultTransitionConfig = TransitionConfig{
+	StepSize: 1,
+}
+
+type TransitionConfig struct {
+	StepSize uint
+}
+
+type TransitionOption func(*TransitionConfig)
+
+func WithStepSize(size uint) TransitionOption {
+	return func(cfg *TransitionConfig) {
+		cfg.StepSize = size
+	}
+}
 
 // ValidatorsTransitioner transitions validators from a static set of validators
 // to a growing set of dynamic validators over a number of smooth steps.
 type ValidatorsTransitioner struct {
 	validators map[ids.ShortID]uint64
 	providers  ValidatorRetriever
-	cache      *lru.Cache
+	cfg        TransitionConfig
 }
 
 // NewValidatorsTransitioner creates a transition from the given default validators
 // to the validators retrieved from the given FTSO validators retriever.
-func NewValidatorsTransitioner(validators map[ids.ShortID]uint64, providers ValidatorRetriever, options ...CacheOption) *ValidatorsTransitioner {
+func NewValidatorsTransitioner(validators map[ids.ShortID]uint64, providers ValidatorRetriever, options ...TransitionOption) *ValidatorsTransitioner {
 
-	cfg := DefaultCacheConfig
+	cfg := DefaultTransitionConfig
 	for _, opt := range options {
 		opt(&cfg)
 	}
 
-	cache, _ := lru.New(int(cfg.CacheSize))
 	v := ValidatorsTransitioner{
 		validators: validators,
 		providers:  providers,
-		cache:      cache,
+		cfg:        cfg,
 	}
 
 	return &v
@@ -72,38 +85,31 @@ func (v *ValidatorsTransitioner) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, 
 	// validator set. This depends on how many we included in the previous set, so
 	// we recurse. The cache is there to avoid recursing all the way back to the
 	// first transition on later requests.
-	var previous map[ids.ShortID]uint64
-	entry, ok := v.cache.Get(epoch - 1)
-	if ok {
-		previous = entry.(map[ids.ShortID]uint64)
-	} else {
-		previous, err = v.ByEpoch(epoch - 1)
-		if err != nil {
-			return nil, fmt.Errorf("could not retrieve active validators for previous epoch: %w", err)
-		}
-		v.cache.Add(epoch-1, previous)
+	previous, err := v.ByEpoch(epoch - 1)
+	if err != nil {
+		return nil, fmt.Errorf("could not retrieve active validators for previous epoch: %w", err)
 	}
 
-	// We compute the number of default validators included in the active validators
-	// from the last epoch.
-	include := 0
+	// First, we compute the number of default validators included in the previous
+	// active validators by increasing the number by one for each one found in the
+	// previous set.
+	numDefault := 0
 	for validator := range previous {
 		_, ok := v.validators[validator]
-		if ok {
-			include++
+		if !ok {
+			continue
 		}
+		numDefault++
 	}
 
-	// If there were no default validators in the previous active validators, we
-	// have completed the transition to FTSO validators.
-	if include == 0 {
-		return providers, nil
-	}
-
-	// If the number of available FTSO validators is big enough to replace an
-	// additional default validator, we include one default validator less.
-	if len(providers) > len(v.validators)-include {
-		include--
+	// Then, we decrease the number of default validators that will be included for
+	// this epoch by one as long as there are enough FTSO validators available, but
+	// at most until there are none left or we reached the maximum step size.
+	for i := 0; i < int(v.cfg.StepSize) && numDefault > 0; i++ {
+		if len(providers) <= len(v.validators)-numDefault {
+			break
+		}
+		numDefault--
 	}
 
 	// In order to always select the same default validators, we sort their IDs
@@ -115,7 +121,7 @@ func (v *ValidatorsTransitioner) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, 
 	sort.Slice(validators, func(i int, j int) bool {
 		return bytes.Compare(validators[i][:], validators[j][:]) < 0
 	})
-	validators = validators[:include]
+	validators = validators[:numDefault]
 
 	// Next, we try to make sure that the default validators have proportionally
 	// the same average weighting as the FTSO validators.
@@ -123,7 +129,7 @@ func (v *ValidatorsTransitioner) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, 
 	for _, weight := range providers {
 		providerWeight += weight
 	}
-	providerWeight /= uint64(len(v.validators) - include)
+	providerWeight /= uint64(len(v.validators) - numDefault)
 
 	// Finally, we add the selected default validators to the set of the validators
 	// with the average weight we have calculated.

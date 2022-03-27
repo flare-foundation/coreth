@@ -411,7 +411,7 @@ func (vm *VM) Initialize(
 		WithRootDegree(4),
 	)
 	cachedFTSOValidators := NewValidatorsCache(ftsoValidators,
-		WithCacheSize(uint(len(defaultValidators))),
+		WithCacheSize(128), // more than a year with reward epochs of 3 days
 	)
 
 	// Initialize the validator transitioner, which is responsible for smoothly
@@ -419,11 +419,11 @@ func (vm *VM) Initialize(
 	// a normalizer to have uniform weights across epochs, and wrap it in a cache
 	// to avoid unnecessary recomputation.
 	activeValidators := NewValidatorsTransitioner(defaultValidators, cachedFTSOValidators,
-		WithCacheSize(uint(len(defaultValidators))),
+		WithStepSize(1),
 	)
 	normalizedActiveValidators := NewValidatorsNormalizer(ctx.Log, activeValidators)
 	cachedNormalizedActiveValidators := NewValidatorsCache(normalizedActiveValidators,
-		WithCacheSize(uint(len(defaultValidators))),
+		WithCacheSize(3), // just enough to ensure smooth transition
 	)
 
 	// Initialize the validators manager, which is our interface between the EVM
