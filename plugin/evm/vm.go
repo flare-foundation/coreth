@@ -391,8 +391,14 @@ func (vm *VM) Initialize(
 	vm.chain = ethChain
 	lastAccepted := vm.chain.LastAcceptedBlock()
 
+	// Load the FTSO parameters for the given chain.
+	params, err := params.LoadFlareParams(vm.chainConfig.ChainID)
+	if err != nil {
+		return fmt.Errorf("could not load flare parameters: %w", err)
+	}
+
 	// Load the default validators for the given chain ID.
-	defaultValidators, err := getDefaultValidators(g.Config.ChainID)
+	defaultValidators, err := NewValidatorsDefault(params)
 	if err != nil {
 		return fmt.Errorf("could not initialize default validators: %w", err)
 	}
@@ -400,7 +406,7 @@ func (vm *VM) Initialize(
 	// Initialize the FTSO system, which is responsible for all of our interactions
 	// with the FTSO smart contracts running at the EVM level.
 	blockchain := vm.chain.BlockChain()
-	ftso, err := NewFTSOSystem(blockchain, params.SubmitterAddress, params.ValidationAddress)
+	ftso, err := NewFTSOSystem(blockchain, params.PriceSubmitter, params.ValidationAddress)
 	if err != nil {
 		return fmt.Errorf("could not initialize FTSO system: %w", err)
 	}
