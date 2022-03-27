@@ -7,16 +7,16 @@ import (
 	"math/big"
 	"math/rand"
 
-	"github.com/flare-foundation/flare/utils"
-
-	"github.com/flare-foundation/coreth/core/state"
-	"github.com/flare-foundation/coreth/params"
 	"github.com/flare-foundation/flare/chains/atomic"
 	"github.com/flare-foundation/flare/codec"
 	"github.com/flare-foundation/flare/codec/linearcodec"
 	"github.com/flare-foundation/flare/ids"
 	"github.com/flare-foundation/flare/snow"
+	"github.com/flare-foundation/flare/utils"
 	"github.com/flare-foundation/flare/utils/wrappers"
+
+	"github.com/flare-foundation/coreth/core/state"
+	"github.com/flare-foundation/coreth/params"
 )
 
 type TestTx struct {

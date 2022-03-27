@@ -6,14 +6,23 @@ package evm
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/flare-foundation/flare/chains/atomic"
 	"github.com/flare-foundation/flare/database/memdb"
 	"github.com/flare-foundation/flare/database/versiondb"
 	"github.com/flare-foundation/flare/ids"
 	"github.com/flare-foundation/flare/utils"
-	"github.com/stretchr/testify/assert"
+	"github.com/flare-foundation/flare/utils/logging"
 )
+
+func testSharedMemory() atomic.SharedMemory {
+	m := &atomic.Memory{}
+	m.Initialize(logging.NoLog{}, memdb.New())
+	return m.NewSharedMemory(testCChainID)
+}
 
 func TestIteratorCanIterate(t *testing.T) {
 	lastAcceptedHeight := uint64(1000)
@@ -26,11 +35,11 @@ func TestIteratorCanIterate(t *testing.T) {
 	// since each test transaction generates random ID for blockchainID we should get
 	// multiple blockchain IDs per block in the overall combined atomic operation map
 	operationsMap := make(map[uint64]map[ids.ID]*atomic.Requests)
-	writeTxs(t, repo, 0, lastAcceptedHeight, constTxsPerHeight(3), nil, operationsMap)
+	writeTxs(t, repo, 1, lastAcceptedHeight, constTxsPerHeight(3), nil, operationsMap)
 
 	// create an atomic trie
 	// on create it will initialize all the transactions from the above atomic repository
-	atomicTrie1, err := newAtomicTrie(db, make(map[uint64]ids.ID), repo, codec, lastAcceptedHeight, 100)
+	atomicTrie1, err := newAtomicTrie(db, testSharedMemory(), nil, repo, codec, lastAcceptedHeight, 100)
 	assert.NoError(t, err)
 
 	lastCommittedHash1, lastCommittedHeight1 := atomicTrie1.LastCommitted()
@@ -38,18 +47,18 @@ func TestIteratorCanIterate(t *testing.T) {
 	assert.NotEqual(t, common.Hash{}, lastCommittedHash1)
 	assert.EqualValues(t, 1000, lastCommittedHeight1)
 
-	verifyOperations(t, atomicTrie1, codec, lastCommittedHash1, 0, 1000, operationsMap)
+	verifyOperations(t, atomicTrie1, codec, lastCommittedHash1, 1, 1000, operationsMap)
 
 	// iterate on a new atomic trie to make sure there is no resident state affecting the data and the
 	// iterator
-	atomicTrie2, err := newAtomicTrie(db, make(map[uint64]ids.ID), repo, codec, lastAcceptedHeight, 100)
+	atomicTrie2, err := newAtomicTrie(db, testSharedMemory(), nil, repo, codec, lastAcceptedHeight, 100)
 	assert.NoError(t, err)
 	lastCommittedHash2, lastCommittedHeight2 := atomicTrie2.LastCommitted()
 	assert.NoError(t, err)
 	assert.NotEqual(t, common.Hash{}, lastCommittedHash2)
 	assert.EqualValues(t, 1000, lastCommittedHeight2)
 
-	verifyOperations(t, atomicTrie2, codec, lastCommittedHash1, 0, 1000, operationsMap)
+	verifyOperations(t, atomicTrie2, codec, lastCommittedHash1, 1, 1000, operationsMap)
 }
 
 func TestIteratorHandlesInvalidData(t *testing.T) {
@@ -63,11 +72,11 @@ func TestIteratorHandlesInvalidData(t *testing.T) {
 	// since each test transaction generates random ID for blockchainID we should get
 	// multiple blockchain IDs per block in the overall combined atomic operation map
 	operationsMap := make(map[uint64]map[ids.ID]*atomic.Requests)
-	writeTxs(t, repo, 0, lastAcceptedHeight, constTxsPerHeight(3), nil, operationsMap)
+	writeTxs(t, repo, 1, lastAcceptedHeight, constTxsPerHeight(3), nil, operationsMap)
 
 	// create an atomic trie
 	// on create it will initialize all the transactions from the above atomic repository
-	atomicTrie, err := newAtomicTrie(db, make(map[uint64]ids.ID), repo, codec, lastAcceptedHeight, 100)
+	atomicTrie, err := newAtomicTrie(db, testSharedMemory(), nil, repo, codec, lastAcceptedHeight, 100)
 	assert.NoError(t, err)
 
 	lastCommittedHash, lastCommittedHeight := atomicTrie.LastCommitted()
@@ -75,14 +84,14 @@ func TestIteratorHandlesInvalidData(t *testing.T) {
 	assert.NotEqual(t, common.Hash{}, lastCommittedHash)
 	assert.EqualValues(t, 1000, lastCommittedHeight)
 
-	verifyOperations(t, atomicTrie, codec, lastCommittedHash, 0, 1000, operationsMap)
+	verifyOperations(t, atomicTrie, codec, lastCommittedHash, 1, 1000, operationsMap)
 
 	// Add a random key-value pair to the atomic trie in order to test that the iterator correctly
 	// handles an error when it runs into an unexpected key-value pair in the trie.
 	assert.NoError(t, atomicTrie.trie.TryUpdate(utils.RandomBytes(50), utils.RandomBytes(50)))
 	assert.NoError(t, atomicTrie.commit(lastCommittedHeight+1))
 	corruptedHash, _ := atomicTrie.LastCommitted()
-	iter, err := atomicTrie.Iterator(corruptedHash, 0)
+	iter, err := atomicTrie.Iterator(corruptedHash, nil)
 	assert.NoError(t, err)
 	for iter.Next() {
 	}

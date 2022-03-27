@@ -34,6 +34,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/event"
+
 	"github.com/flare-foundation/coreth/consensus/dummy"
 	"github.com/flare-foundation/coreth/core"
 	"github.com/flare-foundation/coreth/core/rawdb"
@@ -160,6 +161,10 @@ func (b *testBackend) MinRequiredTip(ctx context.Context, header *types.Header) 
 
 func (b *testBackend) CurrentHeader() *types.Header {
 	return b.chain.CurrentHeader()
+}
+
+func (b *testBackend) LastAcceptedBlock() *types.Block {
+	return b.chain.CurrentBlock()
 }
 
 func (b *testBackend) GetBlockByNumber(number uint64) *types.Block {

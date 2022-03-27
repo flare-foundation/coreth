@@ -12,9 +12,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/flare-foundation/coreth/core/state"
-	"github.com/flare-foundation/coreth/params"
-
 	"github.com/flare-foundation/flare/chains/atomic"
 	"github.com/flare-foundation/flare/codec"
 	"github.com/flare-foundation/flare/ids"
@@ -25,16 +22,22 @@ import (
 	"github.com/flare-foundation/flare/utils/wrappers"
 	"github.com/flare-foundation/flare/vms/components/verify"
 	"github.com/flare-foundation/flare/vms/secp256k1fx"
+
+	"github.com/flare-foundation/coreth/core/state"
+	"github.com/flare-foundation/coreth/params"
 )
 
 var (
-	errNoValueOutput = errors.New("output has no value")
-	errNoValueInput  = errors.New("input has no value")
-	errNilOutput     = errors.New("nil output")
-	errNilInput      = errors.New("nil input")
-	errEmptyAssetID  = errors.New("empty asset ID is not valid")
-	errNilBaseFee    = errors.New("cannot calculate dynamic fee with nil baseFee")
-	errFeeOverflow   = errors.New("overflow occurred while calculating the fee")
+	errWrongBlockchainID = errors.New("wrong blockchain ID provided")
+	errWrongNetworkID    = errors.New("tx was issued with a different network ID")
+	errNilTx             = errors.New("tx is nil")
+	errNoValueOutput     = errors.New("output has no value")
+	errNoValueInput      = errors.New("input has no value")
+	errNilOutput         = errors.New("nil output")
+	errNilInput          = errors.New("nil input")
+	errEmptyAssetID      = errors.New("empty asset ID is not valid")
+	errNilBaseFee        = errors.New("cannot calculate dynamic fee with nil baseFee")
+	errFeeOverflow       = errors.New("overflow occurred while calculating the fee")
 )
 
 // Constants for calculating the gas consumed by atomic transactions
@@ -273,6 +276,10 @@ func calculateDynamicFee(cost uint64, baseFee *big.Int) (uint64, error) {
 	return feeInNAVAX.Uint64(), nil
 }
 
+func calcBytesCost(len int) uint64 {
+	return uint64(len) * TxBytesGas
+}
+
 // mergeAtomicOps merges atomic requests represented by [txs]
 // to the [output] map, depending on whether [chainID] is present in the map.
 func mergeAtomicOps(txs []*Tx) (map[ids.ID]*atomic.Requests, error) {
@@ -286,16 +293,22 @@ func mergeAtomicOps(txs []*Tx) (map[ids.ID]*atomic.Requests, error) {
 	}
 	output := make(map[ids.ID]*atomic.Requests)
 	for _, tx := range txs {
-		chainID, txRequest, err := tx.UnsignedAtomicTx.AtomicOps()
+		chainID, txRequests, err := tx.UnsignedAtomicTx.AtomicOps()
 		if err != nil {
 			return nil, err
 		}
-		if request, exists := output[chainID]; exists {
-			request.PutRequests = append(request.PutRequests, txRequest.PutRequests...)
-			request.RemoveRequests = append(request.RemoveRequests, txRequest.RemoveRequests...)
-		} else {
-			output[chainID] = txRequest
-		}
+		mergeAtomicOpsToMap(output, chainID, txRequests)
 	}
 	return output, nil
+}
+
+// mergeAtomicOps merges atomic ops for [chainID] represented by [requests]
+// to the [output] map provided.
+func mergeAtomicOpsToMap(output map[ids.ID]*atomic.Requests, chainID ids.ID, requests *atomic.Requests) {
+	if request, exists := output[chainID]; exists {
+		request.PutRequests = append(request.PutRequests, requests.PutRequests...)
+		request.RemoveRequests = append(request.RemoveRequests, requests.RemoveRequests...)
+	} else {
+		output[chainID] = requests
+	}
 }

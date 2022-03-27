@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	commitSizeCap = 10 * units.MiB
+	repoCommitSizeCap = 10 * units.MiB
 )
 
 var (
@@ -42,7 +42,7 @@ type AtomicTxRepository interface {
 	Write(height uint64, txs []*Tx) error
 	WriteBonus(height uint64, txs []*Tx) error
 
-	IterateByHeight([]byte) database.Iterator
+	IterateByHeight(uint64) database.Iterator
 
 	IsBonusBlocksRepaired() (bool, error)
 	MarkBonusBlocksRepaired(repairedEntries uint64) error
@@ -60,14 +60,14 @@ type atomicTxRepository struct {
 	// has indexed.
 	atomicRepoMetadataDB database.Database
 
-	// This db is used to store [maxIndexedHeightKey] to avoid interfering with the iterators over the atomic transaction DBs.
+	// [db] is used to commit to the underlying versiondb.
 	db *versiondb.Database
 
 	// Use this codec for serializing
 	codec codec.Manager
 }
 
-func NewAtomicTxRepository(db *versiondb.Database, codec codec.Manager, lastAcceptedHeight uint64) (AtomicTxRepository, error) {
+func NewAtomicTxRepository(db *versiondb.Database, codec codec.Manager, lastAcceptedHeight uint64) (*atomicTxRepository, error) {
 	repo := &atomicTxRepository{
 		acceptedAtomicTxDB:         prefixdb.New(atomicTxIDDBPrefix, db),
 		acceptedAtomicTxByHeightDB: prefixdb.New(atomicHeightTxDBPrefix, db),
@@ -147,7 +147,7 @@ func (a *atomicTxRepository) initializeHeightIndex(lastAcceptedHeight uint64) er
 
 		// call commitFn to write to underlying DB if we have reached
 		// [commitSizeCap]
-		if pendingBytesApproximation > commitSizeCap {
+		if pendingBytesApproximation > repoCommitSizeCap {
 			if err := a.atomicRepoMetadataDB.Put(maxIndexedHeightKey, lastTxID[:]); err != nil {
 				return err
 			}
@@ -348,7 +348,12 @@ func (a *atomicTxRepository) appendTxToHeightIndex(heightBytes []byte, tx *Tx) e
 	return a.indexTxsAtHeight(heightBytes, txs)
 }
 
-func (a *atomicTxRepository) IterateByHeight(heightBytes []byte) database.Iterator {
+// IterateByHeight returns an iterator beginning at [height].
+// Note [height] must be greater than 0 since we assume there are no
+// atomic txs in genesis.
+func (a *atomicTxRepository) IterateByHeight(height uint64) database.Iterator {
+	heightBytes := make([]byte, wrappers.LongLen)
+	binary.BigEndian.PutUint64(heightBytes, height)
 	return a.acceptedAtomicTxByHeightDB.NewIteratorWithStart(heightBytes)
 }
 

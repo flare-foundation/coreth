@@ -11,11 +11,10 @@ import (
 
 	safemath "github.com/flare-foundation/flare/utils/math"
 
+	"github.com/flare-foundation/coreth/chain"
 	"github.com/flare-foundation/coreth/core/types"
 	"github.com/flare-foundation/coreth/params"
 	"github.com/flare-foundation/coreth/trie"
-
-	coreth "github.com/flare-foundation/coreth/chain"
 )
 
 var (
@@ -122,7 +121,7 @@ func (v blockValidatorPhase0) SyntacticVerify(b *Block) error {
 		return errUncleHashMismatch
 	}
 	// Coinbase must be zero on C-Chain
-	if b.ethBlock.Coinbase() != coreth.BlackholeAddr {
+	if b.ethBlock.Coinbase() != chain.BlackholeAddr {
 		return errInvalidBlock
 	}
 	// Block must not have any uncles
@@ -221,7 +220,7 @@ func (blockValidatorPhase1) SyntacticVerify(b *Block) error {
 		return errUncleHashMismatch
 	}
 	// Coinbase must be zero on C-Chain
-	if b.ethBlock.Coinbase() != coreth.BlackholeAddr {
+	if b.ethBlock.Coinbase() != chain.BlackholeAddr {
 		return errInvalidBlock
 	}
 	// Block must not have any uncles
@@ -325,7 +324,7 @@ func (blockValidatorPhase3) SyntacticVerify(b *Block) error {
 		return errUncleHashMismatch
 	}
 	// Coinbase must be zero on C-Chain
-	if b.ethBlock.Coinbase() != coreth.BlackholeAddr {
+	if b.ethBlock.Coinbase() != chain.BlackholeAddr {
 		return errInvalidBlock
 	}
 	// Block must not have any uncles
@@ -422,7 +421,7 @@ func (blockValidatorPhase4) SyntacticVerify(b *Block) error {
 		return errUncleHashMismatch
 	}
 	// Coinbase must be zero on C-Chain
-	if b.ethBlock.Coinbase() != coreth.BlackholeAddr {
+	if b.ethBlock.Coinbase() != chain.BlackholeAddr {
 		return errInvalidBlock
 	}
 	// Block must not have any uncles
@@ -552,7 +551,7 @@ func (blockValidatorPhase5) SyntacticVerify(b *Block) error {
 		return errUncleHashMismatch
 	}
 	// Coinbase must be zero on C-Chain
-	if b.ethBlock.Coinbase() != coreth.BlackholeAddr {
+	if b.ethBlock.Coinbase() != chain.BlackholeAddr {
 		return errInvalidBlock
 	}
 	// Block must not have any uncles

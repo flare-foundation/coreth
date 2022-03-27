@@ -30,6 +30,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/flare-foundation/coreth/core"
 	"github.com/flare-foundation/coreth/eth/gasprice"
 	"github.com/flare-foundation/coreth/miner"
@@ -37,13 +38,13 @@ import (
 
 // DefaultFullGPOConfig contains default gasprice oracle settings for full node.
 var DefaultFullGPOConfig = gasprice.Config{
-	Blocks:           40,
-	Percentile:       60,
-	MaxHeaderHistory: 1024,
-	MaxBlockHistory:  1024,
-	MinPrice:         gasprice.DefaultMinPrice,
-	MaxPrice:         gasprice.DefaultMaxPrice,
-	MinGasUsed:       gasprice.DefaultMinGasUsed,
+	Blocks:              40,
+	Percentile:          60,
+	MaxCallBlockHistory: gasprice.DefaultMaxCallBlockHistory,
+	MaxBlockHistory:     gasprice.DefaultMaxBlockHistory,
+	MinPrice:            gasprice.DefaultMinPrice,
+	MaxPrice:            gasprice.DefaultMaxPrice,
+	MinGasUsed:          gasprice.DefaultMinGasUsed,
 }
 
 // DefaultConfig contains default settings for use on the Avalanche main net.
@@ -55,7 +56,7 @@ func NewDefaultConfig() Config {
 		LightPeers:         100,
 		UltraLightFraction: 75,
 		DatabaseCache:      512,
-		TrieCleanCache:     75,
+		TrieCleanCache:     128,
 		TrieDirtyCache:     256,
 		SnapshotCache:      128,
 		Miner:              miner.Config{},
@@ -82,9 +83,12 @@ type Config struct {
 	// for nodes to connect to.
 	DiscoveryURLs []string
 
-	Pruning        bool // Whether to disable pruning and flush everything to disk
-	SnapshotAsync  bool // Whether to generate the initial snapshot in async mode
-	SnapshotVerify bool // Whether to verify generated snapshots
+	Pruning                         bool    // Whether to disable pruning and flush everything to disk
+	PopulateMissingTries            *uint64 // Height at which to start re-populating missing tries on startup.
+	PopulateMissingTriesParallelism int     // Number of concurrent readers to use when re-populating missing tries on startup.
+	AllowMissingTries               bool    // Whether to allow an archival node to run with pruning enabled and corrupt a complete index.
+	SnapshotAsync                   bool    // Whether to generate the initial snapshot in async mode
+	SnapshotVerify                  bool    // Whether to verify generated snapshots
 
 	// Whitelist of required block number -> hash values to accept
 	Whitelist map[uint64]common.Hash `toml:"-"`

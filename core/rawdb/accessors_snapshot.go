@@ -28,6 +28,7 @@ package rawdb
 
 import (
 	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/flare-foundation/coreth/ethdb"
 )
@@ -132,6 +133,11 @@ func DeleteStorageSnapshot(db ethdb.KeyValueWriter, accountHash, storageHash com
 // space of a specific account.
 func IterateStorageSnapshots(db ethdb.Iteratee, accountHash common.Hash) ethdb.Iterator {
 	return db.NewIterator(storageSnapshotsKey(accountHash), nil)
+}
+
+// IterateAccountSnapshots returns an iterator for walking all of the accounts in the snapshot
+func IterateAccountSnapshots(db ethdb.Iteratee) ethdb.Iterator {
+	return db.NewIterator(SnapshotAccountPrefix, nil)
 }
 
 // ReadSnapshotGenerator retrieves the serialized snapshot generator saved at

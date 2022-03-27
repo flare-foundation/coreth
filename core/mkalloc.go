@@ -46,6 +46,7 @@ import (
 	"strconv"
 
 	"github.com/ethereum/go-ethereum/rlp"
+
 	"github.com/flare-foundation/coreth/core"
 )
 

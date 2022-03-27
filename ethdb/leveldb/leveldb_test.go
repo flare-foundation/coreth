@@ -29,10 +29,11 @@ package leveldb
 import (
 	"testing"
 
-	"github.com/flare-foundation/coreth/ethdb"
-	"github.com/flare-foundation/coreth/ethdb/dbtest"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/storage"
+
+	"github.com/flare-foundation/coreth/ethdb"
+	"github.com/flare-foundation/coreth/ethdb/dbtest"
 )
 
 func TestLevelDB(t *testing.T) {

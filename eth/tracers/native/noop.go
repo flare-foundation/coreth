@@ -32,12 +32,13 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/flare-foundation/coreth/core/vm"
 	"github.com/flare-foundation/coreth/eth/tracers"
 )
 
 func init() {
-	register("noopTracerNative", newNoopTracer)
+	register("noopTracer", newNoopTracer)
 }
 
 // noopTracer is a go implementation of the Tracer interface which

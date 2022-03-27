@@ -9,22 +9,20 @@ import (
 	"sync"
 	"time"
 
-	"github.com/flare-foundation/flare/codec"
-
-	"github.com/flare-foundation/coreth/peer"
-
-	"github.com/flare-foundation/flare/cache"
-	"github.com/flare-foundation/flare/ids"
-	"github.com/flare-foundation/flare/snow"
-	"github.com/flare-foundation/flare/utils/wrappers"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
 
+	"github.com/flare-foundation/flare/cache"
+	"github.com/flare-foundation/flare/codec"
+	"github.com/flare-foundation/flare/ids"
+	"github.com/flare-foundation/flare/snow"
+	"github.com/flare-foundation/flare/utils/wrappers"
+
 	"github.com/flare-foundation/coreth/core"
 	"github.com/flare-foundation/coreth/core/state"
 	"github.com/flare-foundation/coreth/core/types"
+	"github.com/flare-foundation/coreth/peer"
 	"github.com/flare-foundation/coreth/plugin/evm/message"
 )
 
@@ -281,10 +279,10 @@ func (n *pushGossiper) gossipAtomicTx(tx *Tx) error {
 	}
 	n.recentAtomicTxs.Put(txID, nil)
 
-	msg := message.AtomicTx{
+	msg := message.AtomicTxGossip{
 		Tx: tx.Bytes(),
 	}
-	msgBytes, err := message.BuildMessage(n.codec, &msg)
+	msgBytes, err := message.BuildGossipMessage(n.codec, msg)
 	if err != nil {
 		return err
 	}
@@ -305,10 +303,10 @@ func (n *pushGossiper) sendEthTxs(txs []*types.Transaction) error {
 	if err != nil {
 		return err
 	}
-	msg := message.EthTxs{
+	msg := message.EthTxsGossip{
 		Txs: txBytes,
 	}
-	msgBytes, err := message.BuildMessage(n.codec, &msg)
+	msgBytes, err := message.BuildGossipMessage(n.codec, msg)
 	if err != nil {
 		return err
 	}
@@ -417,15 +415,15 @@ func NewGossipHandler(vm *VM) *GossipHandler {
 	}
 }
 
-func (h *GossipHandler) HandleAtomicTx(nodeID ids.ShortID, msg *message.AtomicTx) error {
+func (h *GossipHandler) HandleAtomicTx(nodeID ids.ShortID, msg message.AtomicTxGossip) error {
 	log.Trace(
-		"AppGossip called with AtomicTx",
+		"AppGossip called with AtomicTxGossip",
 		"peerID", nodeID,
 	)
 
 	if len(msg.Tx) == 0 {
 		log.Trace(
-			"AppGossip received empty AtomicTx Message",
+			"AppGossip received empty AtomicTxGossip Message",
 			"peerID", nodeID,
 		)
 		return nil
@@ -467,16 +465,16 @@ func (h *GossipHandler) HandleAtomicTx(nodeID ids.ShortID, msg *message.AtomicTx
 	return nil
 }
 
-func (h *GossipHandler) HandleEthTxs(nodeID ids.ShortID, msg *message.EthTxs) error {
+func (h *GossipHandler) HandleEthTxs(nodeID ids.ShortID, msg message.EthTxsGossip) error {
 	log.Trace(
-		"AppGossip called with EthTxs",
+		"AppGossip called with EthTxsGossip",
 		"peerID", nodeID,
 		"size(txs)", len(msg.Txs),
 	)
 
 	if len(msg.Txs) == 0 {
 		log.Trace(
-			"AppGossip received empty EthTxs Message",
+			"AppGossip received empty EthTxsGossip Message",
 			"peerID", nodeID,
 		)
 		return nil

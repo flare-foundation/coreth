@@ -8,11 +8,13 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/log"
+
 	"github.com/flare-foundation/coreth/core/types"
 	"github.com/flare-foundation/coreth/params"
-	"github.com/stretchr/testify/assert"
 )
 
 func testRollup(t *testing.T, longs []uint64, roll int) {
@@ -525,7 +527,7 @@ func TestCalcBlockGasCost(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			assert.Zero(t, test.expected.Cmp(calcBlockGasCost(
-				2,
+				ApricotPhase4TargetBlockRate,
 				ApricotPhase4MinBlockGasCost,
 				ApricotPhase4MaxBlockGasCost,
 				ApricotPhase4BlockGasCostStep,
