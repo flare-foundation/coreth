@@ -9,22 +9,22 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/flare-foundation/coreth/plugin/evm/testcontracts"
 )
 
 func TestEVMCall_Execute(t *testing.T) {
 
-	initTestContracts(t)
-
 	auth, be := simulatedBlockchain(t)
 	defer be.Close()
 
-	contractAddr := deployTestContract(t, auth, be, testAbiStore, testStoreBin)
+	contractAddr := testcontracts.DeployStore(auth, be)
 
 	be.Commit(true)
 
 	contract := EVMContract{
 		address: contractAddr,
-		abi:     testAbiStore,
+		abi:     testcontracts.StoreABI(),
 	}
 
 	blockChain := be.Blockchain()
