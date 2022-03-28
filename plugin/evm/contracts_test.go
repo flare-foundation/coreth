@@ -127,7 +127,7 @@ func deployFTSORegistryContract(t *testing.T, auth *bind.TransactOpts, be *backe
 
 }
 
-// Slices epochs, providers and unclaimedRewards should all have the same length.
+// Slices of epochs, providers and unclaimedRewards should all have the same length.
 //
 // When calling ProviderRewards method using 'epochs[i]' and 'providers[i]'
 // value 'unclaimedRewards[i]' will be returned.
@@ -151,7 +151,7 @@ func deploySubmitterContract(t *testing.T, auth *bind.TransactOpts, be *backends
 	return deployTestContract(t, auth, be, testAbiSubmitter, testAbiSubmitterBin, voterWhitelister, ftsoRegistry, ftsoManager)
 }
 
-// Slice dataProvidersAddresses should have the same length as nodes outer slice
+// Slice of dataProvidersAddresses should have the same length as nodes outer slice
 //
 // When calling ProviderNode method using 'dataProvidersAddresses[i]'
 // value 'nodes[i]' will be returned.
@@ -165,7 +165,7 @@ func deployValidatorContract(t *testing.T, auth *bind.TransactOpts, be *backends
 	return deployTestContract(t, auth, be, testAbiValidation, testAbiValidationBin, dataProvidersAddresses, nodes)
 }
 
-// Slices providers and vps should all have the same length.
+// Slices of providers and vps should all have the same length.
 //
 // When calling ProviderVotepower method using 'providers[i]'
 // value 'vps[i]' will be returned.
