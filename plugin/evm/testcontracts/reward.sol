@@ -29,7 +29,7 @@ contract Reward {
         return wNatVal;
     }
 
-    function getUnclaimedReward(uint256 epoch, address provider) external view returns (uint256) {
-        return unclaimedReward[epoch][provider];
+    function getUnclaimedReward(uint256 epoch, address provider) external view returns (uint256, uint256) {
+        return (unclaimedReward[epoch][provider], 0);
     }
 }
