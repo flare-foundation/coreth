@@ -25,11 +25,13 @@ import (
 	"reflect"
 	"testing"
 
+	"golang.org/x/crypto/sha3"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/rlp"
+
 	"github.com/flare-foundation/coreth/core/types"
 	"github.com/flare-foundation/coreth/params"
-	"golang.org/x/crypto/sha3"
 )
 
 // Tests block header storage and retrieval operations.

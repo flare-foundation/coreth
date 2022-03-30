@@ -41,6 +41,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rlp"
+
 	"github.com/flare-foundation/coreth/core"
 	"github.com/flare-foundation/coreth/core/rawdb"
 	"github.com/flare-foundation/coreth/core/types"
@@ -138,10 +139,6 @@ type callTracerTest struct {
 // runs the JavaScript tracers against them.
 func TestCallTracerLegacy(t *testing.T) {
 	testCallTracer("callTracerLegacy", "call_tracer_legacy", t)
-}
-
-func TestCallTracerJs(t *testing.T) {
-	testCallTracer("callTracerJs", "call_tracer", t)
 }
 
 func TestCallTracerNative(t *testing.T) {

@@ -33,9 +33,11 @@ import (
 	"time"
 
 	"github.com/VictoriaMetrics/fastcache"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
+
 	"github.com/flare-foundation/coreth/core/rawdb"
 	"github.com/flare-foundation/coreth/ethdb"
 	"github.com/flare-foundation/coreth/trie"
@@ -105,7 +107,7 @@ func loadSnapshot(diskdb ethdb.KeyValueStore, triedb *trie.Database, cache int, 
 		var wiper chan struct{}
 		if generator.Wiping {
 			log.Info("Resuming previous snapshot wipe")
-			wiper = wipeSnapshot(diskdb, false)
+			wiper = WipeSnapshot(diskdb, false)
 		}
 		// Whether or not wiping was in progress, load any generator progress too
 		snapshot.genMarker = generator.Marker

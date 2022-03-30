@@ -4,22 +4,23 @@
 package evm
 
 import (
+	"encoding/binary"
+	"fmt"
 	"sort"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/flare-foundation/flare/chains/atomic"
-	"github.com/flare-foundation/flare/database"
-	"github.com/flare-foundation/flare/database/prefixdb"
-	"github.com/flare-foundation/flare/database/versiondb"
-
-	"github.com/flare-foundation/flare/codec"
-	"github.com/flare-foundation/flare/utils/wrappers"
-
 	"github.com/stretchr/testify/assert"
 
+	"github.com/ethereum/go-ethereum/common"
+
+	"github.com/flare-foundation/flare/chains/atomic"
+	"github.com/flare-foundation/flare/codec"
+	"github.com/flare-foundation/flare/database"
 	"github.com/flare-foundation/flare/database/memdb"
+	"github.com/flare-foundation/flare/database/prefixdb"
+	"github.com/flare-foundation/flare/database/versiondb"
 	"github.com/flare-foundation/flare/ids"
+	"github.com/flare-foundation/flare/utils/wrappers"
 )
 
 // addTxs writes [txsPerHeight] txs for heights ranging in [fromHeight, toHeight) directly to [acceptedAtomicTxDB],
@@ -120,7 +121,9 @@ func verifyTxs(t testing.TB, repo AtomicTxRepository, txMap map[uint64][]*Tx) {
 // the atomic operations contained in [operationsMap] on the same interval.
 func verifyOperations(t testing.TB, atomicTrie AtomicTrie, codec codec.Manager, rootHash common.Hash, from, to uint64, operationsMap map[uint64]map[ids.ID]*atomic.Requests) {
 	// Start the iterator at [from]
-	iter, err := atomicTrie.Iterator(rootHash, from)
+	fromBytes := make([]byte, wrappers.LongLen)
+	binary.BigEndian.PutUint64(fromBytes, from)
+	iter, err := atomicTrie.Iterator(rootHash, fromBytes)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -188,7 +191,7 @@ func TestAtomicRepositoryReadWriteSingleTx(t *testing.T) {
 	}
 	txMap := make(map[uint64][]*Tx)
 
-	writeTxs(t, repo, 0, 100, constTxsPerHeight(1), txMap, nil)
+	writeTxs(t, repo, 1, 100, constTxsPerHeight(1), txMap, nil)
 	verifyTxs(t, repo, txMap)
 }
 
@@ -201,7 +204,7 @@ func TestAtomicRepositoryReadWriteMultipleTxs(t *testing.T) {
 	}
 	txMap := make(map[uint64][]*Tx)
 
-	writeTxs(t, repo, 0, 100, constTxsPerHeight(10), txMap, nil)
+	writeTxs(t, repo, 1, 100, constTxsPerHeight(10), txMap, nil)
 	verifyTxs(t, repo, txMap)
 }
 
@@ -211,7 +214,7 @@ func TestAtomicRepositoryPreAP5Migration(t *testing.T) {
 
 	acceptedAtomicTxDB := prefixdb.New(atomicTxIDDBPrefix, db)
 	txMap := make(map[uint64][]*Tx)
-	addTxs(t, codec, acceptedAtomicTxDB, 0, 100, 1, txMap, nil)
+	addTxs(t, codec, acceptedAtomicTxDB, 1, 100, 1, txMap, nil)
 	if err := db.Commit(); err != nil {
 		t.Fatal(err)
 	}
@@ -236,7 +239,7 @@ func TestAtomicRepositoryPostAP5Migration(t *testing.T) {
 
 	acceptedAtomicTxDB := prefixdb.New(atomicTxIDDBPrefix, db)
 	txMap := make(map[uint64][]*Tx)
-	addTxs(t, codec, acceptedAtomicTxDB, 0, 100, 1, txMap, nil)
+	addTxs(t, codec, acceptedAtomicTxDB, 1, 100, 1, txMap, nil)
 	addTxs(t, codec, acceptedAtomicTxDB, 100, 200, 10, txMap, nil)
 	if err := db.Commit(); err != nil {
 		t.Fatal(err)
@@ -284,4 +287,64 @@ func BenchmarkAtomicRepositoryIndex_10kBlocks_10Tx(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		benchAtomicRepositoryIndex10_000(b, 10_000, 10)
 	}
+}
+
+func TestRepairAtomicRepositoryForBonusBlockTxs(t *testing.T) {
+	db := versiondb.New(memdb.New())
+	atomicTxRepository, err := NewAtomicTxRepository(db, testTxCodec(), 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// check completion flag is not set
+	done, err := atomicTxRepository.IsBonusBlocksRepaired()
+	assert.NoError(t, err)
+	assert.False(t, done)
+
+	tx := newTestTx()
+	// write the same tx to 3 heights.
+	canonical, bonus1, bonus2 := uint64(10), uint64(20), uint64(30)
+	atomicTxRepository.Write(canonical, []*Tx{tx})
+	atomicTxRepository.Write(bonus1, []*Tx{tx})
+	atomicTxRepository.Write(bonus2, []*Tx{tx})
+	db.Commit()
+
+	_, foundHeight, err := atomicTxRepository.GetByTxID(tx.ID())
+	assert.NoError(t, err)
+	assert.Equal(t, bonus2, foundHeight)
+
+	allHeights := []uint64{canonical, bonus1, bonus2}
+	if err := repairAtomicRepositoryForBonusBlockTxs(
+		atomicTxRepository,
+		db,
+		allHeights,
+		func(height uint64) (*Tx, error) {
+			if height == 10 || height == 20 || height == 30 {
+				return tx, nil
+			}
+			return nil, fmt.Errorf("unexpected height %d", height)
+		},
+	); err != nil {
+		t.Fatal(err)
+	}
+
+	// check canonical height is indexed against txID
+	_, foundHeight, err = atomicTxRepository.GetByTxID(tx.ID())
+	assert.NoError(t, err)
+	assert.Equal(t, canonical, foundHeight)
+
+	// check tx can be found with any of the heights
+	for _, height := range allHeights {
+		txs, err := atomicTxRepository.GetByHeight(height)
+		if err != nil {
+			t.Fatal(err)
+		}
+		assert.Len(t, txs, 1)
+		assert.Equal(t, tx.ID(), txs[0].ID())
+	}
+
+	// check completion flag is set
+	done, err = atomicTxRepository.IsBonusBlocksRepaired()
+	assert.NoError(t, err)
+	assert.True(t, done)
 }

@@ -35,10 +35,12 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/flare-foundation/coreth/accounts"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/pbkdf2"
+
+	"github.com/ethereum/go-ethereum/crypto"
+
+	"github.com/flare-foundation/coreth/accounts"
 )
 
 // creates a Key and stores that in the given KeyStore by decrypting a presale key JSON

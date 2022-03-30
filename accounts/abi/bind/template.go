@@ -26,7 +26,9 @@
 
 package bind
 
-import "github.com/flare-foundation/coreth/accounts/abi"
+import (
+	"github.com/flare-foundation/coreth/accounts/abi"
+)
 
 // tmplData is the data structure required to fill the binding template.
 type tmplData struct {
@@ -104,6 +106,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/event"
+
 	"github.com/flare-foundation/coreth/accounts/abi"
 	"github.com/flare-foundation/coreth/accounts/abi/bind"
 	"github.com/flare-foundation/coreth/core/types"

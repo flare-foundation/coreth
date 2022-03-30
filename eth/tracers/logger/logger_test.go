@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/flare-foundation/coreth/core/state"
 	"github.com/flare-foundation/coreth/core/vm"
 	"github.com/flare-foundation/coreth/params"

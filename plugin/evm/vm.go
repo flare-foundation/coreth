@@ -5,7 +5,6 @@ package evm
 
 import (
 	"context"
-	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -15,6 +14,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
 
 	avalancheRPC "github.com/gorilla/rpc/v2"
 
@@ -48,6 +49,7 @@ import (
 	"github.com/flare-foundation/flare/vms/components/chain"
 	"github.com/flare-foundation/flare/vms/secp256k1fx"
 
+	avalanchegoMetrics "github.com/flare-foundation/flare/api/metrics"
 	commonEng "github.com/flare-foundation/flare/snow/engine/common"
 	avalancheJSON "github.com/flare-foundation/flare/utils/json"
 
@@ -56,7 +58,6 @@ import (
 	"github.com/flare-foundation/coreth/core/state"
 	"github.com/flare-foundation/coreth/core/types"
 	"github.com/flare-foundation/coreth/eth/ethconfig"
-	"github.com/flare-foundation/coreth/metrics/prometheus"
 	"github.com/flare-foundation/coreth/node"
 	"github.com/flare-foundation/coreth/params"
 	"github.com/flare-foundation/coreth/peer"
@@ -64,6 +65,7 @@ import (
 	"github.com/flare-foundation/coreth/rpc"
 
 	coreth "github.com/flare-foundation/coreth/chain"
+	corethPrometheus "github.com/flare-foundation/coreth/metrics/prometheus"
 
 	// Force-load tracer engine to trigger registration
 	//
@@ -77,6 +79,10 @@ import (
 const (
 	x2cRateInt64       int64 = 1_000_000_000
 	x2cRateMinus1Int64 int64 = x2cRateInt64 - 1
+
+	// Prefixes for metrics gatherers
+	ethMetricsPrefix        = "eth"
+	chainStateMetricsPrefix = "chain_state"
 )
 
 var (
@@ -122,8 +128,6 @@ var (
 	// Prefixes for atomic trie
 	atomicTrieDBPrefix     = []byte("atomicTrieDB")
 	atomicTrieMetaDBPrefix = []byte("atomicTrieMetaDB")
-
-	pruneRejectedBlocksKey = []byte("pruned_rejected_blocks")
 )
 
 var (
@@ -216,6 +220,9 @@ type VM struct {
 	client       peer.Client
 	networkCodec codec.Manager
 
+	// Metrics
+	multiGatherer avalanchegoMetrics.MultiGatherer
+
 	bootstrapped bool
 
 	ftso       FTSO
@@ -271,6 +278,9 @@ func (vm *VM) Initialize(
 		if err := json.Unmarshal(configBytes, &vm.config); err != nil {
 			return fmt.Errorf("failed to unmarshal config %s: %w", string(configBytes), err)
 		}
+	}
+	if err := vm.config.Validate(); err != nil {
+		return err
 	}
 	if b, err := json.Marshal(vm.config); err == nil {
 		log.Info("Initializing Coreth VM", "Version", Version, "Config", string(b))
@@ -340,12 +350,16 @@ func (vm *VM) Initialize(
 	ethConfig.AllowUnprotectedTxs = vm.config.AllowUnprotectedTxs
 	ethConfig.Preimages = vm.config.Preimages
 	ethConfig.Pruning = vm.config.Pruning
+	ethConfig.PopulateMissingTries = vm.config.PopulateMissingTries
+	ethConfig.PopulateMissingTriesParallelism = vm.config.PopulateMissingTriesParallelism
+	ethConfig.AllowMissingTries = vm.config.AllowMissingTries
 	ethConfig.SnapshotAsync = vm.config.SnapshotAsync
 	ethConfig.SnapshotVerify = vm.config.SnapshotVerify
 	ethConfig.OfflinePruning = vm.config.OfflinePruning
 	ethConfig.OfflinePruningBloomFilterSize = vm.config.OfflinePruningBloomFilterSize
 	ethConfig.OfflinePruningDataDirectory = vm.config.OfflinePruningDataDirectory
 
+	// Create directory for offline pruning
 	if len(ethConfig.OfflinePruningDataDirectory) != 0 {
 		if err := os.MkdirAll(ethConfig.OfflinePruningDataDirectory, perms.ReadWriteExecute); err != nil {
 			log.Error("failed to create offline pruning data directory", "error", err)
@@ -437,10 +451,15 @@ func (vm *VM) Initialize(
 	}
 
 	bonusBlockHeights := make(map[uint64]ids.ID)
-	if err := vm.repairAtomicRepositoryForBonusBlockTxs(getAtomicRepositoryRepairHeights(vm.chainID), vm.getAtomicTxFromPreApricot5BlockByHeight); err != nil {
+	if err := repairAtomicRepositoryForBonusBlockTxs(
+		vm.atomicTxRepository,
+		vm.db,
+		getAtomicRepositoryRepairHeights(vm.chainID),
+		vm.getAtomicTxFromPreApricot5BlockByHeight,
+	); err != nil {
 		return fmt.Errorf("failed to repair atomic repository: %w", err)
 	}
-	vm.atomicTrie, err = NewAtomicTrie(vm.db, bonusBlockHeights, vm.atomicTxRepository, vm.codec, lastAccepted.NumberU64())
+	vm.atomicTrie, err = NewAtomicTrie(vm.db, vm.ctx.SharedMemory, bonusBlockHeights, vm.atomicTxRepository, vm.codec, lastAccepted.NumberU64())
 	if err != nil {
 		return fmt.Errorf("failed to create atomic trie: %w", err)
 	}
@@ -474,22 +493,19 @@ func (vm *VM) Initialize(
 	if err != nil {
 		return err
 	}
-	vm.State = chain.NewState(&chain.Config{
-		DecidedCacheSize:    decidedCacheSize,
-		MissingCacheSize:    missingCacheSize,
-		UnverifiedCacheSize: unverifiedCacheSize,
-		LastAcceptedBlock: &Block{
-			id:        ids.ID(lastAccepted.Hash()),
-			ethBlock:  lastAccepted,
-			vm:        vm,
-			status:    choices.Accepted,
-			atomicTxs: atomicTxs,
-		},
-		GetBlockIDAtHeight: vm.GetBlockIDAtHeight,
-		GetBlock:           vm.getBlock,
-		UnmarshalBlock:     vm.parseBlock,
-		BuildBlock:         vm.buildBlock,
-	})
+
+	vm.multiGatherer = avalanchegoMetrics.NewMultiGatherer()
+
+	// Initialize [vm.State]
+	if err := vm.initChainState(&Block{
+		id:        ids.ID(lastAccepted.Hash()),
+		ethBlock:  lastAccepted,
+		vm:        vm,
+		status:    choices.Accepted,
+		atomicTxs: atomicTxs,
+	}, metrics.Enabled); err != nil {
+		return err
+	}
 
 	vm.builder.awaitSubmittedTxs()
 	go vm.ctx.Log.RecoverAndPanic(vm.startContinuousProfiler)
@@ -500,23 +516,46 @@ func (vm *VM) Initialize(
 	// ignored by the VM's codec.
 	vm.baseCodec = linearcodec.NewDefault()
 
-	// pruneChain removes all rejected blocks stored in the database.
-	//
-	// TODO: This function can take over 60 minutes to run on mainnet and
-	// should be converted to run asynchronously.
-	// if err := vm.pruneChain(); err != nil {
-	// 	return err
-	// }
-
-	// Only provide metrics if they are being populated.
+	// If metrics are enabled, register the default metrics regitry
 	if metrics.Enabled {
-		gatherer := prometheus.Gatherer(metrics.DefaultRegistry)
-		if err := ctx.Metrics.Register(gatherer); err != nil {
+		gatherer := corethPrometheus.Gatherer(metrics.DefaultRegistry)
+		if err := vm.multiGatherer.Register(ethMetricsPrefix, gatherer); err != nil {
 			return err
 		}
 	}
+	// Register [multiGatherer] after registerers have been registered to it
+	if err := ctx.Metrics.Register(vm.multiGatherer); err != nil {
+		return err
+	}
 
 	return vm.fx.Initialize(vm)
+}
+
+func (vm *VM) initChainState(lastAcceptedBlock *Block, metricsEnabled bool) error {
+	config := &chain.Config{
+		DecidedCacheSize:    decidedCacheSize,
+		MissingCacheSize:    missingCacheSize,
+		UnverifiedCacheSize: unverifiedCacheSize,
+		LastAcceptedBlock:   lastAcceptedBlock,
+		GetBlockIDAtHeight:  vm.GetBlockIDAtHeight,
+		GetBlock:            vm.getBlock,
+		UnmarshalBlock:      vm.parseBlock,
+		BuildBlock:          vm.buildBlock,
+	}
+	if !metricsEnabled {
+		vm.State = chain.NewState(config)
+		return nil
+	}
+
+	// Register chain state metrics
+	chainStateRegisterer := prometheus.NewRegistry()
+	state, err := chain.NewMeteredState(chainStateRegisterer, config)
+	if err != nil {
+		return err
+	}
+	vm.State = state
+
+	return vm.multiGatherer.Register(chainStateMetricsPrefix, chainStateRegisterer)
 }
 
 func (vm *VM) initGossipHandling() {
@@ -720,30 +759,6 @@ func (vm *VM) onExtraStateChange(block *types.Block, state *state.StateDB) (*big
 		}
 	}
 	return batchContribution, batchGasUsed, nil
-}
-
-func (vm *VM) pruneChain() error {
-	if !vm.config.Pruning {
-		return nil
-	}
-	pruned, err := vm.db.Has(pruneRejectedBlocksKey)
-	if err != nil {
-		return fmt.Errorf("failed to check if the VM has pruned rejected blocks: %w", err)
-	}
-	if pruned {
-		return nil
-	}
-
-	lastAcceptedHeight := vm.LastAcceptedBlock().Height()
-	if err := vm.chain.RemoveRejectedBlocks(0, lastAcceptedHeight); err != nil {
-		return err
-	}
-	heightBytes := make([]byte, 8)
-	binary.PutUvarint(heightBytes, lastAcceptedHeight)
-	if err := vm.db.Put(pruneRejectedBlocksKey, heightBytes); err != nil {
-		return err
-	}
-	return vm.db.Commit()
 }
 
 func (vm *VM) SetState(state snow.State) error {
@@ -1066,7 +1081,6 @@ func (vm *VM) issueTx(tx *Tx, local bool) error {
 		}
 		return err
 	}
-
 	// add to mempool and possibly re-gossip
 	if err := vm.mempool.AddTx(tx); err != nil {
 		if !local {
@@ -1432,10 +1446,11 @@ func (vm *VM) getAtomicTxFromPreApricot5BlockByHeight(height uint64) (*Tx, error
 // the first height they were processed on (canonical block).
 // [sortedHeights] should include all canonical block + bonus block heights in ascending
 // order, and will only be passed as non-empty on mainnet.
-func (vm *VM) repairAtomicRepositoryForBonusBlockTxs(
+func repairAtomicRepositoryForBonusBlockTxs(
+	atomicTxRepository AtomicTxRepository, db *versiondb.Database,
 	sortedHeights []uint64, getAtomicTxFromBlockByHeight func(height uint64) (*Tx, error),
 ) error {
-	done, err := vm.atomicTxRepository.IsBonusBlocksRepaired()
+	done, err := atomicTxRepository.IsBonusBlocksRepaired()
 	if err != nil {
 		return err
 	}
@@ -1458,16 +1473,16 @@ func (vm *VM) repairAtomicRepositoryForBonusBlockTxs(
 		// a given [txID], overwrite the previous [txID] => [height]
 		// mapping. This provides a canonical mapping across nodes.
 		heights, seen := seenTxs[tx.ID()]
-		_, foundHeight, err := vm.atomicTxRepository.GetByTxID(tx.ID())
+		_, foundHeight, err := atomicTxRepository.GetByTxID(tx.ID())
 		if err != nil && !errors.Is(err, database.ErrNotFound) {
 			return err
 		}
 		if !seen {
-			if err := vm.atomicTxRepository.Write(height, []*Tx{tx}); err != nil {
+			if err := atomicTxRepository.Write(height, []*Tx{tx}); err != nil {
 				return err
 			}
 		} else {
-			if err := vm.atomicTxRepository.WriteBonus(height, []*Tx{tx}); err != nil {
+			if err := atomicTxRepository.WriteBonus(height, []*Tx{tx}); err != nil {
 				return err
 			}
 		}
@@ -1476,11 +1491,11 @@ func (vm *VM) repairAtomicRepositoryForBonusBlockTxs(
 		}
 		seenTxs[tx.ID()] = append(heights, height)
 	}
-	if err := vm.atomicTxRepository.MarkBonusBlocksRepaired(repairedEntries); err != nil {
+	if err := atomicTxRepository.MarkBonusBlocksRepaired(repairedEntries); err != nil {
 		return err
 	}
 	log.Info("repairAtomicRepositoryForBonusBlockTxs complete", "repairedEntries", repairedEntries)
-	return vm.db.Commit()
+	return db.Commit()
 }
 
 func (vm *VM) GetValidators(blockID ids.ID) (validation.Set, error) {

@@ -31,14 +31,16 @@ import (
 	"math/big"
 	"testing"
 
+	"golang.org/x/crypto/sha3"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rlp"
+
 	"github.com/flare-foundation/coreth/consensus/dummy"
 	"github.com/flare-foundation/coreth/core/rawdb"
 	"github.com/flare-foundation/coreth/core/types"
 	"github.com/flare-foundation/coreth/params"
-	"golang.org/x/crypto/sha3"
 )
 
 func getBlock(transactions int, uncles int, dataSize int) *types.Block {

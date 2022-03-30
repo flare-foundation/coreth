@@ -31,7 +31,9 @@
 
 package debug
 
-import "errors"
+import (
+	"errors"
+)
 
 func (*HandlerT) StartGoTrace(string) error {
 	return errors.New("tracing is not supported on Go < 1.5")

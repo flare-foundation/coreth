@@ -20,16 +20,12 @@ func (t TestValidatorsNormalizer) ByEpoch(e uint64) (map[ids.ShortID]uint64, err
 	return t.ByEpochFunc(e)
 }
 
-func (t TestValidatorsNormalizer) calcWeightRatio(vals map[ids.ShortID]uint64) map[ids.ShortID]uint64 {
-	return t.CalcWeightRatioFunc(vals)
-}
-
 func TestValidatorsNormalizer_ByEpoch(t *testing.T) {
 	t.Run("nominal case", func(t *testing.T) {
 		testValidators := validatorsData
 		testWeightRatios := map[ids.ShortID]uint64{
-			ids.ShortID{1}: 13,
-			ids.ShortID{2}: 37,
+			{1}: 13,
+			{2}: 37,
 		}
 
 		var calls int
@@ -127,7 +123,7 @@ func TestValidatorsNormalizer_CalcWeightRatio(t *testing.T) {
 		var calls int
 		mock := TestValidatorsNormalizer{
 			CalcWeightRatioFunc: func(vals map[ids.ShortID]uint64) map[ids.ShortID]uint64 {
-				for i, _ := range vals {
+				for i := range vals {
 					vals[i] = uint64(0)
 				}
 				return vals

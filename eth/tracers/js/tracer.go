@@ -38,15 +38,17 @@ import (
 	"unicode"
 	"unsafe"
 
+	"gopkg.in/olebedev/go-duktape.v3"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/log"
+
 	"github.com/flare-foundation/coreth/core"
 	"github.com/flare-foundation/coreth/core/vm"
 	tracers2 "github.com/flare-foundation/coreth/eth/tracers"
 	"github.com/flare-foundation/coreth/eth/tracers/js/internal/tracers"
-	"gopkg.in/olebedev/go-duktape.v3"
 )
 
 // camel converts a snake cased input string into a camel cased output.

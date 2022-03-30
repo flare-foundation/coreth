@@ -32,6 +32,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+
 	"github.com/flare-foundation/coreth/consensus/dummy"
 	"github.com/flare-foundation/coreth/core/rawdb"
 	"github.com/flare-foundation/coreth/core/types"
@@ -52,7 +53,7 @@ func ExampleGenerateChain() {
 
 	// Ensure that key1 has some funds in the genesis block.
 	gspec := &Genesis{
-		Config: &params.ChainConfig{ChainID: big.NewInt(0), HomesteadBlock: new(big.Int)},
+		Config: &params.ChainConfig{ChainID: big.NewInt(1), HomesteadBlock: new(big.Int)},
 		Alloc:  GenesisAlloc{addr1: {Balance: big.NewInt(1000000)}},
 	}
 	genesis := gspec.MustCommit(db)

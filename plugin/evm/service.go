@@ -14,13 +14,15 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/flare-foundation/coreth/params"
+
 	"github.com/flare-foundation/flare/api"
 	"github.com/flare-foundation/flare/ids"
 	"github.com/flare-foundation/flare/utils/constants"
 	"github.com/flare-foundation/flare/utils/crypto"
 	"github.com/flare-foundation/flare/utils/formatting"
 	"github.com/flare-foundation/flare/utils/json"
+
+	"github.com/flare-foundation/coreth/params"
 )
 
 // test constants

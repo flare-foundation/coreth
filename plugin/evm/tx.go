@@ -12,9 +12,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/flare-foundation/coreth/core/state"
-	"github.com/flare-foundation/coreth/params"
-
 	"github.com/flare-foundation/flare/chains/atomic"
 	"github.com/flare-foundation/flare/codec"
 	"github.com/flare-foundation/flare/ids"
@@ -25,6 +22,9 @@ import (
 	"github.com/flare-foundation/flare/utils/wrappers"
 	"github.com/flare-foundation/flare/vms/components/verify"
 	"github.com/flare-foundation/flare/vms/secp256k1fx"
+
+	"github.com/flare-foundation/coreth/core/state"
+	"github.com/flare-foundation/coreth/params"
 )
 
 var (
@@ -286,16 +286,22 @@ func mergeAtomicOps(txs []*Tx) (map[ids.ID]*atomic.Requests, error) {
 	}
 	output := make(map[ids.ID]*atomic.Requests)
 	for _, tx := range txs {
-		chainID, txRequest, err := tx.UnsignedAtomicTx.AtomicOps()
+		chainID, txRequests, err := tx.UnsignedAtomicTx.AtomicOps()
 		if err != nil {
 			return nil, err
 		}
-		if request, exists := output[chainID]; exists {
-			request.PutRequests = append(request.PutRequests, txRequest.PutRequests...)
-			request.RemoveRequests = append(request.RemoveRequests, txRequest.RemoveRequests...)
-		} else {
-			output[chainID] = txRequest
-		}
+		mergeAtomicOpsToMap(output, chainID, txRequests)
 	}
 	return output, nil
+}
+
+// mergeAtomicOps merges atomic ops for [chainID] represented by [requests]
+// to the [output] map provided.
+func mergeAtomicOpsToMap(output map[ids.ID]*atomic.Requests, chainID ids.ID, requests *atomic.Requests) {
+	if request, exists := output[chainID]; exists {
+		request.PutRequests = append(request.PutRequests, requests.PutRequests...)
+		request.RemoveRequests = append(request.RemoveRequests, requests.RemoveRequests...)
+	} else {
+		output[chainID] = requests
+	}
 }

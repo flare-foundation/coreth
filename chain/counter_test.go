@@ -12,13 +12,12 @@ package chain
 import (
 	"fmt"
 	"math/big"
-
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/flare-foundation/coreth/core/types"
-
 	"github.com/ethereum/go-ethereum/log"
+
+	"github.com/flare-foundation/coreth/core/types"
 )
 
 func TestCounter(t *testing.T) {

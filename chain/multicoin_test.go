@@ -32,6 +32,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/log"
+
+	"github.com/flare-foundation/flare/utils/timer/mockable"
+
 	"github.com/flare-foundation/coreth/accounts/keystore"
 	"github.com/flare-foundation/coreth/consensus/dummy"
 	"github.com/flare-foundation/coreth/core"
@@ -41,7 +44,6 @@ import (
 	"github.com/flare-foundation/coreth/eth"
 	"github.com/flare-foundation/coreth/eth/ethconfig"
 	"github.com/flare-foundation/coreth/node"
-	"github.com/flare-foundation/flare/utils/timer/mockable"
 )
 
 // TestMulticoin tests multicoin low-level state management and regular

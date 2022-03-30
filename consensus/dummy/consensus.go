@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/flare-foundation/coreth/consensus"
 	"github.com/flare-foundation/coreth/core/state"
 	"github.com/flare-foundation/coreth/core/types"
@@ -160,7 +161,7 @@ func (self *DummyEngine) verifyHeaderGasFields(config *params.ChainConfig, heade
 		blockGasCostStep = ApricotPhase5BlockGasCostStep
 	}
 	expectedBlockGasCost := calcBlockGasCost(
-		ApricotPhase4TargetBlockRate,
+		2, // hard-coded, because we changed it to 1
 		ApricotPhase4MinBlockGasCost,
 		ApricotPhase4MaxBlockGasCost,
 		blockGasCostStep,

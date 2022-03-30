@@ -8,13 +8,14 @@ import (
 	"sync"
 	"time"
 
-	coreth "github.com/flare-foundation/coreth/chain"
-	"github.com/flare-foundation/coreth/params"
-
 	"github.com/ethereum/go-ethereum/log"
+
 	"github.com/flare-foundation/flare/snow"
-	commonEng "github.com/flare-foundation/flare/snow/engine/common"
+	"github.com/flare-foundation/flare/snow/engine/common"
 	"github.com/flare-foundation/flare/utils/timer"
+
+	"github.com/flare-foundation/coreth/chain"
+	"github.com/flare-foundation/coreth/params"
 )
 
 // buildingBlkStatus denotes the current status of the VM in block production.
@@ -52,7 +53,7 @@ type blockBuilder struct {
 	ctx         *snow.Context
 	chainConfig *params.ChainConfig
 
-	chain    *coreth.ETHChain
+	chain    *chain.ETHChain
 	mempool  *Mempool
 	gossiper Gossiper
 
@@ -61,7 +62,7 @@ type blockBuilder struct {
 
 	// A message is sent on this channel when a new block
 	// is ready to be build. This notifies the consensus engine.
-	notifyBuildBlockChan chan<- commonEng.Message
+	notifyBuildBlockChan chan<- common.Message
 
 	// [buildBlockLock] must be held when accessing [buildStatus]
 	buildBlockLock sync.Mutex
@@ -84,7 +85,7 @@ type blockBuilder struct {
 	isAP4 bool
 }
 
-func (vm *VM) NewBlockBuilder(notifyBuildBlockChan chan<- commonEng.Message) *blockBuilder {
+func (vm *VM) NewBlockBuilder(notifyBuildBlockChan chan<- common.Message) *blockBuilder {
 	b := &blockBuilder{
 		ctx:                  vm.ctx,
 		chainConfig:          vm.chainConfig,
@@ -227,7 +228,7 @@ func (b *blockBuilder) buildBlockTwoStageTimer() (time.Duration, bool) {
 // markBuilding assumes the [buildBlockLock] is held.
 func (b *blockBuilder) markBuilding() {
 	select {
-	case b.notifyBuildBlockChan <- commonEng.PendingTxs:
+	case b.notifyBuildBlockChan <- common.PendingTxs:
 		b.buildStatus = building
 	default:
 		log.Error("Failed to push PendingTxs notification to the consensus engine.")
@@ -310,6 +311,7 @@ func (b *blockBuilder) awaitSubmittedTxs() {
 					}
 				}
 			case <-b.shutdownChan:
+				b.buildBlockTimer.Stop()
 				return
 			}
 		}

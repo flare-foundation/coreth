@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/flare-foundation/coreth/params"
-
 	"github.com/flare-foundation/flare/snow"
+
+	"github.com/flare-foundation/coreth/params"
 )
 
 func TestBlockBuilderShutsDown(t *testing.T) {

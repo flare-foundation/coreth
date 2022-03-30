@@ -29,9 +29,10 @@ package trie
 import (
 	"sync"
 
+	"golang.org/x/crypto/sha3"
+
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rlp"
-	"golang.org/x/crypto/sha3"
 )
 
 type sliceBuffer []byte

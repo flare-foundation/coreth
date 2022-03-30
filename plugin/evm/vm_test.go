@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"math/big"
 	"math/rand"
 	"os"
@@ -110,6 +111,7 @@ func NewContext() *snow.Context {
 	ctx.ChainID = testCChainID
 	ctx.AVAXAssetID = testAvaxAssetID
 	ctx.XChainID = testXChainID
+	ctx.SharedMemory = testSharedMemory()
 	aliaser := ctx.BCLookup.(ids.Aliaser)
 	_ = aliaser.Alias(testCChainID, "C")
 	_ = aliaser.Alias(testCChainID, testCChainID.String())
@@ -486,7 +488,7 @@ func TestToSet(t *testing.T) {
 		weights []uint64
 	)
 	for i := 0; i < 3; i++ {
-		weight := rand.Uint64()
+		weight := rand.Uint64() % (math.MaxUint64 / 3)
 		weights = append(weights, weight)
 
 		id := randID()
@@ -519,7 +521,7 @@ func TestToSet(t *testing.T) {
 		assert.Equal(t, weight, weights[2])
 		assert.Equal(t, ok, true)
 
-		assert.Len(t, set, len(validators))
+		assert.Len(t, set.List(), len(validators))
 	})
 
 	t.Run("handles given error", func(t *testing.T) {

@@ -23,6 +23,15 @@ import (
 var (
 	bonusBlocks              = ids.Set{}
 	bonusBlockMainnetHeights = make(map[uint64]ids.ID)
+	// first height that processed a TX included on a
+	// bonus block is the canonical height for that TX.
+	canonicalBonusBlocks = []uint64{
+		102928, 103035, 103038, 103114, 103193,
+		103234, 103338, 103444, 103480, 103491,
+		103513, 103533, 103535, 103538, 103541,
+		103546, 103571, 103572, 103619,
+		103287, 103624, 103591,
+	}
 )
 
 func init() {
@@ -138,7 +147,7 @@ func (b *Block) Accept() error {
 	}
 	for _, tx := range b.atomicTxs {
 		// Remove the accepted transaction from the mempool
-		vm.mempool.RemoveTx(tx.ID())
+		vm.mempool.RemoveTx(tx)
 	}
 
 	isBonus := bonusBlocks.Contains(b.id)
@@ -180,7 +189,7 @@ func (b *Block) Reject() error {
 	b.status = choices.Rejected
 	log.Debug(fmt.Sprintf("Rejecting block %s (%s) at height %d", b.ID().Hex(), b.ID(), b.Height()))
 	for _, tx := range b.atomicTxs {
-		b.vm.mempool.RemoveTx(tx.ID())
+		b.vm.mempool.RemoveTx(tx)
 		if err := b.vm.issueTx(tx, false /* set local to false when re-issuing */); err != nil {
 			log.Debug("Failed to re-issue transaction in rejected block", "txID", tx.ID(), "err", err)
 		}

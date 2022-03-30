@@ -33,12 +33,14 @@ import (
 	"reflect"
 	"testing"
 
+	"golang.org/x/crypto/sha3"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rlp"
+
 	"github.com/flare-foundation/coreth/params"
-	"golang.org/x/crypto/sha3"
 )
 
 // This test has been modified from https://github.com/ethereum/go-ethereum/blob/v1.9.21/core/types/block_test.go#L35 to fit

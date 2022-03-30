@@ -8,6 +8,9 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+
+	"github.com/flare-foundation/flare/utils/timer/mockable"
+
 	"github.com/flare-foundation/coreth/consensus/dummy"
 	"github.com/flare-foundation/coreth/core"
 	"github.com/flare-foundation/coreth/core/state"
@@ -16,7 +19,6 @@ import (
 	"github.com/flare-foundation/coreth/ethdb"
 	"github.com/flare-foundation/coreth/node"
 	"github.com/flare-foundation/coreth/rpc"
-	"github.com/flare-foundation/flare/utils/timer/mockable"
 )
 
 var (
@@ -207,6 +209,5 @@ func (self *ETHChain) GetTxAcceptedSubmitCh() <-chan core.NewTxsEvent {
 	return newTxsChan
 }
 
-func (self *ETHChain) GetTxPool() *core.TxPool {
-	return self.backend.TxPool()
-}
+func (self *ETHChain) GetTxPool() *core.TxPool          { return self.backend.TxPool() }
+func (self *ETHChain) BloomIndexer() *core.ChainIndexer { return self.backend.BloomIndexer() }

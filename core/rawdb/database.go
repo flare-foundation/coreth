@@ -32,12 +32,14 @@ import (
 	"os"
 	"time"
 
+	"github.com/olekukonko/tablewriter"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
+
 	"github.com/flare-foundation/coreth/ethdb"
 	"github.com/flare-foundation/coreth/ethdb/leveldb"
 	"github.com/flare-foundation/coreth/ethdb/memorydb"
-	"github.com/olekukonko/tablewriter"
 )
 
 // nofreezedb is a database wrapper that disables freezer data retrievals.
