@@ -32,6 +32,7 @@ import (
 	"fmt"
 	"math"
 	"math/big"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -42,7 +43,17 @@ import (
 	"github.com/flare-foundation/coreth/params"
 )
 
-var emptyCodeHash = crypto.Keccak256Hash(nil)
+var (
+	emptyCodeHash = crypto.Keccak256Hash(nil)
+
+	costonChainID   = new(big.Int).SetUint64(16) // https://github.com/ethereum-lists/chains/blob/master/_data/chains/eip155-16.json
+	songbirdChainID = new(big.Int).SetUint64(19) // https://github.com/ethereum-lists/chains/blob/master/_data/chains/eip155-19.json
+	flareChainID    = new(big.Int).SetUint64(14) // https://github.com/ethereum-lists/chains/blob/master/_data/chains/eip155-14.json
+
+	costonActivationTime   = big.NewInt(time.Date(2022, time.February, 25, 17, 0, 0, 0, time.UTC).Unix())
+	songbirdActivationTime = big.NewInt(time.Date(2200, time.January, 1, 0, 0, 0, 0, time.UTC).Unix())
+	flareActivationTime    = big.NewInt(time.Date(2200, time.January, 1, 0, 0, 0, 0, time.UTC).Unix())
+)
 
 /*
 The State Transitioning Model
@@ -62,17 +73,34 @@ The state transitioning model does all the necessary work to work out a valid ne
 6) Derive new state root
 */
 type StateTransition struct {
-	gp         *GasPool
-	msg        Message
-	gas        uint64
-	gasPrice   *big.Int
-	gasFeeCap  *big.Int
-	gasTipCap  *big.Int
-	initialGas uint64
-	value      *big.Int
-	data       []byte
-	state      vm.StateDB
-	evm        *vm.EVM
+	gp             *GasPool
+	msg            Message
+	gas            uint64
+	gasPrice       *big.Int
+	gasFeeCap      *big.Int
+	gasTipCap      *big.Int
+	initialGas     uint64
+	value          *big.Int
+	data           []byte
+	state          vm.StateDB
+	evm            *vm.EVM
+	stateConnector *stateConnector
+}
+
+// NewStateTransition initialises and returns a new state transition object.
+func NewStateTransition(evm *vm.EVM, msg Message, gp *GasPool) *StateTransition {
+	return &StateTransition{
+		gp:             gp,
+		evm:            evm,
+		msg:            msg,
+		gasPrice:       msg.GasPrice(),
+		gasFeeCap:      msg.GasFeeCap(),
+		gasTipCap:      msg.GasTipCap(),
+		value:          msg.Value(),
+		data:           msg.Data(),
+		state:          evm.StateDB,
+		stateConnector: newConnector(newStateConnectorCaller(evm), msg),
+	}
 }
 
 // Message represents a message sent to a contract.
@@ -187,21 +215,6 @@ func IntrinsicGas(data []byte, accessList types.AccessList, isContractCreation b
 		gas += uint64(accessList.StorageKeys()) * params.TxAccessListStorageKeyGas
 	}
 	return gas, nil
-}
-
-// NewStateTransition initialises and returns a new state transition object.
-func NewStateTransition(evm *vm.EVM, msg Message, gp *GasPool) *StateTransition {
-	return &StateTransition{
-		gp:        gp,
-		evm:       evm,
-		msg:       msg,
-		gasPrice:  msg.GasPrice(),
-		gasFeeCap: msg.GasFeeCap(),
-		gasTipCap: msg.GasTipCap(),
-		value:     msg.Value(),
-		data:      msg.Data(),
-		state:     evm.StateDB,
-	}
 }
 
 // ApplyMessage computes the new state by applying the given message
@@ -355,16 +368,14 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 	var (
 		ret         []byte
 		vmerr       error // vm errors do not affect consensus and are therefore not assigned to err
-		chainID     *big.Int
 		timestamp   *big.Int
 		burnAddress common.Address
 	)
 
-	chainID = st.evm.ChainConfig().ChainID
 	timestamp = st.evm.Context.Time
 	burnAddress = st.evm.Context.Coinbase
 	if burnAddress != common.HexToAddress("0x0100000000000000000000000000000000000000") {
-		return nil, fmt.Errorf("Invalid value for block.coinbase")
+		return nil, fmt.Errorf("invalid value for block.coinbase")
 	}
 
 	if contractCreation {
@@ -429,6 +440,27 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 		Err:        vmerr,
 		ReturnData: ret,
 	}, nil
+}
+
+func (st *StateTransition) shouldFinalize(ret []byte) bool {
+	chainID := st.evm.ChainConfig().ChainID
+	timestamp := st.evm.Context.Time
+
+	switch {
+	case st.to() != stateConnectorContract(chainID, timestamp):
+		return false
+	case len(st.data) < 36:
+		return false
+	case len(ret) != 32:
+		return false
+	case !isStateConnectorActivated(chainID, timestamp):
+		return false
+	case !bytes.Equal(st.data[0:4], submitAttestationSelectorFunc(chainID, timestamp)): // 4 first bytes corresponds to the function name
+		return false
+	case binary.BigEndian.Uint64(ret[24:32]) == 0: // determine whether this is read-only call
+		return false
+	}
+	return true
 }
 
 func (st *StateTransition) refundGas(apricotPhase1 bool) {
