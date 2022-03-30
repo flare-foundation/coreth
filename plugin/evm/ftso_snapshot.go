@@ -39,7 +39,7 @@ func (f *FTSOSnapshot) Cap() (float64, error) {
 		AtBlock(f.start).
 		OnContract(f.contracts.Manager).
 		Execute(Settings).
-		Decode(&fraction, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+		Decode(&fraction, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
 		return 0, fmt.Errorf("could not get votepower threshold fraction: %w", err)
 	}
