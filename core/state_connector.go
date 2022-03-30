@@ -23,8 +23,10 @@ var (
 	costonDefaultAttestors = []common.Address{
 		common.HexToAddress("0x3a6e101103ec3d9267d08f484a6b70e1440a8255"),
 	}
-	songbirdDefaultAttestors []common.Address
-	flareDefaultAttestors    []common.Address
+	songbirdDefaultAttestors = []common.Address{
+		common.HexToAddress("0x0c19f3B4927abFc596353B0f9Ddad5D817736F70"),
+	}
+	flareDefaultAttestors []common.Address
 )
 
 // Caller is a light wrapper around Ethereum Virtual Machine
@@ -60,7 +62,8 @@ func (c *stateConnector) finalizePreviousRound(chainID *big.Int, timestamp *big.
 	}
 
 	// Finalise defaultAttestationVotes.majorityDecision
-	finalizedData := append(finalizeRoundSelector(chainID, timestamp), currentRoundNumber[:]...)
+	finaliseRoundSelector := finalizeRoundSelector(chainID, timestamp)
+	finalizedData := append(finaliseRoundSelector[:], currentRoundNumber[:]...)
 	merkleRootHashBytes, err := hex.DecodeString(defaultAttestationVotes.majorityDecision)
 	if err != nil {
 		return err
