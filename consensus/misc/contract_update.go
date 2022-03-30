@@ -4,6 +4,7 @@ package misc
 
 import (
 	"bytes"
+	"encoding/hex"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
@@ -21,21 +22,16 @@ func updateApplied(statedb *state.StateDB, update CoreContractUpdate) bool {
 
 	code := statedb.GetCode(update.Address)
 
-	log.Debug("applied check: %s\n", update.Address)
-	log.Debug("new code:\n%x\n", update.Old)
-	log.Debug("actual code:\n%x\n", code)
+	log.Debug("update check", "address", update.Address.Hex(), "current code", hex.EncodeToString(code), "new code", hex.EncodeToString(update.New))
 
-	return bytes.Equal(statedb.GetCode(update.Address), update.New)
+	return bytes.Equal(code, update.New)
 }
 
 func applyUpdate(statedb *state.StateDB, update CoreContractUpdate) {
 
 	code := statedb.GetCode(update.Address)
 
-	log.Debug("apply update: %s\n", update.Address)
-	log.Debug("current code:\n%x\n", update.Old)
-	log.Debug("old code:\n%x\n", update.New)
-	log.Debug("new code:\n%x\n", code)
+	log.Debug("update apply", "address", update.Address.Hex(), "current code", hex.EncodeToString(code), "old code", hex.EncodeToString(update.Old), "new code", hex.EncodeToString(update.New))
 
 	if bytes.Equal(statedb.GetCode(update.Address), update.Old) {
 		log.Debug("applying update!")
