@@ -14,6 +14,7 @@ import (
 
 	"github.com/flare-foundation/coreth/core/types"
 	"github.com/flare-foundation/coreth/core/vm"
+	"github.com/flare-foundation/coreth/params"
 )
 
 type mockMessage struct {
@@ -88,7 +89,7 @@ func TestStateTransition_FinalisePreviousRound(t *testing.T) {
 					return rootHash, 0, nil
 				}
 
-				if caller.Address() != stateConnectorCoinbaseSignalAddr(costonChainID, blockTime) {
+				if caller.Address() != stateConnectorCoinbaseSignalAddr(params.CostonChainID, blockTime) {
 					return nil, 0, errors.New("caller address should be state connector coinbase signal addr")
 				}
 
@@ -99,7 +100,7 @@ func TestStateTransition_FinalisePreviousRound(t *testing.T) {
 			}
 
 			c := newConnector(mockSCC, mockMsg)
-			err := c.finalizePreviousRound(costonChainID, blockTime, currentRoundNumber)
+			err := c.finalizePreviousRound(params.CostonChainID, blockTime, currentRoundNumber)
 			require.NoError(t, err)
 			assert.Equal(t, testCoinbaseAddress, mockSCC.context.Coinbase, "coinbase address should be changed to the original address")
 		})
@@ -113,7 +114,7 @@ func TestStateTransition_FinalisePreviousRound(t *testing.T) {
 					return nil, 0, errors.New("attestation error")
 				}
 
-				if caller.Address() != stateConnectorCoinbaseSignalAddr(costonChainID, blockTime) {
+				if caller.Address() != stateConnectorCoinbaseSignalAddr(params.CostonChainID, blockTime) {
 					return nil, 0, errors.New("caller address should be state connector coinbase signal addr")
 				}
 
@@ -124,7 +125,7 @@ func TestStateTransition_FinalisePreviousRound(t *testing.T) {
 			}
 
 			c := newConnector(mockSCC, mockMsg)
-			err := c.finalizePreviousRound(costonChainID, blockTime, currentRoundNumber)
+			err := c.finalizePreviousRound(params.CostonChainID, blockTime, currentRoundNumber)
 			require.NoError(t, err)
 		})
 		t.Run("handles finalization error", func(t *testing.T) {
@@ -137,7 +138,7 @@ func TestStateTransition_FinalisePreviousRound(t *testing.T) {
 					return nil, 0, errors.New("attestation error")
 				}
 
-				if caller.Address() != stateConnectorCoinbaseSignalAddr(costonChainID, blockTime) {
+				if caller.Address() != stateConnectorCoinbaseSignalAddr(params.CostonChainID, blockTime) {
 					return nil, 0, errors.New("caller address should be state connector coinbase signal addr")
 				}
 
@@ -148,7 +149,7 @@ func TestStateTransition_FinalisePreviousRound(t *testing.T) {
 			}
 
 			c := newConnector(mockSCC, mockMsg)
-			err := c.finalizePreviousRound(costonChainID, blockTime, currentRoundNumber)
+			err := c.finalizePreviousRound(params.CostonChainID, blockTime, currentRoundNumber)
 			assert.EqualError(t, err, "finalization error")
 		})
 		t.Run("with local attestors with finalization", func(t *testing.T) {
@@ -172,7 +173,7 @@ func TestStateTransition_FinalisePreviousRound(t *testing.T) {
 					return rootHash, 0, nil
 				}
 
-				if caller.Address() != stateConnectorCoinbaseSignalAddr(costonChainID, blockTime) {
+				if caller.Address() != stateConnectorCoinbaseSignalAddr(params.CostonChainID, blockTime) {
 					return nil, 0, errors.New("caller address should be state connector coinbase signal addr")
 				}
 
@@ -183,7 +184,7 @@ func TestStateTransition_FinalisePreviousRound(t *testing.T) {
 			}
 
 			c := newConnector(mockSCC, mockMsg)
-			err := c.finalizePreviousRound(costonChainID, blockTime, currentRoundNumber)
+			err := c.finalizePreviousRound(params.CostonChainID, blockTime, currentRoundNumber)
 			require.NoError(t, err)
 			assert.Equal(t, testCoinbaseAddress, mockSCC.context.Coinbase, "coinbase address should be changed to the original address")
 		})
@@ -215,7 +216,7 @@ func TestStateTransition_FinalisePreviousRound(t *testing.T) {
 					return rootHash, 0, nil
 				}
 
-				if caller.Address() != stateConnectorCoinbaseSignalAddr(costonChainID, blockTime) {
+				if caller.Address() != stateConnectorCoinbaseSignalAddr(params.CostonChainID, blockTime) {
 					return nil, 0, errors.New("caller address should be state connector coinbase signal addr")
 				}
 
@@ -226,7 +227,7 @@ func TestStateTransition_FinalisePreviousRound(t *testing.T) {
 			}
 
 			c := newConnector(mockSCC, mockMsg)
-			err := c.finalizePreviousRound(costonChainID, blockTime, currentRoundNumber)
+			err := c.finalizePreviousRound(params.CostonChainID, blockTime, currentRoundNumber)
 			require.NoError(t, err)
 			assert.Equal(t, testCoinbaseAddress, mockSCC.context.Coinbase, "coinbase address should be changed to the original address")
 		})
@@ -259,7 +260,7 @@ func TestStateTransition_FinalisePreviousRound(t *testing.T) {
 			}
 
 			c := newConnector(mockSCC, mockMsg)
-			err := c.finalizePreviousRound(costonChainID, blockTime, currentRoundNumber)
+			err := c.finalizePreviousRound(params.CostonChainID, blockTime, currentRoundNumber)
 			require.NoError(t, err)
 			assert.Equal(t, testCoinbaseAddress, mockSCC.context.Coinbase, "coinbase address should not be changed")
 		})

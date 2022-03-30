@@ -12,6 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/flare-foundation/coreth/core/vm"
+	"github.com/flare-foundation/coreth/params"
 )
 
 const (
@@ -96,11 +97,11 @@ func defaultAttestors(chainID *big.Int) []common.Address {
 		return defaultAttestors
 	}
 	switch {
-	case chainID.Cmp(costonChainID) == 0:
+	case chainID.Cmp(params.CostonChainID) == 0:
 		return costonDefaultAttestors
-	case chainID.Cmp(songbirdChainID) == 0:
+	case chainID.Cmp(params.SongbirdChainID) == 0:
 		return songbirdDefaultAttestors
-	case chainID.Cmp(flareChainID) == 0:
+	case chainID.Cmp(params.FlareChainID) == 0:
 		return flareDefaultAttestors
 	default:
 		return nil
@@ -199,11 +200,11 @@ func envAttestors(key string) []common.Address {
 // unused 'blockTime' might be used for hard forks in the future.
 func stateConnectorContract(chainID *big.Int, blockTime *big.Int) common.Address {
 	switch {
-	case chainID.Cmp(costonChainID) == 0:
+	case chainID.Cmp(params.CostonChainID) == 0:
 		return common.HexToAddress("0x947c76694491d3fD67a73688003c4d36C8780A97")
-	case chainID.Cmp(songbirdChainID) == 0:
+	case chainID.Cmp(params.SongbirdChainID) == 0:
 		return common.HexToAddress("0x3A1b3220527aBA427d1e13e4b4c48c31460B4d91")
-	case chainID.Cmp(flareChainID) == 0:
+	case chainID.Cmp(params.FlareChainID) == 0:
 		return common.HexToAddress("0x1000000000000000000000000000000000000001")
 	default:
 		return common.HexToAddress("0x1000000000000000000000000000000000000001")
@@ -212,11 +213,11 @@ func stateConnectorContract(chainID *big.Int, blockTime *big.Int) common.Address
 
 func isStateConnectorActivated(chainID *big.Int, blockTime *big.Int) bool {
 	switch {
-	case chainID.Cmp(costonChainID) == 0:
+	case chainID.Cmp(params.CostonChainID) == 0:
 		return blockTime.Cmp(costonActivationTime) >= 0
-	case chainID.Cmp(songbirdChainID) == 0:
+	case chainID.Cmp(params.SongbirdChainID) == 0:
 		return blockTime.Cmp(songbirdActivationTime) >= 0
-	case chainID.Cmp(flareChainID) == 0:
+	case chainID.Cmp(params.FlareChainID) == 0:
 		return blockTime.Cmp(flareActivationTime) >= 0
 	default:
 		return true
