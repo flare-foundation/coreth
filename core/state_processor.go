@@ -32,6 +32,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/flare-foundation/coreth/consensus"
 	"github.com/flare-foundation/coreth/consensus/misc"
 	"github.com/flare-foundation/coreth/core/state"
@@ -81,13 +82,17 @@ func (p *StateProcessor) Process(block *types.Block, parent *types.Header, state
 		misc.ApplyDAOHardFork(statedb)
 	}
 	if p.config.IsFlareHardFork1(big.NewInt(0).SetUint64(header.Time)) {
+		log.Debug("flare hard fork 1 activated")
 		if !misc.FlareDaemonUpgraded(statedb) {
+			log.Warn("flare hard fork 1 upgrading flare daemon")
 			misc.UpgradeFlareDaemon(statedb)
 		}
 		if !misc.PriceSubmitterUpgraded(statedb) {
+			log.Warn("flare hard fork 1 upgrading price submitter")
 			misc.UpgradePriceSubmitter(statedb)
 		}
 		if !misc.ValidatorRegistryCreated(statedb) {
+			log.Warn("flare hard fork 1 creating validator registry")
 			misc.CreateValidatorRegistry(statedb)
 		}
 	}
