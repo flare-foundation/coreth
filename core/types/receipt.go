@@ -400,13 +400,13 @@ func (rs Receipts) EncodeIndex(i int, w *bytes.Buffer) {
 	data := &receiptRLP{r.statusEncoding(), r.CumulativeGasUsed, r.Bloom, r.Logs}
 	switch r.Type {
 	case LegacyTxType:
-		_ = rlp.Encode(w, data)
+		rlp.Encode(w, data)
 	case AccessListTxType:
-		_ = w.WriteByte(AccessListTxType)
-		_ = rlp.Encode(w, data)
+		w.WriteByte(AccessListTxType)
+		rlp.Encode(w, data)
 	case DynamicFeeTxType:
-		_ = w.WriteByte(DynamicFeeTxType)
-		_ = rlp.Encode(w, data)
+		w.WriteByte(DynamicFeeTxType)
+		rlp.Encode(w, data)
 	default:
 		// For unsupported types, write nothing. Since this is for
 		// DeriveSha, the error will be caught matching the derived hash

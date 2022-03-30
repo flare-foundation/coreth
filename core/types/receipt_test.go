@@ -361,7 +361,7 @@ func TestTypedReceiptEncodingDecoding(t *testing.T) {
 	}
 	{
 		var bundle []*Receipt
-		_ = rlp.DecodeBytes(payload, &bundle)
+		rlp.DecodeBytes(payload, &bundle)
 		check(bundle)
 	}
 	{

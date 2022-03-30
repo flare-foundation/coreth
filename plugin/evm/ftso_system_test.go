@@ -14,7 +14,6 @@ import (
 
 	"github.com/flare-foundation/coreth/accounts/abi/bind"
 	"github.com/flare-foundation/coreth/accounts/abi/bind/backends"
-	"github.com/flare-foundation/coreth/plugin/evm/testcontracts"
 )
 
 func TestNewFTSOSystem(t *testing.T) {
@@ -31,6 +30,7 @@ func TestNewFTSOSystem(t *testing.T) {
 }
 
 func TestFTSOSystem_Contracts(t *testing.T) {
+	initTestContracts(t)
 
 	t.Run("nominal case", func(t *testing.T) {
 		auth, be := simulatedBlockchain(t)
@@ -38,22 +38,22 @@ func TestFTSOSystem_Contracts(t *testing.T) {
 
 		cfg := defaultTestContractsConfig
 
-		votePowerAddr := testcontracts.DeployVotepower(auth, be, cfg.providers, cfg.votePowers)
+		votePowerAddr := deployVotepowerContract(t, auth, be, cfg.providers, cfg.votePowers)
 
-		wnatAddr := testcontracts.DeployWNAT(auth, be, votePowerAddr, cfg.totalSupply)
+		wnatAddr := deployWnatContract(t, auth, be, votePowerAddr)
 
-		rewardAddr := testcontracts.DeployReward(auth, be, wnatAddr, cfg.epochs, cfg.providers, cfg.unclaimedRewards)
+		rewardAddr := deployRewardContract(t, auth, be, wnatAddr, cfg.epochs, cfg.providers, cfg.unclaimedRewards)
 
-		ftsoManagerAddr := testcontracts.DeployManager(auth, be, rewardAddr, cfg.rewardEpochDurationSeconds, cfg.rewardEpochsStartTs,
-			cfg.currentRewardEpoch, cfg.fraction, cfg.epochs, cfg.rewardEpochPowerHeights, cfg.rewardEpochStartHeights, cfg.rewardEpochStartTimes)
+		ftsoManagerAddr := deployManagerContract(t, auth, be, rewardAddr, cfg.rewardEpochDurationSeconds, cfg.rewardEpochsStartTs,
+			cfg.currentRewardEpoch, cfg.epochs, cfg.rewardEpochPowerHeights, cfg.rewardEpochStartHeights, cfg.rewardEpochStartTimes)
 
-		ftsoRegistryAddr := testcontracts.DeployFTSORegistry(auth, be, cfg.supportedIndices)
+		ftsoRegistryAddr := deployFTSORegistryContract(t, auth, be, cfg.supportedIndices)
 
-		voterWhitelisterAddr := testcontracts.DeployWhitelist(auth, be, cfg.supportedIndices, cfg.providers)
+		voterWhitelisterAddr := deployWhitelistContract(t, auth, be, cfg.supportedIndices, cfg.providers)
 
-		validationAddr := testcontracts.DeployValidator(auth, be, cfg.providers, cfg.nodes)
+		validationAddr := deployValidatorContract(t, auth, be, cfg.providers, cfg.nodes)
 
-		submitterAddr := testcontracts.DeploySubmitter(auth, be, voterWhitelisterAddr, ftsoRegistryAddr, ftsoManagerAddr)
+		submitterAddr := deploySubmitterContract(t, auth, be, voterWhitelisterAddr, ftsoRegistryAddr, ftsoManagerAddr)
 
 		be.Commit(true)
 
@@ -86,12 +86,12 @@ func TestFTSOSystem_Contracts(t *testing.T) {
 		assert.EqualError(t, err, "could not get manager address: no return data")
 	})
 
-	t.Run("handles FTSO not testcontracts.Deployed error", func(t *testing.T) {
+	t.Run("handles FTSO not deployed error", func(t *testing.T) {
 		auth, be := simulatedBlockchain(t)
 		defer be.Close()
 
 		// Submitter contract
-		submitterAddr := testcontracts.DeploySubmitter(auth, be, common.Address{}, common.Address{}, common.Address{})
+		submitterAddr := deploySubmitterContract(t, auth, be, common.Address{}, common.Address{}, common.Address{})
 
 		be.Commit(true)
 
@@ -111,10 +111,10 @@ func TestFTSOSystem_Contracts(t *testing.T) {
 		withEpochs([]*big.Int{big.NewInt(0)})(&cfg)
 		withRewardEpochStartHeights([]*big.Int{big.NewInt(0)})(&cfg)
 
-		ftsoManagerAddr := testcontracts.DeployManager(auth, be, common.Address{}, big.NewInt(1), big.NewInt(1), big.NewInt(1),
-			cfg.fraction, cfg.epochs, []*big.Int{big.NewInt(100)}, cfg.rewardEpochStartHeights, []*big.Int{big.NewInt(100)})
+		ftsoManagerAddr := deployManagerContract(t, auth, be, common.Address{}, big.NewInt(1), big.NewInt(1), big.NewInt(1),
+			cfg.epochs, []*big.Int{big.NewInt(100)}, cfg.rewardEpochStartHeights, []*big.Int{big.NewInt(100)})
 
-		submitterAddr := testcontracts.DeploySubmitter(auth, be, common.Address{}, common.Address{}, ftsoManagerAddr)
+		submitterAddr := deploySubmitterContract(t, auth, be, common.Address{}, common.Address{}, ftsoManagerAddr)
 
 		be.Commit(true)
 
@@ -134,16 +134,16 @@ func TestFTSOSystem_Contracts(t *testing.T) {
 
 		rewardsAddr := common.Address{}
 
-		ftsoManagerAddr := testcontracts.DeployManager(auth, be, rewardsAddr, cfg.rewardEpochDurationSeconds, cfg.rewardEpochsStartTs,
-			cfg.currentRewardEpoch, cfg.fraction, cfg.epochs, cfg.rewardEpochPowerHeights, cfg.rewardEpochStartHeights, cfg.rewardEpochStartTimes)
+		ftsoManagerAddr := deployManagerContract(t, auth, be, rewardsAddr, cfg.rewardEpochDurationSeconds, cfg.rewardEpochsStartTs,
+			cfg.currentRewardEpoch, cfg.epochs, cfg.rewardEpochPowerHeights, cfg.rewardEpochStartHeights, cfg.rewardEpochStartTimes)
 
-		ftsoRegistryAddr := testcontracts.DeployFTSORegistry(auth, be, cfg.supportedIndices)
+		ftsoRegistryAddr := deployFTSORegistryContract(t, auth, be, cfg.supportedIndices)
 
-		voterWhitelisterAddr := testcontracts.DeployWhitelist(auth, be, cfg.supportedIndices, cfg.providers)
+		voterWhitelisterAddr := deployWhitelistContract(t, auth, be, cfg.supportedIndices, cfg.providers)
 
-		validationAddr := testcontracts.DeployValidator(auth, be, cfg.providers, cfg.nodes)
+		validationAddr := deployValidatorContract(t, auth, be, cfg.providers, cfg.nodes)
 
-		submitterAddr := testcontracts.DeploySubmitter(auth, be, voterWhitelisterAddr, ftsoRegistryAddr, ftsoManagerAddr)
+		submitterAddr := deploySubmitterContract(t, auth, be, voterWhitelisterAddr, ftsoRegistryAddr, ftsoManagerAddr)
 
 		be.Commit(true)
 
@@ -163,18 +163,18 @@ func TestFTSOSystem_Contracts(t *testing.T) {
 
 		wnatAddr := common.Address{}
 
-		rewardAddr := testcontracts.DeployReward(auth, be, wnatAddr, cfg.epochs, cfg.providers, cfg.unclaimedRewards)
+		rewardAddr := deployRewardContract(t, auth, be, wnatAddr, cfg.epochs, cfg.providers, cfg.unclaimedRewards)
 
-		ftsoManagerAddr := testcontracts.DeployManager(auth, be, rewardAddr, cfg.rewardEpochDurationSeconds, cfg.rewardEpochsStartTs,
-			cfg.currentRewardEpoch, cfg.fraction, cfg.epochs, cfg.rewardEpochPowerHeights, cfg.rewardEpochStartHeights, cfg.rewardEpochStartTimes)
+		ftsoManagerAddr := deployManagerContract(t, auth, be, rewardAddr, cfg.rewardEpochDurationSeconds, cfg.rewardEpochsStartTs,
+			cfg.currentRewardEpoch, cfg.epochs, cfg.rewardEpochPowerHeights, cfg.rewardEpochStartHeights, cfg.rewardEpochStartTimes)
 
-		ftsoRegistryAddr := testcontracts.DeployFTSORegistry(auth, be, cfg.supportedIndices)
+		ftsoRegistryAddr := deployFTSORegistryContract(t, auth, be, cfg.supportedIndices)
 
-		voterWhitelisterAddr := testcontracts.DeployWhitelist(auth, be, cfg.supportedIndices, cfg.providers)
+		voterWhitelisterAddr := deployWhitelistContract(t, auth, be, cfg.supportedIndices, cfg.providers)
 
-		validationAddr := testcontracts.DeployValidator(auth, be, cfg.providers, cfg.nodes)
+		validationAddr := deployValidatorContract(t, auth, be, cfg.providers, cfg.nodes)
 
-		submitterAddr := testcontracts.DeploySubmitter(auth, be, voterWhitelisterAddr, ftsoRegistryAddr, ftsoManagerAddr)
+		submitterAddr := deploySubmitterContract(t, auth, be, voterWhitelisterAddr, ftsoRegistryAddr, ftsoManagerAddr)
 
 		be.Commit(true)
 
@@ -189,6 +189,7 @@ func TestFTSOSystem_Contracts(t *testing.T) {
 }
 
 func TestFTSOSystem_Details(t *testing.T) {
+	initTestContracts(t)
 
 	t.Run("nominal case", func(t *testing.T) {
 		auth, be := simulatedBlockchain(t)
@@ -223,6 +224,7 @@ func TestFTSOSystem_Details(t *testing.T) {
 }
 
 func TestFTSOSystem_Snapshot(t *testing.T) {
+	initTestContracts(t)
 
 	t.Run("nominal case", func(t *testing.T) {
 		auth, be := simulatedBlockchain(t)
@@ -332,6 +334,7 @@ func TestFTSOSystem_Snapshot(t *testing.T) {
 }
 
 func TestFTSOSystem_Current(t *testing.T) {
+	initTestContracts(t)
 
 	t.Run("nominal case", func(t *testing.T) {
 		auth, be := simulatedBlockchain(t)
@@ -373,21 +376,21 @@ func testFTSOSystem(t *testing.T, be *backends.SimulatedBackend, submitterAddr, 
 
 	submitter := EVMContract{
 		address: submitterAddr,
-		abi:     testcontracts.SubmitterABI(),
+		abi:     testAbiSubmitter,
 	}
 
 	validation := EVMContract{
 		address: validationAddr,
-		abi:     testcontracts.ValidatorABI(),
+		abi:     testAbiValidation,
 	}
 
 	abis := FTSOABIs{
-		Registry:  testcontracts.FTSORegistryABI(),
-		Manager:   testcontracts.ManagerABI(),
-		Rewards:   testcontracts.RewardABI(),
-		WNAT:      testcontracts.WnatABI(),
-		Whitelist: testcontracts.WhitelistABI(),
-		Votepower: testcontracts.VotepowerABI(),
+		Registry:  testAbiFtsoRegistry,
+		Manager:   testAbiManager,
+		Rewards:   testAbiReward,
+		WNAT:      testAbiWnat,
+		Whitelist: testAbiVoterWhitelister,
+		Votepower: testAbiVotePower,
 	}
 
 	f := FTSOSystem{
@@ -405,22 +408,22 @@ func deployAllContracts(t *testing.T, auth *bind.TransactOpts, be *backends.Simu
 
 	t.Helper()
 
-	votePowerAddr := testcontracts.DeployVotepower(auth, be, cfg.providers, cfg.votePowers)
+	votePowerAddr := deployVotepowerContract(t, auth, be, cfg.providers, cfg.votePowers)
 
-	wnatAddr := testcontracts.DeployWNAT(auth, be, votePowerAddr, cfg.totalSupply)
+	wnatAddr := deployWnatContract(t, auth, be, votePowerAddr)
 
-	rewardAddr := testcontracts.DeployReward(auth, be, wnatAddr, cfg.epochs, cfg.providers, cfg.unclaimedRewards)
+	rewardAddr := deployRewardContract(t, auth, be, wnatAddr, cfg.epochs, cfg.providers, cfg.unclaimedRewards)
 
-	ftsoManagerAddr := testcontracts.DeployManager(auth, be, rewardAddr, cfg.rewardEpochDurationSeconds, cfg.rewardEpochsStartTs,
-		cfg.currentRewardEpoch, cfg.fraction, cfg.epochs, cfg.rewardEpochPowerHeights, cfg.rewardEpochStartHeights, cfg.rewardEpochStartTimes)
+	ftsoManagerAddr := deployManagerContract(t, auth, be, rewardAddr, cfg.rewardEpochDurationSeconds, cfg.rewardEpochsStartTs,
+		cfg.currentRewardEpoch, cfg.epochs, cfg.rewardEpochPowerHeights, cfg.rewardEpochStartHeights, cfg.rewardEpochStartTimes)
 
-	ftsoRegistryAddr := testcontracts.DeployFTSORegistry(auth, be, cfg.supportedIndices)
+	ftsoRegistryAddr := deployFTSORegistryContract(t, auth, be, cfg.supportedIndices)
 
-	voterWhitelisterAddr := testcontracts.DeployWhitelist(auth, be, cfg.supportedIndices, cfg.providers)
+	voterWhitelisterAddr := deployWhitelistContract(t, auth, be, cfg.supportedIndices, cfg.providers)
 
-	validationAddr = testcontracts.DeployValidator(auth, be, cfg.providers, cfg.nodes)
+	validationAddr = deployValidatorContract(t, auth, be, cfg.providers, cfg.nodes)
 
-	submitterAddr = testcontracts.DeploySubmitter(auth, be, voterWhitelisterAddr, ftsoRegistryAddr, ftsoManagerAddr)
+	submitterAddr = deploySubmitterContract(t, auth, be, voterWhitelisterAddr, ftsoRegistryAddr, ftsoManagerAddr)
 
 	return
 }
@@ -435,11 +438,9 @@ var defaultTestContractsConfig = testContractsConfig{
 	rewardEpochDurationSeconds: big.NewInt(301),
 	rewardEpochsStartTs:        big.NewInt(1),
 	currentRewardEpoch:         big.NewInt(2),
-	fraction:                   big.NewInt(10),
 	rewardEpochPowerHeights:    []*big.Int{big.NewInt(302), big.NewInt(303)},
 	rewardEpochStartHeights:    []*big.Int{big.NewInt(304), big.NewInt(305)},
 	rewardEpochStartTimes:      []*big.Int{big.NewInt(306), big.NewInt(307)},
-	totalSupply:                big.NewInt(1000),
 }
 
 type testContractsConfig struct {
@@ -452,11 +453,9 @@ type testContractsConfig struct {
 	rewardEpochDurationSeconds *big.Int
 	rewardEpochsStartTs        *big.Int
 	currentRewardEpoch         *big.Int
-	fraction                   *big.Int
 	rewardEpochPowerHeights    []*big.Int
 	rewardEpochStartHeights    []*big.Int
 	rewardEpochStartTimes      []*big.Int
-	totalSupply                *big.Int
 }
 
 type testContractsConfigOption func(*testContractsConfig)

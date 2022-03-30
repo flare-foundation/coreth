@@ -74,8 +74,8 @@ func TestEIP2718DeriveSha(t *testing.T) {
 	} {
 		d := &hashToHumanReadable{}
 		var t1, t2 types.Transaction
-		_ = rlp.DecodeBytes(common.FromHex(tc.rlpData), &t1)
-		_ = rlp.DecodeBytes(common.FromHex(tc.rlpData), &t2)
+		rlp.DecodeBytes(common.FromHex(tc.rlpData), &t1)
+		rlp.DecodeBytes(common.FromHex(tc.rlpData), &t2)
 		txs := types.Transactions{&t1, &t2}
 		types.DeriveSha(txs, d)
 		if tc.exp != string(d.data) {
@@ -197,7 +197,7 @@ func (d *dummyDerivableList) EncodeIndex(i int, w *bytes.Buffer) {
 	src := mrand.NewSource(int64(d.seed + i))
 	// max item size 256, at least 1 byte per item
 	size := 1 + src.Int63()&0x00FF
-	_, _ = io.CopyN(w, mrand.New(src), size)
+	io.CopyN(w, mrand.New(src), size)
 }
 
 func printList(l types.DerivableList) {

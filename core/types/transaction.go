@@ -391,7 +391,7 @@ func (tx *Transaction) Size() common.StorageSize {
 		return size.(common.StorageSize)
 	}
 	c := writeCounter(0)
-	_ = rlp.Encode(&c, &tx.inner)
+	rlp.Encode(&c, &tx.inner)
 	tx.size.Store(common.StorageSize(c))
 	return common.StorageSize(c)
 }
@@ -430,9 +430,9 @@ func (s Transactions) Len() int { return len(s) }
 func (s Transactions) EncodeIndex(i int, w *bytes.Buffer) {
 	tx := s[i]
 	if tx.Type() == LegacyTxType {
-		_ = rlp.Encode(w, tx.inner)
+		rlp.Encode(w, tx.inner)
 	} else {
-		_ = tx.encodeTyped(w)
+		tx.encodeTyped(w)
 	}
 }
 
