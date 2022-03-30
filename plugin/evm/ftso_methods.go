@@ -12,6 +12,8 @@ const (
 	WhitelistAddress  = "getVoterWhitelister"
 	WNATAddress       = "wNat"
 	VotepowerAddress  = "readVotePowerContract"
+	TotalSupply       = "totalSupply"
+	Settings          = "settings"
 	CurrentEpoch      = "getCurrentRewardEpoch"
 	RewardEpoch       = "rewardEpochs"
 	DataProviders     = "getFtsoWhitelistedPriceProviders"

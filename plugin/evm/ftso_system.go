@@ -37,6 +37,7 @@ type FTSOContracts struct {
 	Manager    EVMContract
 	Rewards    EVMContract
 	Whitelist  EVMContract
+	WNAT       EVMContract
 	Votepower  EVMContract
 	Validation EVMContract
 }
@@ -207,6 +208,7 @@ func (f *FTSOSystem) Contracts(hash common.Hash) (FTSOContracts, error) {
 		Manager:    manager,
 		Rewards:    rewards,
 		Whitelist:  whitelist,
+		WNAT:       wnat,
 		Votepower:  votepower,
 		Validation: f.validation,
 	}
