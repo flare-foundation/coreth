@@ -180,7 +180,7 @@ func TestVerifyBlockFee(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			blockGasCost := calcBlockGasCost(
-				ApricotPhase4TargetBlockRate,
+				2, // hard-coded, because we changed it to 1
 				ApricotPhase4MinBlockGasCost,
 				ApricotPhase4MaxBlockGasCost,
 				ApricotPhase4BlockGasCostStep,
