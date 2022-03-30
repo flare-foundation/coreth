@@ -5,7 +5,6 @@ package evm
 
 import (
 	"context"
-	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -129,9 +128,6 @@ var (
 	// Prefixes for atomic trie
 	atomicTrieDBPrefix     = []byte("atomicTrieDB")
 	atomicTrieMetaDBPrefix = []byte("atomicTrieMetaDB")
-
-	// Prefixes for pruning
-	pruneRejectedBlocksKey = []byte("pruned_rejected_blocks")
 )
 
 var (
@@ -140,16 +136,7 @@ var (
 	errInvalidBlock                   = errors.New("invalid block")
 	errInvalidAddr                    = errors.New("invalid hex address")
 	errInsufficientAtomicTxFee        = errors.New("atomic tx fee too low for atomic mempool")
-	errAssetIDMismatch                = errors.New("asset IDs in the input don't match the utxo")
-	errNoImportInputs                 = errors.New("tx has no imported inputs")
-	errInputsNotSortedUnique          = errors.New("inputs not sorted and unique")
-	errPublicKeySignatureMismatch     = errors.New("signature doesn't match public key")
-	errWrongChainID                   = errors.New("tx has wrong chain ID")
 	errInsufficientFunds              = errors.New("insufficient funds")
-	errNoExportOutputs                = errors.New("tx has no export outputs")
-	errOutputsNotSorted               = errors.New("tx outputs not sorted")
-	errOutputsNotSortedUnique         = errors.New("outputs not sorted and unique")
-	errOverflowExport                 = errors.New("overflow when computing export amount + txFee")
 	errInvalidNonce                   = errors.New("invalid nonce")
 	errConflictingAtomicInputs        = errors.New("invalid block due to conflicting atomic inputs")
 	errUnclesUnsupported              = errors.New("uncles unsupported")
@@ -161,8 +148,6 @@ var (
 	errInvalidMixDigest               = errors.New("invalid mix digest")
 	errInvalidExtDataHash             = errors.New("invalid extra data hash")
 	errHeaderExtraDataTooBig          = errors.New("header extra data too big")
-	errInsufficientFundsForFee        = errors.New("insufficient AVAX funds to pay transaction fee")
-	errNoEVMOutputs                   = errors.New("tx has no EVM outputs")
 	errNilBaseFeeApricotPhase3        = errors.New("nil base fee is invalid after apricotPhase3")
 	errNilExtDataGasUsedApricotPhase4 = errors.New("nil extDataGasUsed is invalid after apricotPhase4")
 	errNilBlockGasCostApricotPhase4   = errors.New("nil blockGasCost is invalid after apricotPhase4")
@@ -531,14 +516,6 @@ func (vm *VM) Initialize(
 	// ignored by the VM's codec.
 	vm.baseCodec = linearcodec.NewDefault()
 
-	// pruneChain removes all rejected blocks stored in the database.
-	//
-	// TODO: This function can take over 60 minutes to run on mainnet and
-	// should be converted to run asynchronously.
-	// if err := vm.pruneChain(); err != nil {
-	// 	return err
-	// }
-
 	// If metrics are enabled, register the default metrics regitry
 	if metrics.Enabled {
 		gatherer := corethPrometheus.Gatherer(metrics.DefaultRegistry)
@@ -782,30 +759,6 @@ func (vm *VM) onExtraStateChange(block *types.Block, state *state.StateDB) (*big
 		}
 	}
 	return batchContribution, batchGasUsed, nil
-}
-
-func (vm *VM) pruneChain() error {
-	if !vm.config.Pruning {
-		return nil
-	}
-	pruned, err := vm.db.Has(pruneRejectedBlocksKey)
-	if err != nil {
-		return fmt.Errorf("failed to check if the VM has pruned rejected blocks: %w", err)
-	}
-	if pruned {
-		return nil
-	}
-
-	lastAcceptedHeight := vm.LastAcceptedBlock().Height()
-	if err := vm.chain.RemoveRejectedBlocks(0, lastAcceptedHeight); err != nil {
-		return err
-	}
-	heightBytes := make([]byte, 8)
-	binary.PutUvarint(heightBytes, lastAcceptedHeight)
-	if err := vm.db.Put(pruneRejectedBlocksKey, heightBytes); err != nil {
-		return err
-	}
-	return vm.db.Commit()
 }
 
 func (vm *VM) SetState(state snow.State) error {
@@ -1065,47 +1018,6 @@ func (vm *VM) CreateStaticHandlers() (map[string]*commonEng.HTTPHandler, error) 
  *********************************** Helpers **********************************
  ******************************************************************************
  */
-
-// conflicts returns an error if [inputs] conflicts with any of the atomic inputs contained in [ancestor]
-// or any of its ancestor blocks going back to the last accepted block in its ancestry. If [ancestor] is
-// accepted, then nil will be returned immediately.
-// If the ancestry of [ancestor] cannot be fetched, then [errRejectedParent] may be returned.
-func (vm *VM) conflicts(inputs ids.Set, ancestor *Block) error {
-	for ancestor.Status() != choices.Accepted {
-		// If any of the atomic transactions in the ancestor conflict with [inputs]
-		// return an error.
-		for _, atomicTx := range ancestor.atomicTxs {
-			if inputs.Overlaps(atomicTx.InputUTXOs()) {
-				return errConflictingAtomicInputs
-			}
-		}
-
-		// Move up the chain.
-		nextAncestorID := ancestor.Parent()
-		// If the ancestor is unknown, then the parent failed
-		// verification when it was called.
-		// If the ancestor is rejected, then this block shouldn't be
-		// inserted into the canonical chain because the parent is
-		// will be missing.
-		// If the ancestor is processing, then the block may have
-		// been verified.
-		nextAncestorIntf, err := vm.GetBlockInternal(nextAncestorID)
-		if err != nil {
-			return errRejectedParent
-		}
-
-		if blkStatus := nextAncestorIntf.Status(); blkStatus == choices.Unknown || blkStatus == choices.Rejected {
-			return errRejectedParent
-		}
-		nextAncestor, ok := nextAncestorIntf.(*Block)
-		if !ok {
-			return fmt.Errorf("ancestor block %s had unexpected type %T", nextAncestor.ID(), nextAncestorIntf)
-		}
-		ancestor = nextAncestor
-	}
-
-	return nil
-}
 
 // getAtomicTx returns the requested transaction, status, and height.
 // If the status is Unknown, then the returned transaction will be nil.

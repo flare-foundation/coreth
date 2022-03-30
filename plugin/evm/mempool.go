@@ -74,13 +74,6 @@ func (m *Mempool) length() int {
 	return m.txHeap.Len() + len(m.issuedTxs)
 }
 
-// has indicates if a given [txID] is in the mempool and has not been
-// discarded.
-func (m *Mempool) has(txID ids.ID) bool {
-	_, dropped, found := m.GetTx(txID)
-	return found && !dropped
-}
-
 // atomicTxGasPrice is the [gasPrice] paid by a transaction to burn a given
 // amount of [AVAXAssetID] given the value of [gasUsed].
 func (m *Mempool) atomicTxGasPrice(tx *Tx) (uint64, error) {

@@ -47,7 +47,7 @@ func TestValidatorsManager_DefaultValidators(t *testing.T) {
 func TestValidatorsManager_FTSOValidators(t *testing.T) {
 	testEpoch := uint64(1)
 	testValidators := map[ids.ShortID]uint64{
-		ids.ShortID{13}: 37,
+		{13}: 37,
 	}
 
 	t.Run("nominal case", func(t *testing.T) {
@@ -93,7 +93,7 @@ func TestValidatorsManager_FTSOValidators(t *testing.T) {
 func TestValidatorsManager_ActiveValidators(t *testing.T) {
 	testEpoch := uint64(1)
 	testValidators := map[ids.ShortID]uint64{
-		ids.ShortID{13}: 37,
+		{13}: 37,
 	}
 
 	t.Run("nominal case", func(t *testing.T) {
