@@ -21,7 +21,6 @@ func (t TestValidatorsNormalizer) ByEpoch(e uint64) (map[ids.ShortID]uint64, err
 }
 
 func TestValidatorsNormalizer_ByEpoch(t *testing.T) {
-	t.Skip("broken")
 	t.Run("nominal case", func(t *testing.T) {
 		testValidators := validatorsData
 		testWeightRatios := map[ids.ShortID]uint64{
@@ -117,7 +116,6 @@ func TestValidatorsNormalizer_ByEpoch(t *testing.T) {
 }
 
 func TestValidatorsNormalizer_CalcWeightRatio(t *testing.T) {
-	t.Skip("broken")
 	t.Run("nominal case", func(t *testing.T) {
 		testValidators := validatorsData
 		testValidatorsCopy := validatorsData

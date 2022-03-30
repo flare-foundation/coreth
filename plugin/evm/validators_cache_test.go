@@ -28,7 +28,6 @@ func (t TestValidatorCache) ByEpoch(e uint64) (map[ids.ShortID]uint64, error) {
 }
 
 func TestValidatorsCache_ByEpoch(t *testing.T) {
-	t.Skip("broken")
 	t.Run("nominal case", func(t *testing.T) {
 		var (
 			numValidators        = 5

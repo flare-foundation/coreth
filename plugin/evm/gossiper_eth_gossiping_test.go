@@ -7,6 +7,7 @@ import (
 	"crypto/ecdsa"
 	"encoding/json"
 	"math/big"
+	"os"
 	"strings"
 	"sync"
 	"testing"
@@ -19,6 +20,7 @@ import (
 	"github.com/ethereum/go-ethereum/rlp"
 
 	"github.com/flare-foundation/flare/ids"
+	"github.com/flare-foundation/flare/utils/constants"
 
 	"github.com/flare-foundation/coreth/core"
 	"github.com/flare-foundation/coreth/core/types"
@@ -282,6 +284,11 @@ func TestMempoolEthTxsAppGossipHandling(t *testing.T) {
 }
 
 func TestMempoolEthTxsRegossipSingleAccount(t *testing.T) {
+
+	// make sure we have a default validator available for initialization
+	nodeID := ids.GenerateTestShortID()
+	os.Setenv("CUSTOM_VALIDATORS", nodeID.PrefixedString(constants.NodeIDPrefix))
+
 	assert := assert.New(t)
 
 	key, err := crypto.GenerateKey()
