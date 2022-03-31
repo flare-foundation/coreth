@@ -37,7 +37,6 @@ func TestValidatorsCache_ByEpoch(t *testing.T) {
 
 		testValidators := genericValidators(numValidators, numEpochs)
 
-		var calls int
 		mock := TestValidatorCache{
 			ByEpochFunc: func(e uint64) (map[ids.ShortID]uint64, error) {
 				return testValidators[e], nil
@@ -47,10 +46,13 @@ func TestValidatorsCache_ByEpoch(t *testing.T) {
 		for k, v := range testValidators {
 			valCache.cache.Add(k, v)
 		}
-		result, err := valCache.ByEpoch(epoch)
+		got, err := valCache.ByEpoch(epoch)
 		require.NoError(t, err)
-		assert.ElementsMatch(t, result, testValidators[epoch])
-		assert.Equal(t, 1, calls)
+		for key, value := range testValidators[epoch] {
+			assert.Contains(t, got, key)
+			assert.Equal(t, got[key], value)
+		}
+		assert.Len(t, got, len(testValidators[epoch]))
 	})
 
 	t.Run("handles missing key", func(t *testing.T) {
@@ -58,7 +60,6 @@ func TestValidatorsCache_ByEpoch(t *testing.T) {
 			numValidators        = 5
 			numEpochs            = 2
 			epoch         uint64 = 7
-			calls         int
 		)
 
 		testValidators := genericValidators(numValidators, numEpochs)
@@ -77,7 +78,6 @@ func TestValidatorsCache_ByEpoch(t *testing.T) {
 		require.NoError(t, err)
 		assert.Empty(t, got)
 		assert.ElementsMatch(t, testEpochResult, got)
-		assert.Equal(t, 2, calls)
 	})
 
 	t.Run("handles empty validators map", func(t *testing.T) {
@@ -86,7 +86,6 @@ func TestValidatorsCache_ByEpoch(t *testing.T) {
 			epoch: map[ids.ShortID]uint64{},
 		}
 
-		var calls int
 		mock := TestValidatorCache{
 			ByEpochFunc: func(e uint64) (map[ids.ShortID]uint64, error) {
 				return testValidators[e], nil
@@ -100,13 +99,11 @@ func TestValidatorsCache_ByEpoch(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Empty(t, got)
 		assert.ElementsMatch(t, testValidators[epoch], got)
-		assert.Equal(t, 1, calls)
 	})
 
 	t.Run("handles failure to retrieve validator by epoch", func(t *testing.T) {
 		epoch := uint64(9)
 
-		var calls int
 		mock := TestValidatorsNormalizer{
 			ByEpochFunc: func(uint64) (map[ids.ShortID]uint64, error) {
 				return nil, errors.New("dummy error")
@@ -117,6 +114,5 @@ func TestValidatorsCache_ByEpoch(t *testing.T) {
 
 		_, err := valCache.ByEpoch(epoch)
 		assert.Error(t, err)
-		assert.Equal(t, 1, calls)
 	})
 }

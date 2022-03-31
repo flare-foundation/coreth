@@ -8,7 +8,7 @@ import (
 
 // validatorsTestData represents a test object that keeps records
 // of validators ids and corresponding weights.
-type validatorsTestData map[interface{}]map[ids.ShortID]uint64
+type validatorsTestData map[uint64]map[ids.ShortID]uint64
 
 var (
 	validatorsData = validatorsTestData{
