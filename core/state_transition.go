@@ -386,6 +386,11 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 	if vmerr == nil && msg.To() != nil && *msg.To() == common.HexToAddress(GetPrioritisedFTSOContract(timestamp)) {
 		nominalGasUsed := uint64(21000)
 		nominalGasPrice := uint64(225_000_000_000)
+
+		if st.evm.ChainConfig().IsFlareHardFork1(st.evm.Context.Time) {
+			nominalGasPrice = uint64(25_000_000_000)
+		}
+
 		nominalFee := new(big.Int).Mul(new(big.Int).SetUint64(nominalGasUsed), new(big.Int).SetUint64(nominalGasPrice))
 		actualGasUsed := st.gasUsed()
 		actualGasPrice := st.gasPrice
