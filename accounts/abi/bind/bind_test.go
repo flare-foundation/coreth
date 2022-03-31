@@ -461,7 +461,7 @@ var bindTests = []struct {
 
 			"github.com/ethereum/go-ethereum/common"
 			"github.com/ethereum/go-ethereum/crypto"
-			
+
 			"github.com/flare-foundation/coreth/accounts/abi/bind"
 			"github.com/flare-foundation/coreth/accounts/abi/bind/backends"
 			"github.com/flare-foundation/coreth/core"
@@ -510,7 +510,7 @@ var bindTests = []struct {
 			"math/big"
 
 			"github.com/ethereum/go-ethereum/crypto"
-			
+
 			"github.com/flare-foundation/coreth/accounts/abi/bind"
 			"github.com/flare-foundation/coreth/accounts/abi/bind/backends"
 			"github.com/flare-foundation/coreth/core"
@@ -577,7 +577,7 @@ var bindTests = []struct {
 			"math/big"
 
 			"github.com/ethereum/go-ethereum/crypto"
-			
+
 			"github.com/flare-foundation/coreth/accounts/abi/bind"
 			"github.com/flare-foundation/coreth/accounts/abi/bind/backends"
 			"github.com/flare-foundation/coreth/core"
@@ -712,7 +712,7 @@ var bindTests = []struct {
 			"math/big"
 
 			"github.com/ethereum/go-ethereum/crypto"
-			
+
 			"github.com/flare-foundation/coreth/accounts/abi/bind"
 			"github.com/flare-foundation/coreth/accounts/abi/bind/backends"
 			"github.com/flare-foundation/coreth/core"
@@ -839,7 +839,7 @@ var bindTests = []struct {
 			"math/big"
 
 			"github.com/ethereum/go-ethereum/crypto"
-			
+
 			"github.com/flare-foundation/coreth/accounts/abi/bind"
 			"github.com/flare-foundation/coreth/accounts/abi/bind/backends"
 			"github.com/flare-foundation/coreth/core"
@@ -931,7 +931,7 @@ var bindTests = []struct {
 		`
 			"math/big"
 			"time"
-			
+
 			"github.com/ethereum/go-ethereum/common"
 			"github.com/ethereum/go-ethereum/crypto"
 
@@ -1125,7 +1125,7 @@ var bindTests = []struct {
 			"math/big"
 
 			"github.com/ethereum/go-ethereum/crypto"
-			
+
 			"github.com/flare-foundation/coreth/accounts/abi/bind"
 			"github.com/flare-foundation/coreth/accounts/abi/bind/backends"
 			"github.com/flare-foundation/coreth/core"
@@ -1261,7 +1261,7 @@ var bindTests = []struct {
 			"reflect"
 
 			"github.com/ethereum/go-ethereum/crypto"
-			
+
 			"github.com/flare-foundation/coreth/accounts/abi/bind"
 			"github.com/flare-foundation/coreth/accounts/abi/bind/backends"
 			"github.com/flare-foundation/coreth/core"
@@ -1404,7 +1404,7 @@ var bindTests = []struct {
 			"math/big"
 
 			"github.com/ethereum/go-ethereum/crypto"
-			
+
 			"github.com/flare-foundation/coreth/accounts/abi/bind"
 			"github.com/flare-foundation/coreth/accounts/abi/bind/backends"
 			"github.com/flare-foundation/coreth/core"
@@ -1710,7 +1710,7 @@ var bindTests = []struct {
 			"math/big"
 
 			"github.com/ethereum/go-ethereum/crypto"
-			
+
 			"github.com/flare-foundation/coreth/accounts/abi/bind"
 			"github.com/flare-foundation/coreth/accounts/abi/bind/backends"
 			"github.com/flare-foundation/coreth/core"
@@ -1772,7 +1772,7 @@ var bindTests = []struct {
 			"math/big"
 	
 			"github.com/ethereum/go-ethereum/crypto"
-			
+
 			"github.com/flare-foundation/coreth/accounts/abi/bind"
 			"github.com/flare-foundation/coreth/accounts/abi/bind/backends"
 			"github.com/flare-foundation/coreth/core"
@@ -1861,7 +1861,7 @@ var bindTests = []struct {
 			"math/big"
 
 			"github.com/ethereum/go-ethereum/crypto"
-			
+
 			"github.com/flare-foundation/coreth/accounts/abi/bind"
 			"github.com/flare-foundation/coreth/accounts/abi/bind/backends"
 			"github.com/flare-foundation/coreth/core"
@@ -1929,9 +1929,9 @@ var bindTests = []struct {
 		[]string{`[{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"MyError","type":"error"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"MyError1","type":"error"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"},{"internalType":"uint256","name":"","type":"uint256"}],"name":"MyError2","type":"error"},{"inputs":[{"internalType":"uint256","name":"a","type":"uint256"},{"internalType":"uint256","name":"b","type":"uint256"},{"internalType":"uint256","name":"c","type":"uint256"}],"name":"MyError3","type":"error"},{"inputs":[],"name":"Error","outputs":[],"stateMutability":"pure","type":"function"}]`},
 		`
 				"math/big"
-		
+
 				"github.com/ethereum/go-ethereum/crypto"
-				
+
 				"github.com/flare-foundation/coreth/accounts/abi/bind"
 				"github.com/flare-foundation/coreth/accounts/abi/bind/backends"
 				"github.com/flare-foundation/coreth/core"
