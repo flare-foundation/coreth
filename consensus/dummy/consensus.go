@@ -161,7 +161,7 @@ func (self *DummyEngine) verifyHeaderGasFields(config *params.ChainConfig, heade
 		blockGasCostStep = ApricotPhase5BlockGasCostStep
 	}
 	expectedBlockGasCost := calcBlockGasCost(
-		2, // hard-coded, because we changed it to 1
+		ApricotPhase4TargetBlockRate,
 		ApricotPhase4MinBlockGasCost,
 		ApricotPhase4MaxBlockGasCost,
 		blockGasCostStep,
