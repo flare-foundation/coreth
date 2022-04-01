@@ -385,10 +385,10 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 	st.refundGas(apricotPhase1)
 	if vmerr == nil && msg.To() != nil && *msg.To() == common.HexToAddress(GetPrioritisedFTSOContract(timestamp)) {
 		nominalGasUsed := uint64(21000)
-		nominalGasPrice := uint64(225_000_000_000)
+		nominalGasPrice := uint64(params.ApricotPhase1MinGasPrice)
 
 		if st.evm.ChainConfig().IsFlareHardFork1(st.evm.Context.Time) {
-			nominalGasPrice = uint64(25_000_000_000)
+			nominalGasPrice = uint64(params.ApricotPhase4MinBaseFee)
 		}
 
 		nominalFee := new(big.Int).Mul(new(big.Int).SetUint64(nominalGasUsed), new(big.Int).SetUint64(nominalGasPrice))
