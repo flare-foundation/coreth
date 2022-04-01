@@ -81,9 +81,9 @@ func NewValidatorsDefault(chainID *big.Int) (*ValidatorsDefault, error) {
 		nodeIDs = songbirdNodeIDs
 		weight = songbirdValidatorWeight
 		steps = []Step{
-			{Epoch: 41, Cutoff: 15}, // go down to 15 default validators one week after main net
-			{Epoch: 43, Cutoff: 10}, // go down to 10 default validators three weeks after main net
-			{Epoch: 45, Cutoff: 5},  // go down to 5 default validators five weeks after main net
+			{Epoch: 42, Cutoff: 15}, // go down to 15 default validators two weeks after main net launch
+			{Epoch: 44, Cutoff: 10}, // go down to 10 default validators four weeks after main net launch
+			{Epoch: 46, Cutoff: 5},  // go down to 5 default validators six weeks after main net launch
 		}
 	case chainID.Cmp(params.FlareChainID) == 0:
 		nodeIDs = flareNodeIDs
