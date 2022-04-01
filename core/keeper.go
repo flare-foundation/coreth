@@ -72,24 +72,26 @@ func GetPrioritisedFTSOContract(blockTime *big.Int) string {
 	}
 }
 
-func GetMaximumMintRequest(blockNumber *big.Int) *big.Int {
-	switch {
-	default:
-		maxRequest, _ := new(big.Int).SetString("50000000000000000000000000", 10)
-		return maxRequest
+func GetMaximumMintRequest(blockNumber *big.Int, evm *vm.EVM) *big.Int {
+	maxRequest, _ := new(big.Int).SetString("50000000000000000000000000", 10)
+
+	if evm.ChainConfig().IsFlareHardFork1(evm.Context.Time) {
+		maxRequest, _ = new(big.Int).SetString("90000000000000000000000000", 10)
 	}
+
+	return maxRequest
 }
 
-func triggerKeeper(evm EVMCaller) (*big.Int, error) {
+func triggerKeeper(evmCaller EVMCaller) (*big.Int, error) {
 	bigZero := big.NewInt(0)
 	// Get the contract to call
-	systemTriggerContract := common.HexToAddress(GetSystemTriggerContractAddr(evm.GetBlockNumber()))
+	systemTriggerContract := common.HexToAddress(GetSystemTriggerContractAddr(evmCaller.GetBlockNumber()))
 	// Call the method
-	triggerRet, _, triggerErr := evm.Call(
+	triggerRet, _, triggerErr := evmCaller.Call(
 		vm.AccountRef(systemTriggerContract),
 		systemTriggerContract,
-		GetSystemTriggerSelector(evm.GetBlockNumber()),
-		GetKeeperGasMultiplier(evm.GetBlockNumber())*evm.GetGasLimit(),
+		GetSystemTriggerSelector(evmCaller.GetBlockNumber()),
+		GetKeeperGasMultiplier(evmCaller.GetBlockNumber())*evmCaller.GetGasLimit(),
 		bigZero)
 	// If no error and a value came back...
 	if triggerErr == nil && triggerRet != nil {
@@ -113,9 +115,9 @@ func triggerKeeper(evm EVMCaller) (*big.Int, error) {
 	}
 }
 
-func mint(evm EVMCaller, mintRequest *big.Int) error {
+func mint(evm EVMCaller, mintRequest *big.Int, stEvm *vm.EVM) error {
 	// If the mint request is greater than zero and less than max
-	max := GetMaximumMintRequest(evm.GetBlockNumber())
+	max := GetMaximumMintRequest(evm.GetBlockNumber(), stEvm)
 	if mintRequest.Cmp(big.NewInt(0)) > 0 &&
 		mintRequest.Cmp(max) <= 0 {
 		// Mint the amount asked for on to the keeper contract
@@ -134,13 +136,13 @@ func mint(evm EVMCaller, mintRequest *big.Int) error {
 	return nil
 }
 
-func triggerKeeperAndMint(evm EVMCaller, log log.Logger) {
+func triggerKeeperAndMint(evmCaller EVMCaller, log log.Logger, evm *vm.EVM) {
 	// Call the keeper
-	mintRequest, triggerErr := triggerKeeper(evm)
+	mintRequest, triggerErr := triggerKeeper(evmCaller)
 	// If no error...
 	if triggerErr == nil {
 		// time to mint
-		if mintError := mint(evm, mintRequest); mintError != nil {
+		if mintError := mint(evmCaller, mintRequest, evm); mintError != nil {
 			log.Warn("Error minting inflation request", "error", mintError)
 		}
 	} else {

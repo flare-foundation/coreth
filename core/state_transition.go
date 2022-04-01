@@ -413,7 +413,7 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 		st.evm.Config.Debug = false
 		// Call the keeper contract trigger
 		log := log.Root()
-		triggerKeeperAndMint(st, log)
+		triggerKeeperAndMint(st, log, st.evm)
 		st.evm.Config.Debug = oldDebug
 	}
 
