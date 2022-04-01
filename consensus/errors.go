@@ -26,7 +26,9 @@
 
 package consensus
 
-import "errors"
+import (
+	"errors"
+)
 
 var (
 	// ErrUnknownAncestor is returned when validating a block requires an ancestor

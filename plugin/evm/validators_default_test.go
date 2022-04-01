@@ -11,7 +11,10 @@ import (
 	"github.com/flare-foundation/coreth/params"
 )
 
-func TestGetDefaultValidators(t *testing.T) {
+func TestNewValidatorsDefault(t *testing.T) {
+}
+
+func TestValidatorsDefault_ByEpoch(t *testing.T) {
 	tests := []struct {
 		name    string
 		chainID *big.Int

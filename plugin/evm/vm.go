@@ -406,9 +406,13 @@ func (vm *VM) Initialize(
 	lastAccepted := vm.chain.LastAcceptedBlock()
 
 	// Load the default validators for the given chain ID.
-	defaultValidators, err := getDefaultValidators(g.Config.ChainID)
+	defaultValidators, err := NewValidatorsDefault(g.Config.ChainID)
 	if err != nil {
 		return fmt.Errorf("could not initialize default validators: %w", err)
+	}
+	validators, err := defaultValidators.ByEpoch(0)
+	if err != nil {
+		return fmt.Errorf("could not get default validators at epoch zero: %w", err)
 	}
 
 	// Initialize the FTSO system, which is responsible for all of our interactions
@@ -425,19 +429,17 @@ func (vm *VM) Initialize(
 		WithRootDegree(4),
 	)
 	cachedFTSOValidators := NewValidatorsCache(ftsoValidators,
-		WithCacheSize(uint(len(defaultValidators))),
+		WithCacheSize(uint(len(validators))),
 	)
 
 	// Initialize the validator transitioner, which is responsible for smoothly
 	// transitioning validators from the default set to the FTSO set, wrap it in
 	// a normalizer to have uniform weights across epochs, and wrap it in a cache
 	// to avoid unnecessary recomputation.
-	activeValidators := NewValidatorsTransitioner(defaultValidators, cachedFTSOValidators,
-		WithCacheSize(uint(len(defaultValidators))),
-	)
+	activeValidators := NewValidatorsTransitioner(defaultValidators, cachedFTSOValidators)
 	normalizedActiveValidators := NewValidatorsNormalizer(ctx.Log, activeValidators)
 	cachedNormalizedActiveValidators := NewValidatorsCache(normalizedActiveValidators,
-		WithCacheSize(uint(len(defaultValidators))),
+		WithCacheSize(uint(len(validators))),
 	)
 
 	// Initialize the validators manager, which is our interface between the EVM
@@ -1500,33 +1502,38 @@ func repairAtomicRepositoryForBonusBlockTxs(
 
 func (vm *VM) GetValidators(blockID ids.ID) (validation.Set, error) {
 
+	// First, we get the header for the given block ID, so that we can determine
+	// activation of the hard fork by the header's timestamp.
 	hash := common.Hash(blockID)
 	blockchain := vm.chain.BlockChain()
-
 	header := blockchain.GetHeaderByHash(hash)
 	if header == nil {
 		return nil, fmt.Errorf("unknown block (hash: %x)", hash)
 	}
 
-	// If the hard fork was not active at the given block yet, we simply return the
-	// default validator set, which corresponds to what we had before the upgrade.
+	// If the hard fork is not active at the given block yet, we simply return the
+	// default validator set as of epoch zero, which corresponds to the hard-coded
+	// default validators from the older code base.
 	if !blockchain.Config().IsFlareHardFork1(big.NewInt(0).SetUint64(header.Time)) {
 		vm.ctx.Log.Debug("hard fork not active, using default validators")
-		return toSet(vm.validators.DefaultValidators())
+		return toSet(vm.validators.DefaultValidators(0))
 	}
 
-	// If the hard fork is active, we try to map the header to an FTSO rewards epoch.
-	// If the FTSO is not yet deployed, or not yet active, we simply go ahead with an
-	// epoch value of zero as well.
+	// If the hard fork is active, we retrieve the active reward epoch from the state
+	// as it was at the given block ID. If the FTSO was not yet deployed, or not yet
+	// active, at the given block ID, we return the default validators as of epoch
+	// zero as well.
 	epoch, err := vm.ftso.Current(hash)
 	if errors.Is(err, errFTSONotDeployed) || errors.Is(err, errFTSONotActive) {
 		vm.ctx.Log.Debug("FTSO not active, using default validators")
-		return toSet(vm.validators.DefaultValidators())
+		return toSet(vm.validators.DefaultValidators(0))
 	}
 	if err != nil {
 		return nil, fmt.Errorf("could not get epoch (timestamp: %d): %w", header.Time, err)
 	}
 
+	// Finally, if we were able to identify the current rewards epoch, we return
+	// the set of active validators as of that epoch.
 	vm.ctx.Log.Debug("hard fork and FTSO active, using active validators")
 	return toSet(vm.validators.ActiveValidators(epoch))
 }

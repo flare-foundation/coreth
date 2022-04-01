@@ -16,12 +16,12 @@ import (
 // how many validators are in a set.
 type ValidatorsNormalizer struct {
 	log        logging.Logger
-	validators ValidatorRetriever
+	validators ValidatorsRetriever
 }
 
 // NewValidatorsNormalizer wraps a new validators retriever in the normalizer, making
 // sure that all sets retrieved from the wrapper retriever have the same total weight.
-func NewValidatorsNormalizer(log logging.Logger, validators ValidatorRetriever) *ValidatorsNormalizer {
+func NewValidatorsNormalizer(log logging.Logger, validators ValidatorsRetriever) *ValidatorsNormalizer {
 
 	v := ValidatorsNormalizer{
 		log:        log,

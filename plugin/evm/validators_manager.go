@@ -10,12 +10,12 @@ import (
 )
 
 type Validators interface {
-	DefaultValidators() (map[ids.ShortID]uint64, error)
+	DefaultValidators(epoch uint64) (map[ids.ShortID]uint64, error)
 	FTSOValidators(epoch uint64) (map[ids.ShortID]uint64, error)
 	ActiveValidators(epoch uint64) (map[ids.ShortID]uint64, error)
 }
 
-type ValidatorRetriever interface {
+type ValidatorsRetriever interface {
 	ByEpoch(epoch uint64) (map[ids.ShortID]uint64, error)
 }
 
@@ -24,9 +24,9 @@ type ValidatorRetriever interface {
 // before the hard fork upgrade, or a dynamic set of validators based on a transition to
 // the FTSO validator set.
 type ValidatorsManager struct {
-	defaultValidators map[ids.ShortID]uint64
-	ftsoValidators    ValidatorRetriever
-	activeValidators  ValidatorRetriever
+	defaultValidators ValidatorsRetriever
+	ftsoValidators    ValidatorsRetriever
+	activeValidators  ValidatorsRetriever
 }
 
 // NewValidatorsManager creates a new manager of validator sets. It uses the given
@@ -34,7 +34,7 @@ type ValidatorsManager struct {
 // block timestamps to FTSO rewards epochs, the given validators as the legacy static
 // validator set, and the given retriever to get the validator set based on FTSO
 // data providers.
-func NewValidatorsManager(defaultValidators map[ids.ShortID]uint64, ftsoValidators ValidatorRetriever, activeValidators ValidatorRetriever) *ValidatorsManager {
+func NewValidatorsManager(defaultValidators ValidatorsRetriever, ftsoValidators ValidatorsRetriever, activeValidators ValidatorsRetriever) *ValidatorsManager {
 
 	v := ValidatorsManager{
 		defaultValidators: defaultValidators,
@@ -45,8 +45,12 @@ func NewValidatorsManager(defaultValidators map[ids.ShortID]uint64, ftsoValidato
 	return &v
 }
 
-func (v *ValidatorsManager) DefaultValidators() (map[ids.ShortID]uint64, error) {
-	return v.defaultValidators, nil
+func (v *ValidatorsManager) DefaultValidators(epoch uint64) (map[ids.ShortID]uint64, error) {
+	validators, err := v.defaultValidators.ByEpoch(epoch)
+	if err != nil {
+		return nil, fmt.Errorf("could not retrieve default validators by epoch: %w", err)
+	}
+	return validators, nil
 }
 
 func (v *ValidatorsManager) FTSOValidators(epoch uint64) (map[ids.ShortID]uint64, error) {

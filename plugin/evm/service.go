@@ -513,8 +513,8 @@ type FlareAPI struct {
 	vm *VM
 }
 
-func (api *FlareAPI) DefaultValidators(_ context.Context) (map[string]uint64, error) {
-	validators, err := api.vm.validators.DefaultValidators()
+func (api *FlareAPI) DefaultValidators(_ context.Context, epoch uint64) (map[string]uint64, error) {
+	validators, err := api.vm.validators.DefaultValidators(epoch)
 	if err != nil {
 		return nil, fmt.Errorf("could not get default validators: %w", err)
 	}

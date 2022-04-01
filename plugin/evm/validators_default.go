@@ -1,9 +1,11 @@
 package evm
 
 import (
+	"bytes"
 	"fmt"
 	"math/big"
 	"os"
+	"sort"
 	"strings"
 
 	"github.com/flare-foundation/flare/ids"
@@ -52,19 +54,37 @@ var songbirdNodeIDs = []string{
 
 var flareNodeIDs = []string{}
 
-// getDefaultValidators gets the set of default validators, with their respective
-// weights, as defined in the legacy code base of Flare.
-func getDefaultValidators(chainID *big.Int) (map[ids.ShortID]uint64, error) {
+type ValidatorsDefault struct {
+	validators map[ids.ShortID]uint64
+	steps      []Step
+}
+
+type Step struct {
+	Epoch  uint64
+	Cutoff int
+}
+
+func NewValidatorsDefault(chainID *big.Int) (*ValidatorsDefault, error) {
 
 	var weight uint64
 	var nodeIDs []string
+	var steps []Step
 	switch {
 	case chainID.Cmp(params.CostonChainID) == 0:
 		nodeIDs = costonNodeIDs
 		weight = costonValidatorWeight
+		steps = []Step{
+			{Epoch: 1604, Cutoff: 4}, // go down to 4 default validators one week after hard fork
+			{Epoch: 1772, Cutoff: 3}, // go down to 3 default validators two weeks after hard fork
+		}
 	case chainID.Cmp(params.SongbirdChainID) == 0:
 		nodeIDs = songbirdNodeIDs
 		weight = songbirdValidatorWeight
+		steps = []Step{
+			{Epoch: 41, Cutoff: 15}, // go down to 15 default validators one week after main net
+			{Epoch: 43, Cutoff: 10}, // go down to 10 default validators three weeks after main net
+			{Epoch: 45, Cutoff: 5},  // go down to 5 default validators five weeks after main net
+		}
 	case chainID.Cmp(params.FlareChainID) == 0:
 		nodeIDs = flareNodeIDs
 		weight = flareValidatorWeight
@@ -90,5 +110,40 @@ func getDefaultValidators(chainID *big.Int) (map[ids.ShortID]uint64, error) {
 		validators[validator] = weight
 	}
 
-	return validators, nil
+	v := ValidatorsDefault{
+		validators: validators,
+		steps:      steps,
+	}
+
+	return &v, nil
+}
+
+func (v *ValidatorsDefault) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, error) {
+
+	validatorIDs := make([]ids.ShortID, 0, len(v.validators))
+	for validatorID := range v.validators {
+		validatorIDs = append(validatorIDs, validatorID)
+	}
+	sort.Slice(validatorIDs, func(i int, j int) bool {
+		return bytes.Compare(validatorIDs[i][:], validatorIDs[j][:]) < 0
+	})
+
+	for i := len(v.steps) - 1; i >= 0; i-- {
+		step := v.steps[i]
+		if epoch >= step.Epoch {
+			validatorIDs = validatorIDs[:step.Cutoff]
+			break
+		}
+	}
+
+	reduced := make(map[ids.ShortID]uint64, len(validatorIDs))
+	for _, validatorID := range validatorIDs {
+		reduced[validatorID] = v.validators[validatorID]
+	}
+
+	if len(reduced) == 0 {
+		return nil, fmt.Errorf("not default validators available for epoch")
+	}
+
+	return reduced, nil
 }
