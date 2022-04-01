@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 
 	"github.com/flare-foundation/coreth/core/vm"
+	"github.com/flare-foundation/coreth/params"
 )
 
 // Define errors
@@ -38,60 +39,62 @@ func (e *ErrMintNegative) Error() string { return "mint request cannot be negati
 // Define interface for dependencies
 type EVMCaller interface {
 	Call(caller vm.ContractRef, addr common.Address, input []byte, gas uint64, value *big.Int) (ret []byte, leftOverGas uint64, err error)
-	GetBlockNumber() *big.Int
+	GetChainConfig() *params.ChainConfig
+	GetBlockTime() *big.Int
 	GetGasLimit() uint64
 	AddBalance(addr common.Address, amount *big.Int)
 }
 
 // Define maximums that can change by block height
-func GetKeeperGasMultiplier(blockNumber *big.Int) uint64 {
+func GetKeeperGasMultiplier(blockTime *big.Int) uint64 {
 	switch {
 	default:
 		return 100
 	}
 }
 
-func GetSystemTriggerContractAddr(blockNumber *big.Int) string {
+func GetSystemTriggerContract(blockTime *big.Int) common.Address {
 	switch {
 	default:
-		return "0x1000000000000000000000000000000000000002"
+		return common.HexToAddress("0x1000000000000000000000000000000000000002")
 	}
 }
 
-func GetSystemTriggerSelector(blockNumber *big.Int) []byte {
+func GetSystemTriggerSelector(blockTime *big.Int) []byte {
 	switch {
 	default:
 		return []byte{0x7f, 0xec, 0x8d, 0x38}
 	}
 }
 
-func GetPrioritisedFTSOContract(blockTime *big.Int) string {
+func GetPrioritisedFTSOContract(blockTime *big.Int) common.Address {
 	switch {
 	default:
-		return "0x1000000000000000000000000000000000000003"
+		return common.HexToAddress("0x1000000000000000000000000000000000000003")
 	}
 }
 
-func GetMaximumMintRequest(blockNumber *big.Int, evm *vm.EVM) *big.Int {
+func GetMaximumMintRequest(chainConfig *params.ChainConfig, blockTime *big.Int) *big.Int {
 	maxRequest, _ := new(big.Int).SetString("50000000000000000000000000", 10)
 
-	if evm.ChainConfig().IsFlareHardFork1(evm.Context.Time) {
+	if chainConfig.IsFlareHardFork1(blockTime) {
 		maxRequest, _ = new(big.Int).SetString("90000000000000000000000000", 10)
 	}
 
 	return maxRequest
 }
 
-func triggerKeeper(evmCaller EVMCaller) (*big.Int, error) {
+func triggerKeeper(evm EVMCaller) (*big.Int, error) {
 	bigZero := big.NewInt(0)
+	blockTime := evm.GetBlockTime()
 	// Get the contract to call
-	systemTriggerContract := common.HexToAddress(GetSystemTriggerContractAddr(evmCaller.GetBlockNumber()))
+	trigger := GetSystemTriggerContract(blockTime)
 	// Call the method
-	triggerRet, _, triggerErr := evmCaller.Call(
-		vm.AccountRef(systemTriggerContract),
-		systemTriggerContract,
-		GetSystemTriggerSelector(evmCaller.GetBlockNumber()),
-		GetKeeperGasMultiplier(evmCaller.GetBlockNumber())*evmCaller.GetGasLimit(),
+	triggerRet, _, triggerErr := evm.Call(
+		vm.AccountRef(trigger),
+		trigger,
+		GetSystemTriggerSelector(blockTime),
+		GetKeeperGasMultiplier(blockTime)*evm.GetGasLimit(),
 		bigZero)
 	// If no error and a value came back...
 	if triggerErr == nil && triggerRet != nil {
@@ -115,13 +118,16 @@ func triggerKeeper(evmCaller EVMCaller) (*big.Int, error) {
 	}
 }
 
-func mint(evmCaller EVMCaller, mintRequest *big.Int, evm *vm.EVM) error {
+func mint(evm EVMCaller, mintRequest *big.Int) error {
 	// If the mint request is greater than zero and less than max
-	max := GetMaximumMintRequest(evmCaller.GetBlockNumber(), evm)
+	chainConfig := evm.GetChainConfig()
+	blockTime := evm.GetBlockTime()
+	max := GetMaximumMintRequest(chainConfig, blockTime)
 	if mintRequest.Cmp(big.NewInt(0)) > 0 &&
 		mintRequest.Cmp(max) <= 0 {
 		// Mint the amount asked for on to the keeper contract
-		evmCaller.AddBalance(common.HexToAddress(GetSystemTriggerContractAddr(evmCaller.GetBlockNumber())), mintRequest)
+		trigger := GetSystemTriggerContract(blockTime)
+		evm.AddBalance(trigger, mintRequest)
 	} else if mintRequest.Cmp(max) > 0 {
 		// Return error
 		return &ErrMaxMintExceeded{
@@ -136,13 +142,13 @@ func mint(evmCaller EVMCaller, mintRequest *big.Int, evm *vm.EVM) error {
 	return nil
 }
 
-func triggerKeeperAndMint(evmCaller EVMCaller, log log.Logger, evm *vm.EVM) {
+func triggerKeeperAndMint(evm EVMCaller, log log.Logger) {
 	// Call the keeper
-	mintRequest, triggerErr := triggerKeeper(evmCaller)
+	mintRequest, triggerErr := triggerKeeper(evm)
 	// If no error...
 	if triggerErr == nil {
 		// time to mint
-		if mintError := mint(evmCaller, mintRequest, evm); mintError != nil {
+		if mintError := mint(evm, mintRequest); mintError != nil {
 			log.Warn("Error minting inflation request", "error", mintError)
 		}
 	} else {
