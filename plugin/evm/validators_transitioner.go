@@ -11,20 +11,43 @@ import (
 	"github.com/flare-foundation/flare/ids"
 )
 
+var DefaultTransitionConfig = TransitionConfig{
+	StepSize: 1,
+}
+
+type TransitionConfig struct {
+	StepSize uint
+}
+
+type TransitionOption func(*TransitionConfig)
+
+func WithStepSize(size uint) TransitionOption {
+	return func(cfg *TransitionConfig) {
+		cfg.StepSize = size
+	}
+}
+
 // ValidatorsTransitioner transitions validators from a static set of validators
 // to a growing set of dynamic validators over a number of smooth steps.
 type ValidatorsTransitioner struct {
 	validators ValidatorsRetriever
 	providers  ValidatorsRetriever
+	cfg        TransitionConfig
 }
 
 // NewValidatorsTransitioner creates a transition from the given default validators
 // to the validators retrieved from the given FTSO validators retriever.
-func NewValidatorsTransitioner(validators ValidatorsRetriever, providers ValidatorsRetriever) *ValidatorsTransitioner {
+func NewValidatorsTransitioner(validators ValidatorsRetriever, providers ValidatorsRetriever, options ...TransitionOption) *ValidatorsTransitioner {
+
+	cfg := DefaultTransitionConfig
+	for _, opt := range options {
+		opt(&cfg)
+	}
 
 	v := ValidatorsTransitioner{
 		validators: validators,
 		providers:  providers,
+		cfg:        cfg,
 	}
 
 	return &v
@@ -90,16 +113,36 @@ func (v *ValidatorsTransitioner) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, 
 		return providers, nil
 	}
 
-	// If the number of FTSO validators is enough to replace one additional default
-	// validator from the active set, we reduce the count of included default
-	// validators by one.
-	if len(providers) > len(validators)-included {
-		included--
+	// Now, we calculate how many additional default validators we can remove at
+	// this epoch.
+	additional := 0
+	for {
+
+		// If we have reached the maximum number of default validators we can remove
+		// for this epoch, stop the loop.
+		if additional >= int(v.cfg.StepSize) {
+			break
+		}
+
+		// If the number of additional default validators we can remove this epoch
+		// has reached the remaining number of default validators, stop loop too.
+		if additional >= included {
+			break
+		}
+
+		// If the number of available FTSO validators is insufficient to remove
+		// additional default validators, stop as well.
+		if len(providers) <= len(validators)-included+additional {
+			break
+		}
+
+		additional++
 	}
 
 	// We then select the given number of included default validators. In order to
 	// make the selection deterministic, we sort the validator IDs for all default
 	// validators and then cut it off at the number of included ones.
+	cutoff := included - additional
 	validatorIDs := make([]ids.ShortID, 0, len(validators))
 	for validatorID := range validators {
 		validatorIDs = append(validatorIDs, validatorID)
@@ -107,7 +150,7 @@ func (v *ValidatorsTransitioner) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, 
 	sort.Slice(validatorIDs, func(i int, j int) bool {
 		return bytes.Compare(validatorIDs[i][:], validatorIDs[j][:]) < 0
 	})
-	validatorIDs = validatorIDs[:included]
+	validatorIDs = validatorIDs[:cutoff]
 
 	// Once we fix FTSO validators and default validators, we can no longer use the
 	// default configured weight for default validators. Instead we use a proportional
@@ -119,7 +162,7 @@ func (v *ValidatorsTransitioner) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, 
 	for _, weight := range providers {
 		providerWeight += weight
 	}
-	providerWeight /= uint64(len(validators) - included)
+	providerWeight /= uint64(len(validators) - cutoff)
 
 	// We then add all available FTSO validators to the active validators first,
 	// followed by the remaining default validators with the calculated proportional
