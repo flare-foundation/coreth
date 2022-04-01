@@ -115,13 +115,13 @@ func triggerKeeper(evmCaller EVMCaller) (*big.Int, error) {
 	}
 }
 
-func mint(evm EVMCaller, mintRequest *big.Int, stEvm *vm.EVM) error {
+func mint(evmCaller EVMCaller, mintRequest *big.Int, evm *vm.EVM) error {
 	// If the mint request is greater than zero and less than max
-	max := GetMaximumMintRequest(evm.GetBlockNumber(), stEvm)
+	max := GetMaximumMintRequest(evmCaller.GetBlockNumber(), evm)
 	if mintRequest.Cmp(big.NewInt(0)) > 0 &&
 		mintRequest.Cmp(max) <= 0 {
 		// Mint the amount asked for on to the keeper contract
-		evm.AddBalance(common.HexToAddress(GetSystemTriggerContractAddr(evm.GetBlockNumber())), mintRequest)
+		evmCaller.AddBalance(common.HexToAddress(GetSystemTriggerContractAddr(evmCaller.GetBlockNumber())), mintRequest)
 	} else if mintRequest.Cmp(max) > 0 {
 		// Return error
 		return &ErrMaxMintExceeded{
