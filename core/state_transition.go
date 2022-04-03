@@ -123,8 +123,12 @@ func (st *StateTransition) Call(caller vm.ContractRef, addr common.Address, inpu
 	return st.evm.Call(caller, addr, input, gas, value)
 }
 
-func (st *StateTransition) GetBlockNumber() *big.Int {
-	return st.evm.Context.BlockNumber
+func (st *StateTransition) GetChainConfig() *params.ChainConfig {
+	return st.evm.ChainConfig()
+}
+
+func (st *StateTransition) GetBlockTime() *big.Int {
+	return st.evm.Context.Time
 }
 
 func (st *StateTransition) GetGasLimit() uint64 {
@@ -368,10 +372,12 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 	} else {
 		// Increment the nonce for the next transaction
 		st.state.SetNonce(msg.From(), st.state.GetNonce(sender.Address())+1)
+		activated := GetStateConnectorActivated(chainID, timestamp)
+		connector := GetStateConnectorContract(chainID, timestamp)
 		ret, st.gas, vmerr = st.evm.Call(sender, st.to(), st.data, st.gas, st.value)
 		if vmerr == nil &&
-			GetStateConnectorActivated(chainID, timestamp) &&
-			*msg.To() == GetStateConnectorContract(chainID, timestamp) &&
+			activated &&
+			*msg.To() == connector &&
 			len(st.data) >= 36 && len(ret) == 32 &&
 			bytes.Equal(st.data[0:4], SubmitAttestationSelector(chainID, timestamp)) &&
 			binary.BigEndian.Uint64(ret[24:32]) > 0 {
@@ -383,7 +389,8 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 	}
 
 	st.refundGas(apricotPhase1)
-	if vmerr == nil && msg.To() != nil && *msg.To() == common.HexToAddress(GetPrioritisedFTSOContract(timestamp)) {
+	prioritised := GetPrioritisedFTSOContract(timestamp)
+	if vmerr == nil && msg.To() != nil && *msg.To() == prioritised {
 		nominalGasUsed := uint64(21000)
 		nominalGasPrice := uint64(params.ApricotPhase1MinGasPrice)
 

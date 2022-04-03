@@ -42,7 +42,7 @@ func TestValidatorsNormalizer_ByEpoch(t *testing.T) {
 			got, err := valNormalizer.ByEpoch(uint64(i))
 			require.NoError(t, err)
 
-			for key, _ := range testWeightRatios[uint64(i)] {
+			for key := range testWeightRatios[uint64(i)] {
 				assert.Contains(t, got, key)
 				assert.Equal(t, got[key], uint64(0))
 			}
@@ -128,7 +128,7 @@ func TestValidatorsNormalizer_CalcWeightRatio(t *testing.T) {
 		valNormalizer := NewValidatorsNormalizer(&logging.Log{}, valCache)
 		got := valNormalizer.calcWeightRatio(testValidators[uint64(0)])
 
-		for key, _ := range testValidators[uint64(0)] {
+		for key := range testValidators[uint64(0)] {
 			assert.Contains(t, got, key)
 			assert.Equal(t, got[key], uint64(0))
 		}

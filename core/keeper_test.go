@@ -12,15 +12,16 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 
 	"github.com/flare-foundation/coreth/core/vm"
+	"github.com/flare-foundation/coreth/params"
 )
 
 // Define a mock structure to spy and mock values for keeper calls
 type MockEVMCallerData struct {
 	callCalls            int
 	addBalanceCalls      int
-	blockNumber          big.Int
+	blockTime            *big.Int
 	gasLimit             uint64
-	mintRequestReturn    big.Int
+	mintRequestReturn    *big.Int
 	lastAddBalanceAddr   common.Address
 	lastAddBalanceAmount *big.Int
 }
@@ -38,8 +39,8 @@ func defautCall(e *MockEVMCallerData, caller vm.ContractRef, addr common.Address
 	return e.mintRequestReturn.FillBytes(buffer), 0, nil
 }
 
-func defaultGetBlockNumber(e *MockEVMCallerData) *big.Int {
-	return &e.blockNumber
+func defaultGetBlockTime(e *MockEVMCallerData) *big.Int {
+	return e.blockTime
 }
 
 func defaultGetGasLimit(e *MockEVMCallerData) uint64 {
@@ -54,34 +55,38 @@ func defaultAddBalance(e *MockEVMCallerData, addr common.Address, amount *big.In
 
 // Define the default EVM mock and define default mock receiver functions
 type DefaultEVMMock struct {
-	mockEVMCallerData MockEVMCallerData
+	mockEVMCallerData *MockEVMCallerData
 }
 
 func (e *DefaultEVMMock) Call(caller vm.ContractRef, addr common.Address, input []byte, gas uint64, value *big.Int) (ret []byte, leftOverGas uint64, err error) {
-	return defautCall(&e.mockEVMCallerData, caller, addr, input, gas, value)
+	return defautCall(e.mockEVMCallerData, caller, addr, input, gas, value)
 }
 
-func (e *DefaultEVMMock) GetBlockNumber() *big.Int {
-	return defaultGetBlockNumber(&e.mockEVMCallerData)
+func (e *DefaultEVMMock) GetChainConfig() *params.ChainConfig {
+	return params.TestApricotPhase5Config
+}
+
+func (e *DefaultEVMMock) GetBlockTime() *big.Int {
+	return defaultGetBlockTime(e.mockEVMCallerData)
 }
 
 func (e *DefaultEVMMock) GetGasLimit() uint64 {
-	return defaultGetGasLimit(&e.mockEVMCallerData)
+	return defaultGetGasLimit(e.mockEVMCallerData)
 }
 
 func (e *DefaultEVMMock) AddBalance(addr common.Address, amount *big.Int) {
-	defaultAddBalance(&e.mockEVMCallerData, addr, amount)
+	defaultAddBalance(e.mockEVMCallerData, addr, amount)
 }
 
 func TestKeeperTriggerShouldReturnMintRequest(t *testing.T) {
 	mintRequestReturn, _ := new(big.Int).SetString("50000000000000000000000000", 10)
 	mockEVMCallerData := &MockEVMCallerData{
-		blockNumber:       *big.NewInt(0),
+		blockTime:         big.NewInt(0),
 		gasLimit:          0,
-		mintRequestReturn: *mintRequestReturn,
+		mintRequestReturn: mintRequestReturn,
 	}
 	defaultEVMMock := &DefaultEVMMock{
-		mockEVMCallerData: *mockEVMCallerData,
+		mockEVMCallerData: mockEVMCallerData,
 	}
 
 	mintRequest, _ := triggerKeeper(defaultEVMMock)
@@ -92,18 +97,18 @@ func TestKeeperTriggerShouldReturnMintRequest(t *testing.T) {
 }
 
 func TestKeeperTriggerShouldNotLetMintRequestOverflow(t *testing.T) {
-	var mintRequestReturn big.Int
+	mintRequestReturn := &big.Int{}
 	// TODO: Compact with exponent?
 	buffer := []byte{255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255}
 	mintRequestReturn.SetBytes(buffer)
 
 	mockEVMCallerData := &MockEVMCallerData{
-		blockNumber:       *big.NewInt(0),
+		blockTime:         big.NewInt(0),
 		gasLimit:          0,
 		mintRequestReturn: mintRequestReturn,
 	}
 	defaultEVMMock := &DefaultEVMMock{
-		mockEVMCallerData: *mockEVMCallerData,
+		mockEVMCallerData: mockEVMCallerData,
 	}
 
 	mintRequest, mintRequestError := triggerKeeper(defaultEVMMock)
@@ -119,7 +124,7 @@ func TestKeeperTriggerShouldNotLetMintRequestOverflow(t *testing.T) {
 
 // Define a bad mint request return size mock
 type BadMintReturnSizeEVMMock struct {
-	mockEVMCallerData MockEVMCallerData
+	mockEVMCallerData *MockEVMCallerData
 }
 
 func (e *BadMintReturnSizeEVMMock) Call(caller vm.ContractRef, addr common.Address, input []byte, gas uint64, value *big.Int) (ret []byte, leftOverGas uint64, err error) {
@@ -129,31 +134,35 @@ func (e *BadMintReturnSizeEVMMock) Call(caller vm.ContractRef, addr common.Addre
 	return e.mockEVMCallerData.mintRequestReturn.FillBytes(buffer), 0, nil
 }
 
-func (e *BadMintReturnSizeEVMMock) GetBlockNumber() *big.Int {
-	return defaultGetBlockNumber(&e.mockEVMCallerData)
+func (e *BadMintReturnSizeEVMMock) GetChainConfig() *params.ChainConfig {
+	return params.TestApricotPhase5Config
+}
+
+func (e *BadMintReturnSizeEVMMock) GetBlockTime() *big.Int {
+	return defaultGetBlockTime(e.mockEVMCallerData)
 }
 
 func (e *BadMintReturnSizeEVMMock) GetGasLimit() uint64 {
-	return defaultGetGasLimit(&e.mockEVMCallerData)
+	return defaultGetGasLimit(e.mockEVMCallerData)
 }
 
 func (e *BadMintReturnSizeEVMMock) AddBalance(addr common.Address, amount *big.Int) {
-	defaultAddBalance(&e.mockEVMCallerData, addr, amount)
+	defaultAddBalance(e.mockEVMCallerData, addr, amount)
 }
 
 func TestKeeperTriggerValidatesMintRequestReturnValueSize(t *testing.T) {
-	var mintRequestReturn big.Int
+	mintRequestReturn := &big.Int{}
 	// TODO: Compact with exponent?
 	buffer := []byte{255}
 	mintRequestReturn.SetBytes(buffer)
 
 	mockEVMCallerData := &MockEVMCallerData{
-		blockNumber:       *big.NewInt(0),
+		blockTime:         big.NewInt(0),
 		gasLimit:          0,
 		mintRequestReturn: mintRequestReturn,
 	}
 	badMintReturnSizeEVMMock := &BadMintReturnSizeEVMMock{
-		mockEVMCallerData: *mockEVMCallerData,
+		mockEVMCallerData: mockEVMCallerData,
 	}
 	// Call to return less than 32 bytes
 	_, err := triggerKeeper(badMintReturnSizeEVMMock)
@@ -170,7 +179,7 @@ func TestKeeperTriggerValidatesMintRequestReturnValueSize(t *testing.T) {
 
 // Define a mock to simulate keeper trigger returning an error from Call
 type BadTriggerCallEVMMock struct {
-	mockEVMCallerData MockEVMCallerData
+	mockEVMCallerData *MockEVMCallerData
 }
 
 func (e *BadTriggerCallEVMMock) Call(caller vm.ContractRef, addr common.Address, input []byte, gas uint64, value *big.Int) (ret []byte, leftOverGas uint64, err error) {
@@ -180,22 +189,30 @@ func (e *BadTriggerCallEVMMock) Call(caller vm.ContractRef, addr common.Address,
 	return e.mockEVMCallerData.mintRequestReturn.FillBytes(buffer), 0, errors.New("Call error happened")
 }
 
-func (e *BadTriggerCallEVMMock) GetBlockNumber() *big.Int {
-	return defaultGetBlockNumber(&e.mockEVMCallerData)
+func (e *BadTriggerCallEVMMock) GetChainConfig() *params.ChainConfig {
+	return params.TestApricotPhase5Config
+}
+
+func (e *BadTriggerCallEVMMock) GetBlockTime() *big.Int {
+	return defaultGetBlockTime(e.mockEVMCallerData)
 }
 
 func (e *BadTriggerCallEVMMock) GetGasLimit() uint64 {
-	return defaultGetGasLimit(&e.mockEVMCallerData)
+	return defaultGetGasLimit(e.mockEVMCallerData)
 }
 
 func (e *BadTriggerCallEVMMock) AddBalance(addr common.Address, amount *big.Int) {
-	defaultAddBalance(&e.mockEVMCallerData, addr, amount)
+	defaultAddBalance(e.mockEVMCallerData, addr, amount)
 }
 
 func TestKeeperTriggerReturnsCallError(t *testing.T) {
-	mockEVMCallerData := &MockEVMCallerData{}
+	mockEVMCallerData := &MockEVMCallerData{
+		blockTime:            big.NewInt(0),
+		mintRequestReturn:    big.NewInt(0),
+		lastAddBalanceAmount: big.NewInt(0),
+	}
 	badTriggerCallEVMMock := &BadTriggerCallEVMMock{
-		mockEVMCallerData: *mockEVMCallerData,
+		mockEVMCallerData: mockEVMCallerData,
 	}
 	// Call to return less than 32 bytes
 	_, err := triggerKeeper(badTriggerCallEVMMock)
@@ -237,9 +254,13 @@ func (l *LoggerMock) Warn(msg string, ctx ...interface{}) {
 func TestKeeperTriggerAndMintLogsError(t *testing.T) {
 	// Assemble
 	// Set up mock EVM call to return an error
-	mockEVMCallerData := &MockEVMCallerData{}
+	mockEVMCallerData := &MockEVMCallerData{
+		blockTime:            big.NewInt(0),
+		mintRequestReturn:    big.NewInt(0),
+		lastAddBalanceAmount: big.NewInt(0),
+	}
 	badTriggerCallEVMMock := &BadTriggerCallEVMMock{
-		mockEVMCallerData: *mockEVMCallerData,
+		mockEVMCallerData: mockEVMCallerData,
 	}
 	// Set up a mock logger
 	mockLoggerData := &MockLoggerData{}
@@ -267,8 +288,12 @@ func (e *ReturnNilMintRequestEVMMock) Call(caller vm.ContractRef, addr common.Ad
 	return nil, 0, nil
 }
 
-func (e *ReturnNilMintRequestEVMMock) GetBlockNumber() *big.Int {
-	return defaultGetBlockNumber(&e.mockEVMCallerData)
+func (e *ReturnNilMintRequestEVMMock) GetChainConfig() *params.ChainConfig {
+	return params.TestApricotPhase5Config
+}
+
+func (e *ReturnNilMintRequestEVMMock) GetBlockTime() *big.Int {
+	return defaultGetBlockTime(&e.mockEVMCallerData)
 }
 
 func (e *ReturnNilMintRequestEVMMock) GetGasLimit() uint64 {
@@ -280,7 +305,11 @@ func (e *ReturnNilMintRequestEVMMock) AddBalance(addr common.Address, amount *bi
 }
 
 func TestKeeperTriggerHandlesNilMintRequest(t *testing.T) {
-	mockEVMCallerData := &MockEVMCallerData{}
+	mockEVMCallerData := &MockEVMCallerData{
+		blockTime:            big.NewInt(0),
+		mintRequestReturn:    big.NewInt(0),
+		lastAddBalanceAmount: big.NewInt(0),
+	}
 	returnNilMintRequestEVMMock := &ReturnNilMintRequestEVMMock{
 		mockEVMCallerData: *mockEVMCallerData,
 	}
@@ -300,12 +329,12 @@ func TestKeeperTriggerHandlesNilMintRequest(t *testing.T) {
 func TestKeeperTriggerShouldNotMintMoreThanMax(t *testing.T) {
 	mintRequest, _ := new(big.Int).SetString("50000000000000000000000001", 10)
 	mockEVMCallerData := &MockEVMCallerData{
-		blockNumber:       *big.NewInt(0),
+		blockTime:         big.NewInt(0),
 		gasLimit:          0,
-		mintRequestReturn: *big.NewInt(0),
+		mintRequestReturn: big.NewInt(0),
 	}
 	defaultEVMMock := &DefaultEVMMock{
-		mockEVMCallerData: *mockEVMCallerData,
+		mockEVMCallerData: mockEVMCallerData,
 	}
 
 	err := mint(defaultEVMMock, mintRequest)
@@ -314,7 +343,7 @@ func TestKeeperTriggerShouldNotMintMoreThanMax(t *testing.T) {
 		if err, ok := err.(*ErrMaxMintExceeded); !ok {
 			want := &ErrMaxMintExceeded{
 				mintRequest: mintRequest,
-				mintMax:     GetMaximumMintRequest(big.NewInt(0)),
+				mintMax:     GetMaximumMintRequest(defaultEVMMock.GetChainConfig(), big.NewInt(0)),
 			}
 			t.Errorf("got '%s' want '%s'", err.Error(), want.Error())
 		}
@@ -326,12 +355,12 @@ func TestKeeperTriggerShouldNotMintMoreThanMax(t *testing.T) {
 func TestKeeperTriggerShouldNotMintNegative(t *testing.T) {
 	mintRequest := big.NewInt(-1)
 	mockEVMCallerData := &MockEVMCallerData{
-		blockNumber:       *big.NewInt(0),
+		blockTime:         big.NewInt(0),
 		gasLimit:          0,
-		mintRequestReturn: *big.NewInt(0),
+		mintRequestReturn: big.NewInt(0),
 	}
 	defaultEVMMock := &DefaultEVMMock{
-		mockEVMCallerData: *mockEVMCallerData,
+		mockEVMCallerData: mockEVMCallerData,
 	}
 
 	err := mint(defaultEVMMock, mintRequest)
@@ -350,12 +379,12 @@ func TestKeeperTriggerShouldMint(t *testing.T) {
 	// Assemble
 	mintRequest, _ := new(big.Int).SetString("50000000000000000000000000", 10)
 	mockEVMCallerData := &MockEVMCallerData{
-		blockNumber:       *big.NewInt(0),
+		blockTime:         big.NewInt(0),
 		gasLimit:          0,
-		mintRequestReturn: *big.NewInt(0),
+		mintRequestReturn: big.NewInt(0),
 	}
 	defaultEVMMock := &DefaultEVMMock{
-		mockEVMCallerData: *mockEVMCallerData,
+		mockEVMCallerData: mockEVMCallerData,
 	}
 
 	// Act
@@ -366,8 +395,8 @@ func TestKeeperTriggerShouldMint(t *testing.T) {
 		if defaultEVMMock.mockEVMCallerData.addBalanceCalls != 1 {
 			t.Errorf("AddBalance not called as expected")
 		}
-		if defaultEVMMock.mockEVMCallerData.lastAddBalanceAddr.String() != GetSystemTriggerContractAddr(big.NewInt(0)) {
-			t.Errorf("wanted addr %s; got addr %s", GetSystemTriggerContractAddr(big.NewInt(0)), defaultEVMMock.mockEVMCallerData.lastAddBalanceAddr)
+		if defaultEVMMock.mockEVMCallerData.lastAddBalanceAddr != GetSystemTriggerContract(big.NewInt(0)) {
+			t.Errorf("wanted addr %s; got addr %s", GetSystemTriggerContract(big.NewInt(0)), defaultEVMMock.mockEVMCallerData.lastAddBalanceAddr)
 		}
 		if defaultEVMMock.mockEVMCallerData.lastAddBalanceAmount.Cmp(mintRequest) != 0 {
 			t.Errorf("wanted amount %s; got amount %s", mintRequest.Text(10), defaultEVMMock.mockEVMCallerData.lastAddBalanceAmount.Text(10))
@@ -381,12 +410,12 @@ func TestKeeperTriggerShouldNotErrorMintingZero(t *testing.T) {
 	// Assemble
 	mintRequest := big.NewInt(0)
 	mockEVMCallerData := &MockEVMCallerData{
-		blockNumber:       *big.NewInt(0),
+		blockTime:         big.NewInt(0),
 		gasLimit:          0,
-		mintRequestReturn: *big.NewInt(0),
+		mintRequestReturn: big.NewInt(0),
 	}
 	defaultEVMMock := &DefaultEVMMock{
-		mockEVMCallerData: *mockEVMCallerData,
+		mockEVMCallerData: mockEVMCallerData,
 	}
 
 	// Act
@@ -402,15 +431,15 @@ func TestKeeperTriggerShouldNotErrorMintingZero(t *testing.T) {
 	}
 }
 
-func TestKeeperTriggerFiredAndMinted(t *testing.T) {
+func TestKeeperTriggerFiredAndMinted50M(t *testing.T) {
 	mintRequestReturn, _ := new(big.Int).SetString("50000000000000000000000000", 10)
 	mockEVMCallerData := &MockEVMCallerData{
-		blockNumber:       *big.NewInt(0),
+		blockTime:         big.NewInt(0),
 		gasLimit:          0,
-		mintRequestReturn: *mintRequestReturn,
+		mintRequestReturn: mintRequestReturn,
 	}
 	defaultEVMMock := &DefaultEVMMock{
-		mockEVMCallerData: *mockEVMCallerData,
+		mockEVMCallerData: mockEVMCallerData,
 	}
 
 	log := log.New()
@@ -426,15 +455,88 @@ func TestKeeperTriggerFiredAndMinted(t *testing.T) {
 	}
 }
 
-func TestKeeperTriggerShouldNotMintMoreThanLimit(t *testing.T) {
+func TestKeeperTriggerShouldNotMintMoreThanLimit50M(t *testing.T) {
 	mintRequestReturn, _ := new(big.Int).SetString("50000000000000000000000001", 10)
 	mockEVMCallerData := &MockEVMCallerData{
-		blockNumber:       *big.NewInt(0),
+		blockTime:         big.NewInt(0),
 		gasLimit:          0,
-		mintRequestReturn: *mintRequestReturn,
+		mintRequestReturn: mintRequestReturn,
 	}
 	defaultEVMMock := &DefaultEVMMock{
-		mockEVMCallerData: *mockEVMCallerData,
+		mockEVMCallerData: mockEVMCallerData,
+	}
+
+	log := log.New()
+	triggerKeeperAndMint(defaultEVMMock, log)
+
+	// EVM Call function calling the keeper should have been called
+	if defaultEVMMock.mockEVMCallerData.callCalls != 1 {
+		t.Errorf("EVM Call count not as expected. got %d want 1", defaultEVMMock.mockEVMCallerData.callCalls)
+	}
+	// AddBalance should not have been called on the state database, as the mint request was over the limit
+	if defaultEVMMock.mockEVMCallerData.addBalanceCalls != 0 {
+		t.Errorf("Add balance call count not as expected. got %d want 1", defaultEVMMock.mockEVMCallerData.addBalanceCalls)
+	}
+}
+
+// Define the default EVM mock and define default mock receiver functions
+type DefaultEVMMockAfterHF struct {
+	mockEVMCallerData *MockEVMCallerData
+}
+
+func (e *DefaultEVMMockAfterHF) Call(caller vm.ContractRef, addr common.Address, input []byte, gas uint64, value *big.Int) (ret []byte, leftOverGas uint64, err error) {
+	return defautCall(e.mockEVMCallerData, caller, addr, input, gas, value)
+}
+
+func (e *DefaultEVMMockAfterHF) GetChainConfig() *params.ChainConfig {
+	return params.TestFlareHardFork1Config
+}
+
+func (e *DefaultEVMMockAfterHF) GetBlockTime() *big.Int {
+	return defaultGetBlockTime(e.mockEVMCallerData)
+}
+
+func (e *DefaultEVMMockAfterHF) GetGasLimit() uint64 {
+	return defaultGetGasLimit(e.mockEVMCallerData)
+}
+
+func (e *DefaultEVMMockAfterHF) AddBalance(addr common.Address, amount *big.Int) {
+	defaultAddBalance(e.mockEVMCallerData, addr, amount)
+}
+
+func TestKeeperTriggerFiredAndMinted90M(t *testing.T) {
+	mintRequestReturn, _ := new(big.Int).SetString("90000000000000000000000000", 10)
+	mockEVMCallerData := &MockEVMCallerData{
+		blockTime:         big.NewInt(0),
+		gasLimit:          0,
+		mintRequestReturn: mintRequestReturn,
+	}
+	defaultEVMMock := &DefaultEVMMockAfterHF{
+		mockEVMCallerData: mockEVMCallerData,
+	}
+
+	log := log.New()
+	triggerKeeperAndMint(defaultEVMMock, log)
+
+	// EVM Call function calling the keeper should have been cqlled
+	if defaultEVMMock.mockEVMCallerData.callCalls != 1 {
+		t.Errorf("EVM Call count not as expected. got %d want 1", defaultEVMMock.mockEVMCallerData.callCalls)
+	}
+	// AddBalance should have been called on the state database, minting the request asked for
+	if defaultEVMMock.mockEVMCallerData.addBalanceCalls != 1 {
+		t.Errorf("Add balance call count not as expected. got %d want 1", defaultEVMMock.mockEVMCallerData.addBalanceCalls)
+	}
+}
+
+func TestKeeperTriggerShouldNotMintMoreThanLimit90M(t *testing.T) {
+	mintRequestReturn, _ := new(big.Int).SetString("90000000000000000000000001", 10)
+	mockEVMCallerData := &MockEVMCallerData{
+		blockTime:         big.NewInt(0),
+		gasLimit:          0,
+		mintRequestReturn: mintRequestReturn,
+	}
+	defaultEVMMock := &DefaultEVMMockAfterHF{
+		mockEVMCallerData: mockEVMCallerData,
 	}
 
 	log := log.New()
