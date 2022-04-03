@@ -30,13 +30,13 @@ func WithCacheSize(slots uint) CacheOption {
 // ValidatorsCache wraps around a validator retriever and caches the results in
 // order to improve retrieval performance.
 type ValidatorsCache struct {
-	validators ValidatorRetriever
+	validators ValidatorsRetriever
 	cache      *lru.Cache
 }
 
 // NewValidatorCache creates a new LRU cache for validator retrieval with the
 // configured cache size.
-func NewValidatorsCache(validators ValidatorRetriever, opts ...CacheOption) *ValidatorsCache {
+func NewValidatorsCache(validators ValidatorsRetriever, opts ...CacheOption) *ValidatorsCache {
 
 	cfg := DefaultCacheConfig
 	for _, opt := range opts {
