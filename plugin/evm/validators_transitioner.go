@@ -9,6 +9,8 @@ import (
 	"sort"
 
 	"github.com/flare-foundation/flare/ids"
+	"github.com/flare-foundation/flare/utils/constants"
+	"github.com/flare-foundation/flare/utils/logging"
 )
 
 var DefaultTransitionConfig = TransitionConfig{
@@ -30,6 +32,7 @@ func WithStepSize(size uint) TransitionOption {
 // ValidatorsTransitioner transitions validators from a static set of validators
 // to a growing set of dynamic validators over a number of smooth steps.
 type ValidatorsTransitioner struct {
+	log        logging.Logger
 	validators ValidatorsRetriever
 	providers  ValidatorsRetriever
 	cfg        TransitionConfig
@@ -37,7 +40,7 @@ type ValidatorsTransitioner struct {
 
 // NewValidatorsTransitioner creates a transition from the given default validators
 // to the validators retrieved from the given FTSO validators retriever.
-func NewValidatorsTransitioner(validators ValidatorsRetriever, providers ValidatorsRetriever, options ...TransitionOption) *ValidatorsTransitioner {
+func NewValidatorsTransitioner(log logging.Logger, validators ValidatorsRetriever, providers ValidatorsRetriever, options ...TransitionOption) *ValidatorsTransitioner {
 
 	cfg := DefaultTransitionConfig
 	for _, opt := range options {
@@ -45,6 +48,7 @@ func NewValidatorsTransitioner(validators ValidatorsRetriever, providers Validat
 	}
 
 	v := ValidatorsTransitioner{
+		log:        log,
 		validators: validators,
 		providers:  providers,
 		cfg:        cfg,
@@ -60,6 +64,8 @@ func NewValidatorsTransitioner(validators ValidatorsRetriever, providers Validat
 // validators have been entirely phased out.
 func (v *ValidatorsTransitioner) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, error) {
 
+	v.log.Debug("getting active validators (epoch: %d)", epoch)
+
 	// Get the default validators for the requested epoch.
 	validators, err := v.validators.ByEpoch(epoch)
 	if err != nil {
@@ -70,6 +76,7 @@ func (v *ValidatorsTransitioner) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, 
 	// check we are not at epoch zero. For reward epoch zero, we always return
 	// the default validators.
 	if epoch == 0 {
+		v.log.Debug("returning default validators for epoch zero (%d)", len(validators))
 		return validators, nil
 	}
 
@@ -85,6 +92,7 @@ func (v *ValidatorsTransitioner) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, 
 	// If there are no FTSO validators for the previous epoch, we return the default
 	// validators, as none of them can currently be phased out.
 	if len(providers) == 0 {
+		v.log.Debug("returning default validators in absence of providers (%d)", len(validators))
 		return validators, nil
 	}
 
@@ -110,6 +118,7 @@ func (v *ValidatorsTransitioner) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, 
 	// we have already completed the transition from default validators to FTSO
 	// validators, and we simply return the FTSO validators as active validators.
 	if included == 0 {
+		v.log.Debug("returning provider validators on completed transition (%d)", len(providers))
 		return providers, nil
 	}
 
@@ -138,6 +147,8 @@ func (v *ValidatorsTransitioner) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, 
 
 		additional++
 	}
+
+	v.log.Debug("reducing default validators (previous: %d, removing: %d, next: %d)", included, additional, included-additional)
 
 	// We then select the given number of included default validators. In order to
 	// make the selection deterministic, we sort the validator IDs for all default
@@ -170,9 +181,11 @@ func (v *ValidatorsTransitioner) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, 
 	active := make(map[ids.ShortID]uint64, len(providers)+len(validators))
 	for provider, weight := range providers {
 		active[provider] = weight
+		v.log.Debug("adding provider validator %s (weight: %d)", provider.PrefixedString(constants.NodeIDPrefix), weight)
 	}
 	for _, validatorID := range validatorIDs {
 		active[validatorID] = providerWeight
+		v.log.Debug("adding default validator %s (weight: %d)", validatorID.PrefixedString(constants.NodeIDPrefix), providerWeight)
 	}
 
 	return active, nil

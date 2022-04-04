@@ -8,6 +8,7 @@ import (
 	"math"
 
 	"github.com/flare-foundation/flare/ids"
+	"github.com/flare-foundation/flare/utils/constants"
 	"github.com/flare-foundation/flare/utils/logging"
 )
 
@@ -48,20 +49,20 @@ func (v *ValidatorsNormalizer) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, er
 }
 
 func (v *ValidatorsNormalizer) calcWeightRatio(validators map[ids.ShortID]uint64) map[ids.ShortID]uint64 {
+
 	var totalWeight uint64
-	for _, wght := range validators {
-		totalWeight += wght
+	for _, weight := range validators {
+		totalWeight += weight
 	}
 
-	v.log.Debug("normalizing weight from %d to %d", totalWeight, math.MaxInt32)
+	v.log.Debug("normalizing weight total from %d to %d", totalWeight, math.MaxInt32)
 
 	ratio := math.MaxInt64 / totalWeight
 	normalized := make(map[ids.ShortID]uint64, len(validators))
-	for val, wght := range validators {
-		normalized[val] = wght * ratio
+	for validator, weight := range validators {
+		v.log.Debug("normalizing weight for %s to %d", validator.PrefixedString(constants.NodeIDPrefix), weight*ratio)
+		normalized[validator] = weight * ratio
 	}
-
-	v.log.Debug("new normalized validator set: %#v", normalized)
 
 	return normalized
 }

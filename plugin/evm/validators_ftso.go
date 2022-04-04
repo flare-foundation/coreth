@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/flare-foundation/flare/ids"
+	"github.com/flare-foundation/flare/utils/constants"
 	"github.com/flare-foundation/flare/utils/logging"
 
 	"github.com/flare-foundation/coreth/core"
@@ -104,7 +105,7 @@ func (v *ValidatorsFTSO) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, error) {
 			return nil, fmt.Errorf("could not get FTSO validator (provider: %s): %w", provider, err)
 		}
 		if validator == ids.ShortEmpty {
-			v.log.Debug("skipping provider %s with unset validator", provider.Hex())
+			v.log.Debug("skipping provider %s (validator not set)", provider.Hex())
 			continue
 		}
 
@@ -113,12 +114,12 @@ func (v *ValidatorsFTSO) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, error) {
 			return nil, fmt.Errorf("could not get vote power (provider: %s): %w", provider, err)
 		}
 		if votepower == 0 {
-			v.log.Verbo("skipping provider %s with validator %s and no votepower", provider.Hex(), validator)
+			v.log.Verbo("skipping provider %s (validator: %s, no vote power)", provider.Hex(), validator.PrefixedString(constants.NodeIDPrefix))
 			continue
 		}
 
 		if votepower > cap {
-			v.log.Verbo("capping provider %s at maximum votepower %f", provider.Hex(), cap)
+			v.log.Verbo("capping provider %s (validator: %s, votepower: %f, cap: %f)", provider.Hex(), validator.PrefixedString(constants.NodeIDPrefix), votepower, cap)
 			votepower = cap
 		}
 
@@ -127,13 +128,13 @@ func (v *ValidatorsFTSO) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, error) {
 			return nil, fmt.Errorf("could not get rewards (provider: %s): %w", provider, err)
 		}
 		if rewards == 0 {
-			v.log.Debug("skipping provider %s with validator %s and no rewards", provider.Hex(), validator)
+			v.log.Debug("skipping provider %s (validator: %s, votepower: %f, no rewards)", provider.Hex(), validator.PrefixedString(constants.NodeIDPrefix), votepower)
 			continue
 		}
 
 		weight := uint64(math.Pow(votepower, 1.0/float64(v.cfg.RootDegree)) * (v.cfg.RatioMultiplier * rewards / votepower))
 
-		v.log.Debug("pro:%s val:%s vp:%f rw:%f w:%d", provider.Hex(), validator, votepower, rewards, weight)
+		v.log.Debug("adding provider %s (validator: %s, votepower: %f, rewards: %f, weight: %d)", provider.Hex(), validator.PrefixedString(constants.NodeIDPrefix), votepower, rewards, weight)
 
 		validators[validator] = weight
 	}
