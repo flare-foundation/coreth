@@ -213,6 +213,8 @@ github.com/flare-foundation/flare v0.6.1-0.20220321205227-011fb41aadbf/go.mod h1
 github.com/flare-foundation/flare v0.6.1-0.20220322053109-2f3a41fa09da/go.mod h1:+N1a7CJVUTiOxTaM20UpUPu3esCBl3vgabIOWJpQYV4=
 github.com/flare-foundation/flare v0.6.2-0.20220324212111-fb5aa9980079 h1:Lrom2iDVnl9tEnR93VLoS0umKGVjE+ys0XiG0/yZNjU=
 github.com/flare-foundation/flare v0.6.2-0.20220324212111-fb5aa9980079/go.mod h1:j6YT8/t3fmeBfAgI3xUNmqDJar17A2tKuPWzuvIziKg=
+github.com/flare-foundation/flare v0.6.2-0.20220331224404-056f5ccce915 h1:2B1CnMXpYgjDAo9CJLNz+lysx0yQRVzH8mSn7UgqTPs=
+github.com/flare-foundation/flare v0.6.2-0.20220331224404-056f5ccce915/go.mod h1:OlYbLoU+E0Nx2bb8mWEKTD8/IpvkmbL8bWcgtRM7cPY=
 github.com/fogleman/gg v1.2.1-0.20190220221249-0403632d5b90/go.mod h1:R/bRT+9gY/C5z7JzPU0zXsXHKM4/ayA+zqcVNZzPa1k=
 github.com/fogleman/gg v1.3.0/go.mod h1:R/bRT+9gY/C5z7JzPU0zXsXHKM4/ayA+zqcVNZzPa1k=
 github.com/fsnotify/fsnotify v1.4.7/go.mod h1:jwhsz4b93w/PPRr/qN1Yymfu8t87LnFCMoQvtojpjFo=
