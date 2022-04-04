@@ -379,18 +379,16 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 	} else {
 		// Increment the nonce for the next transaction
 		st.state.SetNonce(msg.From(), st.state.GetNonce(sender.Address())+1)
-		activated := GetStateConnectorActivated(chainID, timestamp)
-		connector := GetStateConnectorContract(chainID, timestamp)
+
 		ret, st.gas, vmerr = st.evm.Call(sender, st.to(), st.data, st.gas, st.value)
-		if vmerr == nil &&
-			activated &&
-			*msg.To() == connector &&
-			len(st.data) >= 36 && len(ret) == 32 &&
-			bytes.Equal(st.data[0:4], SubmitAttestationSelector(chainID, timestamp)) &&
-			binary.BigEndian.Uint64(ret[24:32]) > 0 {
-			err = st.FinalisePreviousRound(chainID, timestamp, st.data[4:36])
+
+		if vmerr == nil && st.shouldFinalize(ret) {
+			chainID := st.evm.ChainConfig().ChainID
+			currentRoundNumber := st.data[4:36]
+
+			err = st.stateConnector.finalizePreviousRound(chainID, timestamp, currentRoundNumber)
 			if err != nil {
-				log.Warn("Error finalising state connector round", "error", err)
+				log.Warn("error finalising state connector round", "error", err)
 			}
 		}
 	}
