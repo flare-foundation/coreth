@@ -55,12 +55,10 @@ func (v *ValidatorsNormalizer) calcWeightRatio(validators map[ids.ShortID]uint64
 		totalWeight += weight
 	}
 
-	v.log.Debug("normalizing weight total from %d to %d", totalWeight, math.MaxInt32)
-
 	ratio := math.MaxInt64 / totalWeight
 	normalized := make(map[ids.ShortID]uint64, len(validators))
 	for validator, weight := range validators {
-		v.log.Debug("normalizing weight for %s to %d", validator.PrefixedString(constants.NodeIDPrefix), weight*ratio)
+		v.log.Debug("normalizing weight for %s from %d to %d", validator.PrefixedString(constants.NodeIDPrefix), weight, weight*ratio)
 		normalized[validator] = weight * ratio
 	}
 

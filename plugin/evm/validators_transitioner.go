@@ -124,36 +124,34 @@ func (v *ValidatorsTransitioner) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, 
 
 	// Now, we calculate how many additional default validators we can remove at
 	// this epoch.
-	additional := 0
+	remove := 0
 	for {
 
 		// If we have reached the maximum number of default validators we can remove
 		// for this epoch, stop the loop.
-		if additional >= int(v.cfg.StepSize) {
+		if remove >= int(v.cfg.StepSize) {
 			break
 		}
 
-		// If the number of additional default validators we can remove this epoch
+		// If the number of remove default validators we can remove this epoch
 		// has reached the remaining number of default validators, stop loop too.
-		if additional >= included {
+		if remove >= included {
 			break
 		}
 
 		// If the number of available FTSO validators is insufficient to remove
-		// additional default validators, stop as well.
-		if len(providers) <= len(validators)-included+additional {
+		// remove default validators, stop as well.
+		if len(providers) <= len(validators)-included+remove {
 			break
 		}
 
-		additional++
+		remove++
 	}
-
-	v.log.Debug("reducing default validators (previous: %d, removing: %d, next: %d)", included, additional, included-additional)
 
 	// We then select the given number of included default validators. In order to
 	// make the selection deterministic, we sort the validator IDs for all default
 	// validators and then cut it off at the number of included ones.
-	cutoff := included - additional
+	cutoff := included - remove
 	validatorIDs := make([]ids.ShortID, 0, len(validators))
 	for validatorID := range validators {
 		validatorIDs = append(validatorIDs, validatorID)
@@ -162,6 +160,8 @@ func (v *ValidatorsTransitioner) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, 
 		return bytes.Compare(validatorIDs[i][:], validatorIDs[j][:]) < 0
 	})
 	validatorIDs = validatorIDs[:cutoff]
+
+	v.log.Debug("reducing default validators (previous: %d, rnext: %d)", included, cutoff)
 
 	// Once we fix FTSO validators and default validators, we can no longer use the
 	// default configured weight for default validators. Instead we use a proportional
@@ -178,7 +178,7 @@ func (v *ValidatorsTransitioner) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, 
 	// We then add all available FTSO validators to the active validators first,
 	// followed by the remaining default validators with the calculated proportional
 	// average weight.
-	active := make(map[ids.ShortID]uint64, len(providers)+len(validators))
+	active := make(map[ids.ShortID]uint64, len(providers)+len(validatorIDs))
 	for provider, weight := range providers {
 		active[provider] = weight
 		v.log.Debug("adding provider validator %s (weight: %d)", provider.PrefixedString(constants.NodeIDPrefix), weight)
