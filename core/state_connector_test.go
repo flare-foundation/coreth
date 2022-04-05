@@ -53,7 +53,7 @@ func (m *mockStateConnectorCaller) Call(caller vm.ContractRef, addr common.Addre
 	return m.CallFunc(m.context, caller, addr, input, gas, value)
 }
 
-func (m *mockStateConnectorCaller) WithBlockContext(bc vm.BlockContext) { m.context = bc }
+func (m *mockStateConnectorCaller) SetBlockContext(bc vm.BlockContext) { m.context = bc }
 
 func (m *mockStateConnectorCaller) BlockContext() vm.BlockContext { return m.context }
 
@@ -84,10 +84,13 @@ func TestStateTransition_FinalisePreviousRound(t *testing.T) {
 			mockMsg, mockSCC := buildStateConnectorMock("coston chain", testCoinbaseAddress)
 
 			mockSCC.CallFunc = func(context vm.BlockContext, caller vm.ContractRef, addr common.Address, input []byte, gas uint64, value *big.Int) (ret []byte, leftOverGas uint64, err error) {
+				// this is used to return response for attestationResult
 				if caller.Address() == costonDefaultAttestors[0] {
 					rootHash := []byte("some_hash")
 					return rootHash, 0, nil
 				}
+
+				// the rest is used for mocking finalization call
 
 				if caller.Address() != stateConnectorCoinbaseSignalAddr(params.CostonChainID, blockTime) {
 					return nil, 0, errors.New("caller address should be state connector coinbase signal addr")
@@ -104,7 +107,7 @@ func TestStateTransition_FinalisePreviousRound(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, testCoinbaseAddress, mockSCC.context.Coinbase, "coinbase address should be changed to the original address")
 		})
-		t.Run("handles count attestations error", func(t *testing.T) {
+		t.Run("handles count attestations error without reaching finalization", func(t *testing.T) {
 			t.Parallel()
 
 			mockMsg, mockSCC := buildStateConnectorMock("coston chain", testCoinbaseAddress)
@@ -114,14 +117,7 @@ func TestStateTransition_FinalisePreviousRound(t *testing.T) {
 					return nil, 0, errors.New("attestation error")
 				}
 
-				if caller.Address() != stateConnectorCoinbaseSignalAddr(params.CostonChainID, blockTime) {
-					return nil, 0, errors.New("caller address should be state connector coinbase signal addr")
-				}
-
-				if context.Coinbase == testCoinbaseAddress {
-					return nil, 0, errors.New("original coinbase address should have been changed to state connector coinbase signal addr")
-				}
-				return nil, 0, nil
+				return nil, 0, errors.New("finalization should not be reached")
 			}
 
 			c := newConnector(mockSCC, mockMsg)
@@ -134,9 +130,13 @@ func TestStateTransition_FinalisePreviousRound(t *testing.T) {
 			mockMsg, mockSCC := buildStateConnectorMock("coston chain", testCoinbaseAddress)
 
 			mockSCC.CallFunc = func(context vm.BlockContext, caller vm.ContractRef, addr common.Address, input []byte, gas uint64, value *big.Int) (ret []byte, leftOverGas uint64, err error) {
+				// this is used to return response for attestationResult
 				if caller.Address() == costonDefaultAttestors[0] {
-					return nil, 0, errors.New("attestation error")
+					rootHash := []byte("some_hash")
+					return rootHash, 0, nil
 				}
+
+				// the rest is used for mocking finalization call
 
 				if caller.Address() != stateConnectorCoinbaseSignalAddr(params.CostonChainID, blockTime) {
 					return nil, 0, errors.New("caller address should be state connector coinbase signal addr")
@@ -168,10 +168,13 @@ func TestStateTransition_FinalisePreviousRound(t *testing.T) {
 			mockMsg, mockSCC := buildStateConnectorMock("default", testCoinbaseAddress)
 
 			mockSCC.CallFunc = func(context vm.BlockContext, caller vm.ContractRef, addr common.Address, input []byte, gas uint64, value *big.Int) (ret []byte, leftOverGas uint64, err error) {
+				// this is used to return response for attestationResult
 				if caller.Address() == attestor1 || caller.Address() == attestor2 || caller.Address() == attestor3 || caller.Address() == costonDefaultAttestors[0] {
 					rootHash := []byte("some_hash")
 					return rootHash, 0, nil
 				}
+
+				// the rest is used for mocking finalization call
 
 				if caller.Address() != stateConnectorCoinbaseSignalAddr(params.CostonChainID, blockTime) {
 					return nil, 0, errors.New("caller address should be state connector coinbase signal addr")
@@ -211,10 +214,13 @@ func TestStateTransition_FinalisePreviousRound(t *testing.T) {
 			mockMsg, mockSCC := buildStateConnectorMock("default", testCoinbaseAddress)
 
 			mockSCC.CallFunc = func(context vm.BlockContext, caller vm.ContractRef, addr common.Address, input []byte, gas uint64, value *big.Int) (ret []byte, leftOverGas uint64, err error) {
+				// this is used to return response for attestationResult
 				if caller.Address() == attestor1 || caller.Address() == attestor2 || caller.Address() == attestor3 {
 					rootHash := []byte("some_hash")
 					return rootHash, 0, nil
 				}
+
+				// the rest is used for mocking finalization call
 
 				if caller.Address() != stateConnectorCoinbaseSignalAddr(params.CostonChainID, blockTime) {
 					return nil, 0, errors.New("caller address should be state connector coinbase signal addr")
@@ -242,6 +248,8 @@ func TestStateTransition_FinalisePreviousRound(t *testing.T) {
 			mockMsg, mockSCC := buildStateConnectorMock("default", testCoinbaseAddress)
 
 			mockSCC.CallFunc = func(context vm.BlockContext, caller vm.ContractRef, addr common.Address, input []byte, gas uint64, value *big.Int) (ret []byte, leftOverGas uint64, err error) {
+				// this is used only to return response for attestationResult
+
 				if caller.Address() == attestor1 {
 					rootHash := []byte("some_hash")
 					return rootHash, 0, nil

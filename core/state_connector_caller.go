@@ -8,6 +8,8 @@ import (
 	"github.com/flare-foundation/coreth/core/vm"
 )
 
+// stateConnectorCaller is a lightweight wrapper around EVM that allows to
+// change the context and adds ability to mock the EVM
 type stateConnectorCaller struct {
 	evm *vm.EVM
 }
@@ -20,7 +22,7 @@ func (c *stateConnectorCaller) Call(caller vm.ContractRef, addr common.Address, 
 	return c.evm.Call(caller, addr, input, gas, value)
 }
 
-func (c *stateConnectorCaller) WithBlockContext(bc vm.BlockContext) {
+func (c *stateConnectorCaller) SetBlockContext(bc vm.BlockContext) {
 	c.evm.Context = bc
 }
 

@@ -5,6 +5,7 @@ package core
 
 import (
 	"encoding/hex"
+	"fmt"
 	"math/big"
 	"os"
 	"strings"
@@ -33,7 +34,7 @@ var (
 // Caller is a light wrapper around Ethereum Virtual Machine
 type Caller interface {
 	Call(caller vm.ContractRef, addr common.Address, input []byte, gas uint64, value *big.Int) (ret []byte, leftOverGas uint64, err error)
-	WithBlockContext(bc vm.BlockContext)
+	SetBlockContext(bc vm.BlockContext)
 	BlockContext() vm.BlockContext
 }
 
@@ -62,12 +63,12 @@ func (c *stateConnector) finalizePreviousRound(chainID *big.Int, timestamp *big.
 		return nil
 	}
 
-	// Finalise defaultAttestationVotes.majorityDecision
-	finaliseRoundSelector := finalizeRoundSelector(chainID, timestamp)
-	finalizedData := append(finaliseRoundSelector[:], currentRoundNumber[:]...)
+	// Finalize defaultAttestationVotes.majorityDecision
+	finalizeRoundSelector := finalizeRoundSelector(chainID, timestamp)
+	finalizedData := append(finalizeRoundSelector[:], currentRoundNumber[:]...)
 	merkleRootHashBytes, err := hex.DecodeString(defaultAttestationVotes.majorityDecision)
 	if err != nil {
-		return err
+		return fmt.Errorf("could not decode majority decision into hex: %w", err)
 	}
 	finalizedData = append(finalizedData[:], merkleRootHashBytes[:]...)
 
@@ -76,11 +77,11 @@ func (c *stateConnector) finalizePreviousRound(chainID *big.Int, timestamp *big.
 	// switch the address to be able to call the finalized function
 	originalBC := bc
 	defer func() {
-		c.caller.WithBlockContext(originalBC)
+		c.caller.SetBlockContext(originalBC)
 	}()
 	coinbaseSignal := stateConnectorCoinbaseSignalAddr(chainID, timestamp)
 	bc.Coinbase = coinbaseSignal
-	c.caller.WithBlockContext(bc)
+	c.caller.SetBlockContext(bc)
 
 	_, _, err = c.caller.Call(vm.AccountRef(coinbaseSignal), c.to(), finalizedData, bc.GasLimit, new(big.Int).SetUint64(0))
 	if err != nil {
@@ -108,16 +109,13 @@ func defaultAttestors(chainID *big.Int) []common.Address {
 	}
 }
 
-type attestationVotes struct {
-	reachedMajority    bool
-	majorityDecision   string
-	majorityAttestors  []common.Address
-	divergentAttestors []common.Address
-	abstainedAttestors []common.Address
+type attestationResult struct {
+	reachedMajority  bool
+	majorityDecision string
 }
 
 // isFinalityReached checks if finality is reached based on attestation votes.
-func (c *stateConnector) isFinalityReached(defaultAttestationVotes attestationVotes, instructions []byte) bool {
+func (c *stateConnector) isFinalityReached(defaultAttestationVotes attestationResult, instructions []byte) bool {
 	var finalityReached bool
 
 	localAttestors := envAttestors(localAttestorEnv)
@@ -136,13 +134,15 @@ func (c *stateConnector) isFinalityReached(defaultAttestationVotes attestationVo
 }
 
 // countAttestations counts the number of the votes and determines whether majority is reached
-func (c *stateConnector) countAttestations(attestors []common.Address, instructions []byte) attestationVotes {
-	var av attestationVotes
+func (c *stateConnector) countAttestations(attestors []common.Address, instructions []byte) attestationResult {
+	var av attestationResult
+
 	hashFrequencies := make(map[string][]common.Address, len(attestors))
 	for i := range attestors {
 		h, err := c.attestationResult(attestors[i], instructions)
 		if err != nil {
-			av.abstainedAttestors = append(av.abstainedAttestors, attestors[i])
+			// FIXME: how to handle this error??
+			continue
 		}
 		hashFrequencies[h] = append(hashFrequencies[h], attestors[i])
 	}
@@ -157,13 +157,8 @@ func (c *stateConnector) countAttestations(attestors []common.Address, instructi
 	if majorityNum > len(attestors)/2 {
 		av.reachedMajority = true
 		av.majorityDecision = majorityKey
-		av.majorityAttestors = hashFrequencies[majorityKey]
 	}
-	for key, val := range hashFrequencies {
-		if key != majorityKey {
-			av.divergentAttestors = append(av.divergentAttestors, val...)
-		}
-	}
+
 	return av
 }
 
