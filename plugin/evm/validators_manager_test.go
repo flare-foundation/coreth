@@ -21,27 +21,60 @@ func (r retrieverMock) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, error) {
 }
 
 func TestNewValidatorsManager(t *testing.T) {
-	testDefault := make(map[ids.ShortID]uint64)
 	testRetriever := &retrieverMock{}
 
-	got := NewValidatorsManager(testDefault, testRetriever, testRetriever)
+	got := NewValidatorsManager(testRetriever, testRetriever, testRetriever)
 
 	require.NotNil(t, got)
-	assert.Equal(t, testDefault, got.defaultValidators)
+	assert.Equal(t, testRetriever, got.defaultValidators)
 	assert.Equal(t, testRetriever, got.ftsoValidators)
 	assert.Equal(t, testRetriever, got.activeValidators)
 }
 
 func TestValidatorsManager_DefaultValidators(t *testing.T) {
-	testDefault := make(map[ids.ShortID]uint64)
-
-	subject := &ValidatorsManager{
-		defaultValidators: testDefault,
+	testEpoch := uint64(1)
+	testValidators := map[ids.ShortID]uint64{
+		{13}: 37,
 	}
 
-	got, err := subject.DefaultValidators()
-	require.NoError(t, err)
-	assert.Equal(t, testDefault, got)
+	t.Run("nominal case", func(t *testing.T) {
+		t.Parallel()
+
+		testRetriever := &retrieverMock{
+			ByEpochFunc: func(epoch uint64) (map[ids.ShortID]uint64, error) {
+				assert.Equal(t, testEpoch, epoch)
+
+				return testValidators, nil
+			},
+		}
+
+		subject := &ValidatorsManager{
+			defaultValidators: testRetriever,
+		}
+
+		got, err := subject.DefaultValidators(testEpoch)
+		require.NoError(t, err)
+		assert.Equal(t, testValidators, got)
+	})
+
+	t.Run("handles failure to retrieve default validators", func(t *testing.T) {
+		t.Parallel()
+
+		testRetriever := &retrieverMock{
+			ByEpochFunc: func(epoch uint64) (map[ids.ShortID]uint64, error) {
+				assert.Equal(t, testEpoch, epoch)
+
+				return nil, errors.New("dummy error")
+			},
+		}
+
+		subject := &ValidatorsManager{
+			defaultValidators: testRetriever,
+		}
+
+		_, err := subject.DefaultValidators(testEpoch)
+		assert.Error(t, err)
+	})
 }
 
 func TestValidatorsManager_FTSOValidators(t *testing.T) {
