@@ -7,9 +7,10 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/flare-foundation/flare/ids"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/flare-foundation/flare/ids"
 )
 
 type retrieverMock struct {
@@ -73,98 +74,6 @@ func TestValidatorsManager_DefaultValidators(t *testing.T) {
 		}
 
 		_, err := subject.DefaultValidators(testEpoch)
-		assert.Error(t, err)
-	})
-}
-
-func TestValidatorsManager_FTSOValidators(t *testing.T) {
-	testEpoch := uint64(1)
-	testValidators := map[ids.ShortID]uint64{
-		{13}: 37,
-	}
-
-	t.Run("nominal case", func(t *testing.T) {
-		t.Parallel()
-
-		testRetriever := &retrieverMock{
-			ByEpochFunc: func(epoch uint64) (map[ids.ShortID]uint64, error) {
-				assert.Equal(t, testEpoch, epoch)
-
-				return testValidators, nil
-			},
-		}
-
-		subject := &ValidatorsManager{
-			ftsoValidators: testRetriever,
-		}
-
-		got, err := subject.FTSOValidators(testEpoch)
-		require.NoError(t, err)
-		assert.Equal(t, testValidators, got)
-	})
-
-	t.Run("handles failure to retrieve FTSO validators", func(t *testing.T) {
-		t.Parallel()
-
-		testRetriever := &retrieverMock{
-			ByEpochFunc: func(epoch uint64) (map[ids.ShortID]uint64, error) {
-				assert.Equal(t, testEpoch, epoch)
-
-				return nil, errors.New("dummy error")
-			},
-		}
-
-		subject := &ValidatorsManager{
-			ftsoValidators: testRetriever,
-		}
-
-		_, err := subject.FTSOValidators(testEpoch)
-		assert.Error(t, err)
-	})
-}
-
-func TestValidatorsManager_ActiveValidators(t *testing.T) {
-	testEpoch := uint64(1)
-	testValidators := map[ids.ShortID]uint64{
-		{13}: 37,
-	}
-
-	t.Run("nominal case", func(t *testing.T) {
-		t.Parallel()
-
-		testRetriever := &retrieverMock{
-			ByEpochFunc: func(epoch uint64) (map[ids.ShortID]uint64, error) {
-				assert.Equal(t, testEpoch, epoch)
-
-				return testValidators, nil
-			},
-		}
-
-		subject := &ValidatorsManager{
-			activeValidators: testRetriever,
-		}
-
-		got, err := subject.ActiveValidators(testEpoch)
-		require.NoError(t, err)
-		assert.Equal(t, testValidators, got)
-	})
-
-	t.Run("handles failure to retrieve active validators", func(t *testing.T) {
-		t.Parallel()
-
-		testRetriever := &retrieverMock{
-			ByEpochFunc: func(epoch uint64) (map[ids.ShortID]uint64, error) {
-				assert.Equal(t, testEpoch, epoch)
-
-				return nil, errors.New("dummy error")
-			},
-		}
-
-		subject := &ValidatorsManager{
-			activeValidators: testRetriever,
-		}
-
-		_, err := subject.ActiveValidators(testEpoch)
 		assert.Error(t, err)
 	})
 }
