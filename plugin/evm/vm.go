@@ -405,6 +405,20 @@ func (vm *VM) Initialize(
 	vm.chain = ethChain
 	lastAccepted := vm.chain.LastAcceptedBlock()
 
+	// Determine how many default validators we can phase out maximum per epoch,
+	// based on the network we are on.
+	stepSize := uint(0)
+	switch {
+	case g.Config.ChainID.Cmp(params.CostonChainID) == 0:
+		stepSize = 1 // with 1 hour reward epochs, doesn't matter much
+	case g.Config.ChainID.Cmp(params.SongbirdChainID) == 0:
+		stepSize = 2 // only FTSO validators ~1 week after main net launch
+	case g.Config.ChainID.Cmp(params.FlareChainID) == 0:
+		stepSize = 1 // doing as slow as possible on main net makes senes
+	default:
+		stepSize = 1 // as incremental as possible for testing purposes
+	}
+
 	// Load the default validators for the given chain ID.
 	defaultValidators, err := NewValidatorsDefault(g.Config.ChainID)
 	if err != nil {
@@ -432,25 +446,15 @@ func (vm *VM) Initialize(
 		WithCacheSize(uint(len(validators))),
 	)
 
-	// Determine how many default validators we can phase out maximum per epoch,
-	// based on the network we are on.
-	stepSize := uint(0)
-	switch {
-	case g.Config.ChainID.Cmp(params.CostonChainID) == 0:
-		stepSize = 1 // with 1 hour reward epochs, doesn't matter much
-	case g.Config.ChainID.Cmp(params.SongbirdChainID) == 0:
-		stepSize = 2 // only FTSO validators ~1 week after main net launch
-	case g.Config.ChainID.Cmp(params.FlareChainID) == 0:
-		stepSize = 1 // doing as slow as possible on main net makes senes
-	default:
-		stepSize = 1 // as incremental as possible for testing purposes
-	}
+	// Initialize the validators storage, which is responsible for persisting the
+	// active validator set on the blockchain.
+	validatorsStorage := NewValidatorsOnChain(blockchain)
 
 	// Initialize the validator transitioner, which is responsible for smoothly
 	// transitioning validators from the default set to the FTSO set, wrap it in
 	// a normalizer to have uniform weights across epochs, and wrap it in a cache
 	// to avoid unnecessary recomputation.
-	activeValidators := NewValidatorsTransitioner(ctx.Log, defaultValidators, cachedFTSOValidators,
+	activeValidators := NewValidatorsTransitioner(ctx.Log, validatorsStorage, defaultValidators, cachedFTSOValidators,
 		WithStepSize(stepSize),
 	)
 	normalizedActiveValidators := NewValidatorsNormalizer(ctx.Log, activeValidators)

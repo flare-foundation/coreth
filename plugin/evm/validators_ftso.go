@@ -44,6 +44,7 @@ type FTSO interface {
 	Current(hash common.Hash) (uint64, error)
 	Details(epoch uint64) (FTSOEpoch, error)
 	Snapshot(epoch uint64) (Snapshot, error)
+	Storage(epoch uint64) (Storage, error)
 }
 
 type Snapshot interface {
@@ -52,6 +53,11 @@ type Snapshot interface {
 	Validator(provider common.Address) (ids.ShortID, error)
 	Votepower(provider common.Address) (float64, error)
 	Rewards(provider common.Address) (float64, error)
+}
+
+type Storage interface {
+	Save(epoch uint64, validators map[ids.ShortID]uint64) error
+	Load() (uint64, map[ids.ShortID]uint64, error)
 }
 
 // ValidatorsFTSO is responsible for retrieving the set of validators for the FTSO

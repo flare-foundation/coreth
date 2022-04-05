@@ -29,10 +29,16 @@ func WithStepSize(size uint) TransitionOption {
 	}
 }
 
+type ValidatorsStorage interface {
+	Load() (uint64, map[ids.ShortID]uint64, error)
+	Save(epoch uint64, validators map[ids.ShortID]uint64) error
+}
+
 // ValidatorsTransitioner transitions validators from a static set of validators
 // to a growing set of dynamic validators over a number of smooth steps.
 type ValidatorsTransitioner struct {
 	log        logging.Logger
+	ftso       FTSO
 	validators ValidatorsRetriever
 	providers  ValidatorsRetriever
 	cfg        TransitionConfig
@@ -40,7 +46,7 @@ type ValidatorsTransitioner struct {
 
 // NewValidatorsTransitioner creates a transition from the given default validators
 // to the validators retrieved from the given FTSO validators retriever.
-func NewValidatorsTransitioner(log logging.Logger, validators ValidatorsRetriever, providers ValidatorsRetriever, options ...TransitionOption) *ValidatorsTransitioner {
+func NewValidatorsTransitioner(log logging.Logger, ftso FTSO, validators ValidatorsRetriever, providers ValidatorsRetriever, options ...TransitionOption) *ValidatorsTransitioner {
 
 	cfg := DefaultTransitionConfig
 	for _, opt := range options {
@@ -49,6 +55,7 @@ func NewValidatorsTransitioner(log logging.Logger, validators ValidatorsRetrieve
 
 	v := ValidatorsTransitioner{
 		log:        log,
+		ftso:       ftso,
 		validators: validators,
 		providers:  providers,
 		cfg:        cfg,
@@ -64,20 +71,40 @@ func NewValidatorsTransitioner(log logging.Logger, validators ValidatorsRetrieve
 // validators have been entirely phased out.
 func (v *ValidatorsTransitioner) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, error) {
 
-	v.log.Debug("getting active validators (epoch: %d)", epoch)
-
 	// Get the default validators for the requested epoch.
 	validators, err := v.validators.ByEpoch(epoch)
 	if err != nil {
 		return nil, fmt.Errorf("could not get default validators: %w", err)
 	}
 
+	// Get the storage interface for the given epoch.
+	storage := v.ftso.Storage(epoch)
+
 	// We need to get the FTSO providers for the previous epoch, so we need to
 	// check we are not at epoch zero. For reward epoch zero, we always return
 	// the default validators.
 	if epoch == 0 {
-		v.log.Debug("returning default validators for epoch zero (%d)", len(validators))
+		err = v.storage.Save(epoch, validators)
+		if err != nil {
+			return nil, fmt.Errorf("could not save active validators for epoch zero: %w", err)
+		}
+		v.log.Debug("returning default validators (epoch zero)", len(validators))
 		return validators, nil
+	}
+
+	// First, we try to get the active validators that are currently set in the
+	// validators storage. If the epoch matches, we can return those.
+	persisted, previous, err := v.storage.Load()
+	if persisted == epoch {
+		v.log.Debug("returning persisted validators (already transitioned)")
+		return previous, nil
+	}
+
+	// Otherwise, the stored validators should be exactly one epoch before the requested
+	// epoch, and we will use the previous validators from the blockchain to put together
+	// our new set of active validators.
+	if persisted != epoch-1 {
+		return nil, fmt.Errorf("storage epoch mismatch (persisted: %d, requested: %d, expected: %d)", persisted, epoch, epoch-1)
 	}
 
 	// Now that we know we are not at epoch zero, we can get the FTSO validators
@@ -92,16 +119,8 @@ func (v *ValidatorsTransitioner) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, 
 	// If there are no FTSO validators for the previous epoch, we return the default
 	// validators, as none of them can currently be phased out.
 	if len(providers) == 0 {
-		v.log.Debug("returning default validators in absence of providers (%d)", len(validators))
+		v.log.Debug("returning default validators (no providers)")
 		return validators, nil
-	}
-
-	// At this point, we have some FTSO validators available, and we have some default
-	// validators available. In order to determine how many default validators to
-	// phase out, we first retrieve the active validators from the previous epoch.
-	previous, err := v.ByEpoch(epoch - 1)
-	if err != nil {
-		return nil, fmt.Errorf("could not retrieve active validators for previous epoch: %w", err)
 	}
 
 	// We can then count the number of default validators that were included in the
@@ -118,7 +137,7 @@ func (v *ValidatorsTransitioner) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, 
 	// we have already completed the transition from default validators to FTSO
 	// validators, and we simply return the FTSO validators as active validators.
 	if included == 0 {
-		v.log.Debug("returning provider validators on completed transition (%d)", len(providers))
+		v.log.Debug("returning provider validators (transition complete)")
 		return providers, nil
 	}
 
@@ -146,12 +165,6 @@ func (v *ValidatorsTransitioner) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, 
 		}
 
 		remove++
-	}
-
-	// If all default validators are to be removed, we return the providers.
-	if remove == 0 {
-		v.log.Debug("returning default validators on transition (%d)", len(providers))
-		return validators, nil
 	}
 
 	// We then select the given number of included default validators. In order to
@@ -192,6 +205,12 @@ func (v *ValidatorsTransitioner) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, 
 	for _, validatorID := range validatorIDs {
 		active[validatorID] = providerWeight
 		v.log.Debug("adding default validator %s (weight: %d)", validatorID.PrefixedString(constants.NodeIDPrefix), providerWeight)
+	}
+
+	// Persist the validators for this epoch, as they were just computed the first time.
+	err = v.storage.Save(epoch, active)
+	if err != nil {
+		return nil, fmt.Errorf("could not persist active validators: %w", err)
 	}
 
 	return active, nil

@@ -314,3 +314,27 @@ func (f *FTSOSystem) Snapshot(epoch uint64) (Snapshot, error) {
 
 	return &snap, nil
 }
+
+func (f *FTSOSystem) Storage(epoch uint64) (Storage, error) {
+
+	currentEpoch, err := f.Details(epoch)
+	if err != nil {
+		return nil, fmt.Errorf("could not get current epoch details: %w", err)
+	}
+
+	startHeader := f.blockchain.GetHeaderByNumber(currentEpoch.StartHeight)
+	if startHeader == nil {
+		return nil, fmt.Errorf("unknown current block (height: %d)", currentEpoch.StartHeight)
+	}
+
+	state, err := f.blockchain.StateAt(startHeader.Hash())
+	if err != nil {
+		return nil, fmt.Errorf("could not get state at hash (hash: %x)", startHeader.Hash())
+	}
+
+	storage := FTSOStorage{
+		state: state,
+	}
+
+	return &storage, nil
+}
