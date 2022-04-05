@@ -11,7 +11,7 @@ import (
 	"github.com/flare-foundation/coreth/params"
 )
 
-func TestNewValidatorsDefault(t *testing.T) {
+func TestNewValidatorsDefault_StandardNetwork(t *testing.T) {
 	tests := []struct {
 		name    string
 		chainID *big.Int
@@ -59,7 +59,7 @@ func TestNewValidatorsDefault(t *testing.T) {
 	}
 }
 
-func TestGetDefaultValidators_CustomValidators(t *testing.T) {
+func TestNewValidatorsDefault_CustomNetwork(t *testing.T) {
 	err := os.Setenv("CUSTOM_VALIDATORS", "NodeID-3M9KVT6ixi4gVMisbm5TnPXYXgFN5LHuv,NodeID-NnX4fajAmyvpL9RLfheNdc47FKKDuQW8i")
 	require.NoError(t, err)
 
