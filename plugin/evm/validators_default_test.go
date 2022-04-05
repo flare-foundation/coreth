@@ -75,7 +75,6 @@ func TestGetDefaultValidators_CustomValidators(t *testing.T) {
 }
 
 func TestValidatorsDefault_ByEpoch(t *testing.T) {
-
 	t.Run("nominal case", func(t *testing.T) {
 		t.Parallel()
 
@@ -95,7 +94,6 @@ func TestValidatorsDefault_ByEpoch(t *testing.T) {
 		assert.Equal(t, uint64(5*costonValidatorWeight), totalWeight)
 
 		assert.Len(t, got, 5)
-
 	})
 
 	t.Run("edge cases", func(t *testing.T) {
@@ -122,6 +120,5 @@ func TestValidatorsDefault_ByEpoch(t *testing.T) {
 		got, err = v.ByEpoch(epoch)
 		require.NoError(t, err)
 		assert.Len(t, got, 3)
-
 	})
 }
