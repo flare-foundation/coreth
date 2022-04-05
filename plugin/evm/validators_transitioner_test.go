@@ -3,164 +3,214 @@
 
 package evm
 
-// import (
-// 	"fmt"
-// 	"testing"
+import (
+	"testing"
 
-// 	"github.com/stretchr/testify/assert"
-// 	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
-// 	"github.com/flare-foundation/flare/ids"
-// )
+	"github.com/flare-foundation/flare/ids"
+	"github.com/flare-foundation/flare/utils/logging"
+)
 
-// type testValidatorRetriever struct {
-// 	ByEpochFunc func(epoch uint64) (map[ids.ShortID]uint64, error)
-// }
+type testValidatorRetriever struct {
+	ByEpochFunc func(epoch uint64) (map[ids.ShortID]uint64, error)
+}
 
-// func (t *testValidatorRetriever) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, error) {
-// 	return t.ByEpochFunc(epoch)
-// }
+func (t *testValidatorRetriever) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, error) {
+	return t.ByEpochFunc(epoch)
+}
 
-// func TestValidatorsTransitioner_ByEpoch(t *testing.T) {
+func TestNewValidatorsTransitioner(t *testing.T) {
+	providers := fakeProviders(12)
+	validators := fakeValidators(12)
+	mockValidators := &testValidatorRetriever{
+		ByEpochFunc: func(uint64) (map[ids.ShortID]uint64, error) {
+			return validators, nil
+		},
+	}
+	mockProviders := &testValidatorRetriever{
+		ByEpochFunc: func(uint64) (map[ids.ShortID]uint64, error) {
+			return providers, nil
+		},
+	}
 
-// 	t.Run("nominal case 1: includes check for recursion and cache usage", func(t *testing.T) {
-// 		t.Parallel()
+	got := NewValidatorsTransitioner(logging.NoLog{}, mockValidators, mockProviders)
+	require.NotNil(t, got)
+	assert.Equal(t, mockValidators, got.validators)
+	assert.Equal(t, mockProviders, got.providers)
+}
 
-// 		calls := 0
-// 		testEpoch := uint64(10)
-// 		providers := fakeProviders(testEpoch)
+func TestValidatorsTransitioner_ByEpoch(t *testing.T) {
 
-// 		mock := &testValidatorRetriever{
-// 			ByEpochFunc: func(uint64) (map[ids.ShortID]uint64, error) {
-// 				calls++
-// 				return providers, nil
-// 			},
-// 		}
+	validatorIDs := []ids.ShortID{
+		{1},
+		{2},
+		{3},
+	}
 
-// 		validatorsTransitioner := NewValidatorsTransitioner(nil, mock)
+	validators := map[ids.ShortID]uint64{
+		validatorIDs[0]: 1,
+		validatorIDs[1]: 2,
+		validatorIDs[2]: 3,
+	}
 
-// 		got, err := validatorsTransitioner.ByEpoch(testEpoch)
-// 		require.NoError(t, err)
-// 		assert.Equal(t, providers, got)
-// 		assert.Equal(t, 10, calls)
+	providerIDs := []ids.ShortID{
+		{4},
+		{5},
+		{6},
+	}
 
-// 		// calls is expected to increase by 1 only because the cache would be used
-// 		got, err = validatorsTransitioner.ByEpoch(testEpoch)
-// 		require.NoError(t, err)
-// 		assert.Equal(t, providers, got)
-// 		assert.Equal(t, 11, calls)
+	providers := map[ids.ShortID]uint64{
+		providerIDs[0]: 4,
+		providerIDs[1]: 5,
+		providerIDs[2]: 6,
+	}
 
-// 		mock.ByEpochFunc = func(uint64) (map[ids.ShortID]uint64, error) {
-// 			calls++
-// 			return providers, nil
-// 		}
+	mockProvider := &testValidatorRetriever{
+		ByEpochFunc: func(uint64) (map[ids.ShortID]uint64, error) {
+			return providers, nil
+		},
+	}
 
-// 		got, err = validatorsTransitioner.ByEpoch(testEpoch + 1)
-// 		require.NoError(t, err)
-// 		assert.Equal(t, providers, got)
-// 		assert.Equal(t, 13, calls)
-// 	})
+	tests := []struct {
+		name         string
+		steps        []Step
+		epoch        uint64
+		validatorIDs []ids.ShortID
+	}{
+		{
+			name:         "no steps zero epoch",
+			steps:        []Step{},
+			epoch:        0,
+			validatorIDs: validatorIDs,
+		},
+		{
+			name:         "no steps non-zero epoch",
+			steps:        []Step{},
+			epoch:        1,
+			validatorIDs: validatorIDs,
+		},
+		{
+			name:  "one step epoch before",
+			epoch: 4,
+			steps: []Step{
+				{Epoch: 5, Cutoff: 2},
+			},
+			validatorIDs: validatorIDs,
+		},
+		{
+			name:  "one step epoch exact",
+			epoch: 5,
+			steps: []Step{
+				{Epoch: 5, Cutoff: 2},
+			},
+			validatorIDs: append(validatorIDs[:2], providerIDs[0]),
+		},
+		{
+			name:  "one step epoch after",
+			epoch: 6,
+			steps: []Step{
+				{Epoch: 5, Cutoff: 2},
+			},
+			validatorIDs: append(validatorIDs[:2], providerIDs[0]),
+		},
+		{
+			name:  "two steps epoch before first",
+			epoch: 4,
+			steps: []Step{
+				{Epoch: 5, Cutoff: 2},
+				{Epoch: 10, Cutoff: 1},
+			},
+			validatorIDs: validatorIDs,
+		},
+		{
+			name:  "two steps epoch exact first",
+			epoch: 5,
+			steps: []Step{
+				{Epoch: 5, Cutoff: 2},
+				{Epoch: 10, Cutoff: 1},
+			},
+			validatorIDs: append(validatorIDs[:2], providerIDs[0]),
+		},
+		{
+			name:  "two steps epoch after first",
+			epoch: 6,
+			steps: []Step{
+				{Epoch: 5, Cutoff: 2},
+				{Epoch: 10, Cutoff: 1},
+			},
+			validatorIDs: append(validatorIDs[:2], providerIDs[0]),
+		},
+		{
+			name:  "two steps epoch before second",
+			epoch: 9,
+			steps: []Step{
+				{Epoch: 5, Cutoff: 2},
+				{Epoch: 10, Cutoff: 1},
+			},
+			validatorIDs: append(validatorIDs[:2], providerIDs[0]),
+		},
+		{
+			name:  "two steps epoch exact second",
+			epoch: 10,
+			steps: []Step{
+				{Epoch: 5, Cutoff: 2},
+				{Epoch: 10, Cutoff: 1},
+			},
+			validatorIDs: append(validatorIDs[:1], providerIDs[0], providerIDs[1]),
+		},
+		{
+			name:  "two steps epoch after second",
+			epoch: 11,
+			steps: []Step{
+				{Epoch: 5, Cutoff: 2},
+				{Epoch: 10, Cutoff: 1},
+			},
+			validatorIDs: append(validatorIDs[:1], providerIDs[0], providerIDs[1]),
+		},
+	}
 
-// 	t.Run("nominal case 2: non-nil default validators to reach the end of the function", func(t *testing.T) {
-// 		t.Parallel()
+	for _, test := range tests {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 
-// 		testEpoch := uint64(10)
-// 		wantWeight := uint64(45)
-// 		providers := fakeProviders(testEpoch)
-// 		// here we give non-nil validators so that the later part of the ByEpoch() function can be reached by control and therefore tested
-// 		validators := fakeValidators(testEpoch)
+			v := &ValidatorsDefault{
+				validators: validators,
+				steps:      test.steps,
+			}
 
-// 		mock := &testValidatorRetriever{
-// 			ByEpochFunc: func(uint64) (map[ids.ShortID]uint64, error) {
-// 				return providers, nil
-// 			},
-// 		}
+			transitioner := NewValidatorsTransitioner(logging.NoLog{}, v, mockProvider, WithStepSize(1))
 
-// 		validatorsTransitioner := NewValidatorsTransitioner(validators, mock)
+			got, err := transitioner.ByEpoch(test.epoch)
+			require.NoError(t, err)
 
-// 		got, err := validatorsTransitioner.ByEpoch(testEpoch)
-// 		require.NoError(t, err)
-// 		assert.Equal(t, providers, got)
+			assert.Len(t, got, len(test.validatorIDs))
+			for _, validatorID := range test.validatorIDs {
+				assert.Contains(t, got, validatorID)
+			}
+		})
+	}
+}
 
-// 		var totalWeight uint64
-// 		for _, u := range got {
-// 			totalWeight += u
-// 		}
-// 		assert.Equal(t, wantWeight, totalWeight)
-// 	})
+func fakeProviders(epoch uint64) map[ids.ShortID]uint64 {
 
-// 	t.Run("epoch less than 1", func(t *testing.T) {
-// 		t.Parallel()
+	providers := make(map[ids.ShortID]uint64)
+	for i := 0; i < int(epoch); i++ {
+		providers[ids.ShortID{byte(i)}] = uint64(i)
+	}
 
-// 		testEpoch := uint64(0)
-// 		validators := fakeProviders(testEpoch)
+	return providers
+}
 
-// 		mock := &testValidatorRetriever{
-// 			ByEpochFunc: func(epoch uint64) (map[ids.ShortID]uint64, error) {
-// 				assert.Equal(t, testEpoch, epoch)
-// 				return nil, nil
-// 			},
-// 		}
+// fakeValidators gives a different set of validators compared to fakeProviders() to have no overlap for now
+func fakeValidators(epoch uint64) map[ids.ShortID]uint64 {
 
-// 		validatorsTransitioner := NewValidatorsTransitioner(validators, mock)
+	providers := make(map[ids.ShortID]uint64)
+	for i := 0; i < int(epoch); i++ {
+		providers[ids.ShortID{byte(i + int(epoch))}] = uint64(i)
+	}
 
-// 		got, err := validatorsTransitioner.ByEpoch(testEpoch)
-// 		require.NoError(t, err)
-// 		assert.Equal(t, validators, got)
-// 	})
-
-// 	t.Run("case for non nil error", func(t *testing.T) {
-// 		t.Parallel()
-
-// 		mock := &testValidatorRetriever{
-// 			ByEpochFunc: func(uint64) (map[ids.ShortID]uint64, error) {
-// 				return nil, fmt.Errorf("dummy error")
-// 			},
-// 		}
-
-// 		validatorsTransitioner := NewValidatorsTransitioner(nil, mock)
-
-// 		_, err := validatorsTransitioner.ByEpoch(1)
-// 		require.Error(t, err)
-// 	})
-
-// 	t.Run("case for nil default validators", func(t *testing.T) {
-// 		t.Parallel()
-
-// 		epoch := uint64(10)
-// 		providers := fakeProviders(epoch)
-
-// 		mock := &testValidatorRetriever{
-// 			ByEpochFunc: func(epoch uint64) (map[ids.ShortID]uint64, error) {
-// 				return providers, nil
-// 			},
-// 		}
-
-// 		validatorsTransitioner := NewValidatorsTransitioner(nil, mock)
-
-// 		got, err := validatorsTransitioner.ByEpoch(epoch)
-// 		require.NoError(t, err)
-// 		assert.Equal(t, providers, got)
-// 	})
-// }
-
-// func fakeProviders(epoch uint64) map[ids.ShortID]uint64 {
-
-// 	providers := make(map[ids.ShortID]uint64)
-// 	for i := 0; i < int(epoch); i++ {
-// 		providers[ids.ShortID{byte(i)}] = uint64(i)
-// 	}
-
-// 	return providers
-// }
-
-// // fakeValidators gives a different set of validators compared to fakeProviders() to have no overlap for now
-// func fakeValidators(epoch uint64) map[ids.ShortID]uint64 {
-
-// 	providers := make(map[ids.ShortID]uint64)
-// 	for i := 0; i < int(epoch); i++ {
-// 		providers[ids.ShortID{byte(i + int(epoch))}] = uint64(i)
-// 	}
-
-// 	return providers
-// }
+	return providers
+}
