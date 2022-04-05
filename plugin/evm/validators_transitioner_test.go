@@ -3,164 +3,151 @@
 
 package evm
 
-// import (
-// 	"fmt"
-// 	"testing"
+import (
+	"fmt"
+	"testing"
 
-// 	"github.com/stretchr/testify/assert"
-// 	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
-// 	"github.com/flare-foundation/flare/ids"
-// )
+	"github.com/flare-foundation/flare/ids"
+	"github.com/flare-foundation/flare/utils/logging"
+)
 
-// type testValidatorRetriever struct {
-// 	ByEpochFunc func(epoch uint64) (map[ids.ShortID]uint64, error)
-// }
+type ValidatorsRetrieverMock struct {
+	ByEpochFunc func(epoch uint64) (map[ids.ShortID]uint64, error)
+}
 
-// func (t *testValidatorRetriever) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, error) {
-// 	return t.ByEpochFunc(epoch)
-// }
+func (t *ValidatorsRetrieverMock) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, error) {
+	return t.ByEpochFunc(epoch)
+}
 
-// func TestValidatorsTransitioner_ByEpoch(t *testing.T) {
+func TestNewValidatorsTransitioner(t *testing.T) {
 
-// 	t.Run("nominal case 1: includes check for recursion and cache usage", func(t *testing.T) {
-// 		t.Parallel()
+	validators := &ValidatorsRetrieverMock{}
+	providers := &ValidatorsRetrieverMock{}
 
-// 		calls := 0
-// 		testEpoch := uint64(10)
-// 		providers := fakeProviders(testEpoch)
+	got := NewValidatorsTransitioner(logging.NoLog{}, validators, providers)
+	require.NotNil(t, got)
+	assert.Equal(t, validators, got.validators)
+	assert.Equal(t, providers, got.providers)
+}
 
-// 		mock := &testValidatorRetriever{
-// 			ByEpochFunc: func(uint64) (map[ids.ShortID]uint64, error) {
-// 				calls++
-// 				return providers, nil
-// 			},
-// 		}
+func TestValidatorsTransitioner_ByEpoch(t *testing.T) {
 
-// 		validatorsTransitioner := NewValidatorsTransitioner(nil, mock)
+	validatorIDs := []ids.ShortID{
+		{1},
+		{2},
+		{3},
+		{4},
+		{5},
+		{6},
+	}
 
-// 		got, err := validatorsTransitioner.ByEpoch(testEpoch)
-// 		require.NoError(t, err)
-// 		assert.Equal(t, providers, got)
-// 		assert.Equal(t, 10, calls)
+	weights := []uint64{
+		100,
+		200,
+		300,
+		400,
+		500,
+		600,
+	}
 
-// 		// calls is expected to increase by 1 only because the cache would be used
-// 		got, err = validatorsTransitioner.ByEpoch(testEpoch)
-// 		require.NoError(t, err)
-// 		assert.Equal(t, providers, got)
-// 		assert.Equal(t, 11, calls)
+	useValidators := func(begin int, end int) map[ids.ShortID]uint64 {
+		validators := make(map[ids.ShortID]uint64)
+		weights := weights[begin:end]
+		for i, validatorID := range validatorIDs[begin:end] {
+			weight := weights[i]
+			validators[validatorID] = weight
+		}
+		return validators
+	}
 
-// 		mock.ByEpochFunc = func(uint64) (map[ids.ShortID]uint64, error) {
-// 			calls++
-// 			return providers, nil
-// 		}
+	returnValidators := func(begin int, end int) func(epoch uint64) (map[ids.ShortID]uint64, error) {
+		return func(epoch uint64) (map[ids.ShortID]uint64, error) {
+			return useValidators(begin, end), nil
+		}
+	}
 
-// 		got, err = validatorsTransitioner.ByEpoch(testEpoch + 1)
-// 		require.NoError(t, err)
-// 		assert.Equal(t, providers, got)
-// 		assert.Equal(t, 13, calls)
-// 	})
+	retrieveValidators := &ValidatorsRetrieverMock{
+		ByEpochFunc: returnValidators(0, 3),
+	}
 
-// 	t.Run("nominal case 2: non-nil default validators to reach the end of the function", func(t *testing.T) {
-// 		t.Parallel()
+	retrieveProviders := &ValidatorsRetrieverMock{
+		ByEpochFunc: returnValidators(3, 6),
+	}
 
-// 		testEpoch := uint64(10)
-// 		wantWeight := uint64(45)
-// 		providers := fakeProviders(testEpoch)
-// 		// here we give non-nil validators so that the later part of the ByEpoch() function can be reached by control and therefore tested
-// 		validators := fakeValidators(testEpoch)
+	retrieveNothing := &ValidatorsRetrieverMock{
+		ByEpochFunc: returnValidators(0, 0),
+	}
 
-// 		mock := &testValidatorRetriever{
-// 			ByEpochFunc: func(uint64) (map[ids.ShortID]uint64, error) {
-// 				return providers, nil
-// 			},
-// 		}
+	retrieveError := &ValidatorsRetrieverMock{
+		ByEpochFunc: func(epoch uint64) (map[ids.ShortID]uint64, error) {
+			return nil, fmt.Errorf("could not retrieve validators")
+		},
+	}
 
-// 		validatorsTransitioner := NewValidatorsTransitioner(validators, mock)
+	tests := []struct {
+		name               string
+		epoch              uint64
+		stepSize           uint
+		retrieveValidators ValidatorsRetriever
+		retrieveProviders  ValidatorsRetriever
+		wantValidators     map[ids.ShortID]uint64
+		wantErr            assert.ErrorAssertionFunc
+	}{
+		{
+			name:               "epoch zero",
+			epoch:              0,
+			retrieveValidators: retrieveValidators,
+			retrieveProviders:  retrieveProviders,
+			wantValidators:     useValidators(0, 3),
+			wantErr:            assert.NoError,
+		},
+		{
+			name:               "no providers",
+			epoch:              10,
+			retrieveValidators: retrieveValidators,
+			retrieveProviders:  retrieveNothing,
+			wantErr:            assert.NoError,
+		},
+		{
+			name:               "validators error",
+			epoch:              10,
+			retrieveValidators: retrieveError,
+			retrieveProviders:  retrieveProviders,
+			wantErr:            assert.Error,
+		},
+		{
+			name:               "providers error",
+			epoch:              10,
+			retrieveValidators: retrieveValidators,
+			retrieveProviders:  retrieveProviders,
+			wantErr:            assert.Error,
+		},
+	}
 
-// 		got, err := validatorsTransitioner.ByEpoch(testEpoch)
-// 		require.NoError(t, err)
-// 		assert.Equal(t, providers, got)
+	for _, test := range tests {
+		test := test
 
-// 		var totalWeight uint64
-// 		for _, u := range got {
-// 			totalWeight += u
-// 		}
-// 		assert.Equal(t, wantWeight, totalWeight)
-// 	})
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 
-// 	t.Run("epoch less than 1", func(t *testing.T) {
-// 		t.Parallel()
+			transitioner := &ValidatorsTransitioner{
+				log:        logging.NoLog{},
+				validators: test.retrieveValidators,
+				providers:  test.retrieveProviders,
+				cfg:        TransitionConfig{StepSize: test.stepSize},
+			}
 
-// 		testEpoch := uint64(0)
-// 		validators := fakeProviders(testEpoch)
+			gotValidators, err := transitioner.ByEpoch(test.epoch)
+			test.wantErr(t, err)
 
-// 		mock := &testValidatorRetriever{
-// 			ByEpochFunc: func(epoch uint64) (map[ids.ShortID]uint64, error) {
-// 				assert.Equal(t, testEpoch, epoch)
-// 				return nil, nil
-// 			},
-// 		}
+			if err != nil {
+				return
+			}
 
-// 		validatorsTransitioner := NewValidatorsTransitioner(validators, mock)
-
-// 		got, err := validatorsTransitioner.ByEpoch(testEpoch)
-// 		require.NoError(t, err)
-// 		assert.Equal(t, validators, got)
-// 	})
-
-// 	t.Run("case for non nil error", func(t *testing.T) {
-// 		t.Parallel()
-
-// 		mock := &testValidatorRetriever{
-// 			ByEpochFunc: func(uint64) (map[ids.ShortID]uint64, error) {
-// 				return nil, fmt.Errorf("dummy error")
-// 			},
-// 		}
-
-// 		validatorsTransitioner := NewValidatorsTransitioner(nil, mock)
-
-// 		_, err := validatorsTransitioner.ByEpoch(1)
-// 		require.Error(t, err)
-// 	})
-
-// 	t.Run("case for nil default validators", func(t *testing.T) {
-// 		t.Parallel()
-
-// 		epoch := uint64(10)
-// 		providers := fakeProviders(epoch)
-
-// 		mock := &testValidatorRetriever{
-// 			ByEpochFunc: func(epoch uint64) (map[ids.ShortID]uint64, error) {
-// 				return providers, nil
-// 			},
-// 		}
-
-// 		validatorsTransitioner := NewValidatorsTransitioner(nil, mock)
-
-// 		got, err := validatorsTransitioner.ByEpoch(epoch)
-// 		require.NoError(t, err)
-// 		assert.Equal(t, providers, got)
-// 	})
-// }
-
-// func fakeProviders(epoch uint64) map[ids.ShortID]uint64 {
-
-// 	providers := make(map[ids.ShortID]uint64)
-// 	for i := 0; i < int(epoch); i++ {
-// 		providers[ids.ShortID{byte(i)}] = uint64(i)
-// 	}
-
-// 	return providers
-// }
-
-// // fakeValidators gives a different set of validators compared to fakeProviders() to have no overlap for now
-// func fakeValidators(epoch uint64) map[ids.ShortID]uint64 {
-
-// 	providers := make(map[ids.ShortID]uint64)
-// 	for i := 0; i < int(epoch); i++ {
-// 		providers[ids.ShortID{byte(i + int(epoch))}] = uint64(i)
-// 	}
-
-// 	return providers
-// }
+			assert.Equal(t, gotValidators, test.wantValidators)
+		})
+	}
+}

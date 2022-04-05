@@ -148,6 +148,12 @@ func (v *ValidatorsTransitioner) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, 
 		remove++
 	}
 
+	// If all default validators are to be removed, we return the providers.
+	if remove == 0 {
+		v.log.Debug("returning default validators on transition (%d)", len(providers))
+		return validators, nil
+	}
+
 	// We then select the given number of included default validators. In order to
 	// make the selection deterministic, we sort the validator IDs for all default
 	// validators and then cut it off at the number of included ones.
