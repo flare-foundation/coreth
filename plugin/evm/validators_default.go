@@ -142,7 +142,7 @@ func (v *ValidatorsDefault) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, error
 	}
 
 	if len(reduced) == 0 {
-		return nil, fmt.Errorf("not default validators available for epoch")
+		return nil, fmt.Errorf("no default validators available for epoch")
 	}
 
 	return reduced, nil
