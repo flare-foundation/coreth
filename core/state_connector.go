@@ -56,17 +56,17 @@ func (c *stateConnector) finalizePreviousRound(chainID *big.Int, timestamp *big.
 	instructions := append(attestationSelector(chainID, timestamp), currentRoundNumber[:]...)
 	defaultAttestors := defaultAttestors(chainID)
 
-	defaultAttestationVotes := c.countAttestations(defaultAttestors, instructions)
+	defaultAttestationResult := c.countAttestations(defaultAttestors, instructions)
 
-	reached := c.isFinalityReached(defaultAttestationVotes, instructions)
+	reached := c.isFinalityReached(defaultAttestationResult, instructions)
 	if !reached {
 		return nil
 	}
 
-	// Finalize defaultAttestationVotes.majorityDecision
+	// Finalize defaultAttestationResult.majorityDecision
 	finalizeRoundSelector := finalizeRoundSelector(chainID, timestamp)
 	finalizedData := append(finalizeRoundSelector[:], currentRoundNumber[:]...)
-	merkleRootHashBytes, err := hex.DecodeString(defaultAttestationVotes.majorityDecision)
+	merkleRootHashBytes, err := hex.DecodeString(defaultAttestationResult.majorityDecision)
 	if err != nil {
 		return fmt.Errorf("could not decode majority decision into hex: %w", err)
 	}
@@ -115,18 +115,18 @@ type attestationResult struct {
 }
 
 // isFinalityReached checks if finality is reached based on attestation votes.
-func (c *stateConnector) isFinalityReached(defaultAttestationVotes attestationResult, instructions []byte) bool {
+func (c *stateConnector) isFinalityReached(defaultAttestationResult attestationResult, instructions []byte) bool {
 	var finalityReached bool
 
 	localAttestors := envAttestors(localAttestorEnv)
 	if len(localAttestors) > 0 {
-		localAttestationVotes := c.countAttestations(localAttestors, instructions)
-		if defaultAttestationVotes.reachedMajority && localAttestationVotes.reachedMajority && defaultAttestationVotes.majorityDecision == localAttestationVotes.majorityDecision {
+		localAttestationResult := c.countAttestations(localAttestors, instructions)
+		if defaultAttestationResult.reachedMajority && localAttestationResult.reachedMajority && defaultAttestationResult.majorityDecision == localAttestationResult.majorityDecision {
 			finalityReached = true
-		} else if defaultAttestationVotes.reachedMajority && defaultAttestationVotes.majorityDecision != localAttestationVotes.majorityDecision {
+		} else if defaultAttestationResult.reachedMajority && defaultAttestationResult.majorityDecision != localAttestationResult.majorityDecision {
 			// FIXME Make a back-up of the current state database, because this node is about to branch from the default set
 		}
-	} else if defaultAttestationVotes.reachedMajority {
+	} else if defaultAttestationResult.reachedMajority {
 		finalityReached = true
 	}
 
