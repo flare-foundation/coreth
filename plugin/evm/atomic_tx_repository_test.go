@@ -304,10 +304,10 @@ func TestRepairAtomicRepositoryForBonusBlockTxs(t *testing.T) {
 	tx := newTestTx()
 	// write the same tx to 3 heights.
 	canonical, bonus1, bonus2 := uint64(10), uint64(20), uint64(30)
-	atomicTxRepository.Write(canonical, []*Tx{tx})
-	atomicTxRepository.Write(bonus1, []*Tx{tx})
-	atomicTxRepository.Write(bonus2, []*Tx{tx})
-	db.Commit()
+	_ = atomicTxRepository.Write(canonical, []*Tx{tx})
+	_ = atomicTxRepository.Write(bonus1, []*Tx{tx})
+	_ = atomicTxRepository.Write(bonus2, []*Tx{tx})
+	_ = db.Commit()
 
 	_, foundHeight, err := atomicTxRepository.GetByTxID(tx.ID())
 	assert.NoError(t, err)

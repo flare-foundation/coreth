@@ -439,7 +439,7 @@ func (s *sharedMemories) assertOpsNotApplied(t *testing.T, ops map[ids.ID]*atomi
 
 func newSharedMemories(db *versiondb.Database, thisChainID, peerChainID ids.ID) *sharedMemories {
 	m := &atomic.Memory{}
-	m.Initialize(logging.NoLog{}, db)
+	_ = m.Initialize(logging.NoLog{}, db)
 
 	return &sharedMemories{
 		thisChain:   m.NewSharedMemory(thisChainID),
@@ -524,7 +524,7 @@ func TestApplyToSharedMemory(t *testing.T) {
 			assert.NoError(t, err)
 			assert.False(t, hasMarker)
 			// reinitialize the atomic trie
-			atomicTrie, err = newAtomicTrie(db, sharedMemories.thisChain, nil, repo, codec, test.lastAcceptedHeight, test.commitInterval)
+			_, err = newAtomicTrie(db, sharedMemories.thisChain, nil, repo, codec, test.lastAcceptedHeight, test.commitInterval)
 			assert.NoError(t, err)
 			// no further changes should have occurred in shared memory
 			// assert they are as they were prior to reinitializing

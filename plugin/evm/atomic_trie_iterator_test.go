@@ -20,7 +20,7 @@ import (
 
 func testSharedMemory() atomic.SharedMemory {
 	m := &atomic.Memory{}
-	m.Initialize(logging.NoLog{}, memdb.New())
+	_ = m.Initialize(logging.NoLog{}, memdb.New())
 	return m.NewSharedMemory(testCChainID)
 }
 
