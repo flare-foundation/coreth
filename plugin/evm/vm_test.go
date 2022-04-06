@@ -184,6 +184,9 @@ func GenesisVM(t *testing.T,
 	*VM, manager.Manager,
 	*atomic.Memory,
 	*engCommon.SenderTest) {
+	if os.Getenv("CUSTOM_VALIDATORS") == "" {
+		os.Setenv("CUSTOM_VALIDATORS", "NodeID-3M9KVT6ixi4gVMisbm5TnPXYXgFN5LHuv")
+	}
 	vm := &VM{}
 	ctx, dbManager, genesisBytes, issuer, m := setupGenesis(t, genesisJSON)
 	appSender := &engCommon.SenderTest{}
