@@ -32,17 +32,17 @@ func (v *ValidatorsPersisterMock) Persist(epoch uint64, validators map[ids.Short
 
 func TestNewValidatorsTransitioner(t *testing.T) {
 
-	validators := &ValidatorsRetrieverMock{}
-	providers := &ValidatorsRetrieverMock{}
-	active := &ValidatorsRetrieverMock{}
+	retrieveActive := &ValidatorsRetrieverMock{}
+	retrieveDefault := &ValidatorsRetrieverMock{}
+	retrieveFTSO := &ValidatorsRetrieverMock{}
 	store := &ValidatorsPersisterMock{}
 	size := uint(8)
 
-	got := NewValidatorsTransitioner(logging.NoLog{}, active, validators, providers, store, WithStepSize(size))
+	got := NewValidatorsTransitioner(logging.NoLog{}, retrieveActive, retrieveDefault, retrieveFTSO, store, WithStepSize(size))
 	require.NotNil(t, got)
-	assert.Equal(t, active, got.active)
-	assert.Equal(t, validators, got.validators)
-	assert.Equal(t, providers, got.providers)
+	assert.Equal(t, retrieveActive, got.retrieveActive)
+	assert.Equal(t, retrieveDefault, got.retrieveDefault)
+	assert.Equal(t, retrieveFTSO, got.retrieveFTSO)
 	assert.Equal(t, store, got.store)
 	assert.Equal(t, size, got.cfg.StepSize)
 }
@@ -148,10 +148,10 @@ func TestValidatorsTransitioner_ByEpoch(t *testing.T) {
 			t.Parallel()
 
 			transitioner := &ValidatorsTransitioner{
-				log:        logging.NoLog{},
-				validators: test.retrieveValidators,
-				providers:  test.retrieveProviders,
-				cfg:        TransitionConfig{StepSize: test.stepSize},
+				log:             logging.NoLog{},
+				retrieveDefault: test.retrieveValidators,
+				retrieveFTSO:    test.retrieveProviders,
+				cfg:             TransitionConfig{StepSize: test.stepSize},
 			}
 
 			gotValidators, err := transitioner.ByEpoch(test.epoch)

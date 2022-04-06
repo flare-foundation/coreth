@@ -42,7 +42,7 @@ func TestNewValidatorsManager(t *testing.T) {
 func TestValidatorsManager_DefaultValidators(t *testing.T) {
 
 	testEpoch := uint64(1)
-	testValidators := map[ids.ShortID]uint64{
+	wantValidators := map[ids.ShortID]uint64{
 		{13}: 37,
 	}
 
@@ -52,7 +52,7 @@ func TestValidatorsManager_DefaultValidators(t *testing.T) {
 		testRetriever := &retrieverMock{
 			ByEpochFunc: func(epoch uint64) (map[ids.ShortID]uint64, error) {
 				assert.Equal(t, testEpoch, epoch)
-				return testValidators, nil
+				return wantValidators, nil
 			},
 		}
 
@@ -63,7 +63,7 @@ func TestValidatorsManager_DefaultValidators(t *testing.T) {
 
 		got, err := subject.DefaultValidators(testEpoch)
 		require.NoError(t, err)
-		assert.Equal(t, testValidators, got)
+		assert.Equal(t, wantValidators, got)
 	})
 
 	t.Run("handles failure to retrieve default validators", func(t *testing.T) {
@@ -89,7 +89,7 @@ func TestValidatorsManager_DefaultValidators(t *testing.T) {
 func TestValidatorsManager_FTSOValidators(t *testing.T) {
 
 	testEpoch := uint64(1)
-	testValidators := map[ids.ShortID]uint64{
+	wantValidators := map[ids.ShortID]uint64{
 		{13}: 37,
 	}
 
@@ -99,7 +99,7 @@ func TestValidatorsManager_FTSOValidators(t *testing.T) {
 		testRetriever := &retrieverMock{
 			ByEpochFunc: func(epoch uint64) (map[ids.ShortID]uint64, error) {
 				assert.Equal(t, testEpoch, epoch)
-				return testValidators, nil
+				return wantValidators, nil
 			},
 		}
 
@@ -110,7 +110,7 @@ func TestValidatorsManager_FTSOValidators(t *testing.T) {
 
 		got, err := subject.FTSOValidators(testEpoch)
 		require.NoError(t, err)
-		assert.Equal(t, testValidators, got)
+		assert.Equal(t, wantValidators, got)
 	})
 
 	t.Run("handles failure to retrieve FTSO validators", func(t *testing.T) {
@@ -136,7 +136,7 @@ func TestValidatorsManager_FTSOValidators(t *testing.T) {
 func TestValidatorsManager_ActiveValidators(t *testing.T) {
 
 	testEpoch := uint64(1)
-	testValidators := map[ids.ShortID]uint64{
+	wantValidators := map[ids.ShortID]uint64{
 		{13}: 37,
 	}
 	t.Run("nominal case", func(t *testing.T) {
@@ -145,7 +145,7 @@ func TestValidatorsManager_ActiveValidators(t *testing.T) {
 		testRetriever := &retrieverMock{
 			ByEpochFunc: func(epoch uint64) (map[ids.ShortID]uint64, error) {
 				assert.Equal(t, testEpoch, epoch)
-				return testValidators, nil
+				return wantValidators, nil
 			},
 		}
 		testTransitioner := &retrieverMock{
@@ -160,9 +160,9 @@ func TestValidatorsManager_ActiveValidators(t *testing.T) {
 			transitionValidators: testTransitioner,
 		}
 
-		got, err := subject.ActiveValidators(testEpoch)
+		gotValidators, err := subject.ActiveValidators(testEpoch)
 		require.NoError(t, err)
-		assert.Equal(t, testValidators, got)
+		assert.Equal(t, wantValidators, gotValidators)
 	})
 
 	t.Run("gracefully falls back on transitioner", func(t *testing.T) {
@@ -176,7 +176,7 @@ func TestValidatorsManager_ActiveValidators(t *testing.T) {
 		}
 		testTransitioner := &retrieverMock{
 			ByEpochFunc: func(epoch uint64) (map[ids.ShortID]uint64, error) {
-				return testValidators, nil
+				return wantValidators, nil
 			},
 		}
 
@@ -186,9 +186,9 @@ func TestValidatorsManager_ActiveValidators(t *testing.T) {
 			transitionValidators: testTransitioner,
 		}
 
-		got, err := subject.ActiveValidators(testEpoch)
+		gotValidators, err := subject.ActiveValidators(testEpoch)
 		require.NoError(t, err)
-		assert.Equal(t, testValidators, got)
+		assert.Equal(t, wantValidators, gotValidators)
 	})
 
 	t.Run("handles failure to retrieve active validators", func(t *testing.T) {
@@ -202,7 +202,7 @@ func TestValidatorsManager_ActiveValidators(t *testing.T) {
 		}
 		testTransitioner := &retrieverMock{
 			ByEpochFunc: func(epoch uint64) (map[ids.ShortID]uint64, error) {
-				return testValidators, nil
+				return wantValidators, nil
 			},
 		}
 

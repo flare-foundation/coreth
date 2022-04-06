@@ -119,7 +119,7 @@ func TestNewValidatorsDefault(t *testing.T) {
 			}
 
 			for _, weight := range got.validators {
-				assert.Equal(t, weight, test.weight)
+				assert.Equal(t, test.weight, weight)
 			}
 		})
 	}
@@ -247,12 +247,12 @@ func TestValidatorsDefault_ByEpoch(t *testing.T) {
 				steps:      test.steps,
 			}
 
-			got, err := v.ByEpoch(test.epoch)
+			gotValidators, err := v.ByEpoch(test.epoch)
 			require.NoError(t, err)
 
-			assert.Len(t, got, len(test.validatorIDs))
+			assert.Len(t, gotValidators, len(test.validatorIDs))
 			for _, validatorID := range test.validatorIDs {
-				assert.Contains(t, got, validatorID)
+				assert.Contains(t, validatorID, gotValidators)
 			}
 		})
 	}

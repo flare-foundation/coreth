@@ -494,7 +494,11 @@ func TestToSet(t *testing.T) {
 		weight := rand.Uint64() % (math.MaxUint64 / 3)
 		weights = append(weights, weight)
 
-		id := randID()
+		id := ids.ShortID{}
+		n, err := rand.Read(id[:])
+		require.NoError(t, err)
+		require.Equal(t, n, len(id))
+
 		idsList = append(idsList, id)
 	}
 

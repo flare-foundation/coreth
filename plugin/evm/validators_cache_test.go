@@ -12,13 +12,11 @@ import (
 	"github.com/flare-foundation/flare/utils/logging"
 )
 
-func TestWithCacheSize(t *testing.T) {
-	wantCacheSize := uint(42)
+func TestNewValidatorsCache(t *testing.T) {
+	retrieve := &ValidatorsRetrieverMock{}
 
-	cfg := CacheConfig{}
-	WithCacheSize(wantCacheSize)(&cfg)
-
-	assert.Equal(t, wantCacheSize, cfg.CacheSize)
+	normalize := NewValidatorsCache(logging.NoLog{}, retrieve)
+	assert.Equal(t, retrieve, normalize.retrieve)
 }
 
 func TestValidatorsCache_ByEpoch(t *testing.T) {
@@ -27,7 +25,7 @@ func TestValidatorsCache_ByEpoch(t *testing.T) {
 
 		epoch := uint64(1)
 
-		testValidators := map[ids.ShortID]uint64{
+		want := map[ids.ShortID]uint64{
 			{1}: 100,
 			{2}: 200,
 		}
@@ -35,32 +33,32 @@ func TestValidatorsCache_ByEpoch(t *testing.T) {
 		mock := &ValidatorsRetrieverMock{
 			ByEpochFunc: func(e uint64) (map[ids.ShortID]uint64, error) {
 				assert.Equal(t, e, epoch)
-				return testValidators, nil
+				return want, nil
 			},
 		}
 
 		cache, _ := lru.New(1)
 
 		retrieve := ValidatorsCache{
-			log:        logging.NoLog{},
-			validators: mock,
-			cache:      cache,
+			log:      logging.NoLog{},
+			retrieve: mock,
+			cache:    cache,
 		}
 
 		got, err := retrieve.ByEpoch(epoch)
 		require.NoError(t, err)
-		assert.Equal(t, got, testValidators)
+		assert.Equal(t, got, want)
 
 		cached, ok := cache.Get(epoch)
 		require.True(t, ok)
-		assert.Equal(t, cached, testValidators)
+		assert.Equal(t, cached, want)
 	})
 
 	t.Run("returns cached validators", func(t *testing.T) {
 
 		epoch := uint64(1)
 
-		testValidators := map[ids.ShortID]uint64{
+		want := map[ids.ShortID]uint64{
 			{1}: 100,
 			{2}: 200,
 		}
@@ -72,21 +70,21 @@ func TestValidatorsCache_ByEpoch(t *testing.T) {
 		}
 
 		cache, _ := lru.New(1)
-		cache.Add(epoch, testValidators)
+		cache.Add(epoch, want)
 
 		retrieve := ValidatorsCache{
-			log:        logging.NoLog{},
-			validators: mock,
-			cache:      cache,
+			log:      logging.NoLog{},
+			retrieve: mock,
+			cache:    cache,
 		}
 
 		got, err := retrieve.ByEpoch(epoch)
 		require.NoError(t, err)
-		assert.Equal(t, got, testValidators)
+		assert.Equal(t, got, want)
 
 		cached, ok := cache.Get(epoch)
 		require.True(t, ok)
-		assert.Equal(t, cached, testValidators)
+		assert.Equal(t, cached, want)
 	})
 
 	t.Run("ejects least recently used entry", func(t *testing.T) {
@@ -94,7 +92,7 @@ func TestValidatorsCache_ByEpoch(t *testing.T) {
 		epoch1 := uint64(1)
 		epoch2 := uint64(2)
 
-		testValidators := map[ids.ShortID]uint64{
+		want := map[ids.ShortID]uint64{
 			{1}: 100,
 			{2}: 200,
 		}
@@ -102,7 +100,7 @@ func TestValidatorsCache_ByEpoch(t *testing.T) {
 		mock := &ValidatorsRetrieverMock{
 			ByEpochFunc: func(e uint64) (map[ids.ShortID]uint64, error) {
 				assert.Equal(t, e, epoch2)
-				return testValidators, nil
+				return want, nil
 			},
 		}
 
@@ -110,18 +108,18 @@ func TestValidatorsCache_ByEpoch(t *testing.T) {
 		cache.Add(epoch1, map[ids.ShortID]uint64{})
 
 		retrieve := ValidatorsCache{
-			log:        logging.NoLog{},
-			validators: mock,
-			cache:      cache,
+			log:      logging.NoLog{},
+			retrieve: mock,
+			cache:    cache,
 		}
 
 		got, err := retrieve.ByEpoch(epoch2)
 		require.NoError(t, err)
-		assert.Equal(t, got, testValidators)
+		assert.Equal(t, want, got)
 
 		cached, ok := cache.Get(epoch2)
 		require.True(t, ok)
-		assert.Equal(t, cached, testValidators)
+		assert.Equal(t, want, cached)
 
 		_, ok = cache.Get(epoch1)
 		require.False(t, ok)
@@ -140,9 +138,9 @@ func TestValidatorsCache_ByEpoch(t *testing.T) {
 		cache, _ := lru.New(1)
 
 		retrieve := ValidatorsCache{
-			log:        logging.NoLog{},
-			validators: mock,
-			cache:      cache,
+			log:      logging.NoLog{},
+			retrieve: mock,
+			cache:    cache,
 		}
 
 		_, err := retrieve.ByEpoch(epoch)

@@ -31,14 +31,14 @@ func WithCacheSize(slots uint) CacheOption {
 // ValidatorsCache wraps around a validator retriever and caches the results in
 // order to improve retrieval performance.
 type ValidatorsCache struct {
-	log        logging.Logger
-	validators ValidatorsRetriever
-	cache      *lru.Cache
+	log      logging.Logger
+	retrieve ValidatorsRetriever
+	cache    *lru.Cache
 }
 
 // NewValidatorCache creates a new LRU cache for validator retrieval with the
 // configured cache size.
-func NewValidatorsCache(log logging.Logger, validators ValidatorsRetriever, opts ...CacheOption) *ValidatorsCache {
+func NewValidatorsCache(log logging.Logger, retrieve ValidatorsRetriever, opts ...CacheOption) *ValidatorsCache {
 
 	cfg := DefaultCacheConfig
 	for _, opt := range opts {
@@ -47,9 +47,9 @@ func NewValidatorsCache(log logging.Logger, validators ValidatorsRetriever, opts
 
 	cache, _ := lru.New(int(cfg.CacheSize))
 	v := ValidatorsCache{
-		log:        log,
-		validators: validators,
-		cache:      cache,
+		log:      log,
+		retrieve: retrieve,
+		cache:    cache,
 	}
 
 	return &v
@@ -62,7 +62,7 @@ func (v *ValidatorsCache) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, error) 
 		return entry.(map[ids.ShortID]uint64), nil
 	}
 
-	validators, err := v.validators.ByEpoch(epoch)
+	validators, err := v.retrieve.ByEpoch(epoch)
 	if err != nil {
 		return nil, fmt.Errorf("could not retrieve validators before caching: %w", err)
 	}
