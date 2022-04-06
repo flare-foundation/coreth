@@ -252,7 +252,7 @@ func TestValidatorsDefault_ByEpoch(t *testing.T) {
 
 			assert.Len(t, gotValidators, len(test.validatorIDs))
 			for _, validatorID := range test.validatorIDs {
-				assert.Contains(t, validatorID, gotValidators)
+				assert.Contains(t, gotValidators, validatorID)
 			}
 		})
 	}

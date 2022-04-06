@@ -15,13 +15,14 @@ import (
 )
 
 type ValidatorsStore struct {
-	log logging.Logger
-	db  ethdb.Database
-	enc cbor.EncMode
-	dec cbor.DecMode
+	log   logging.Logger
+	read  ethdb.Reader
+	write ethdb.Writer
+	enc   cbor.EncMode
+	dec   cbor.DecMode
 }
 
-func NewValidatorsStore(log logging.Logger, db ethdb.Database) (*ValidatorsStore, error) {
+func NewValidatorsStore(log logging.Logger, read ethdb.Reader, write ethdb.Writer) (*ValidatorsStore, error) {
 
 	enc, err := cbor.EncOptions{
 		Sort:        cbor.SortCoreDeterministic,
@@ -43,10 +44,11 @@ func NewValidatorsStore(log logging.Logger, db ethdb.Database) (*ValidatorsStore
 	}
 
 	v := ValidatorsStore{
-		log: log,
-		db:  db,
-		enc: enc,
-		dec: dec,
+		log:   log,
+		read:  read,
+		write: write,
+		enc:   enc,
+		dec:   dec,
 	}
 
 	return &v, nil
@@ -62,7 +64,7 @@ func (v *ValidatorsStore) Persist(epoch uint64, validators map[ids.ShortID]uint6
 		return fmt.Errorf("could not encode validators: %w", err)
 	}
 
-	err = v.db.Put(key, data)
+	err = v.write.Put(key, data)
 	if err != nil {
 		return fmt.Errorf("could not put validator data: %w", err)
 	}
@@ -77,7 +79,7 @@ func (v *ValidatorsStore) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, error) 
 	key := make([]byte, 8)
 	binary.BigEndian.PutUint64(key, epoch)
 
-	data, err := v.db.Get(key)
+	data, err := v.read.Get(key)
 	if err != nil {
 		return nil, fmt.Errorf("could not get validator data: %w", err)
 	}
