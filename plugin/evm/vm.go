@@ -456,6 +456,20 @@ func (vm *VM) Initialize(
 	)
 	normalizeTransitionValidators := NewValidatorsNormalizer(ctx.Log, transitionValidators)
 
+	// Getting the active validators for the current epoch will bootstrap all of the
+	// storage that is part of the transition logic, and will avoid long delays once
+	// we start processing blocks.
+	epoch, err := ftso.Current(lastAccepted.Hash())
+	if err != nil && !errors.Is(err, errFTSONotDeployed) && !errors.Is(err, errFTSONotActive) {
+		return fmt.Errorf("could not get current epoch: %w", err)
+	}
+	if err == nil {
+		_, err = normalizeTransitionValidators.ByEpoch(epoch)
+		if err != nil {
+			return fmt.Errorf("could not bootstrap validator caches: %w", err)
+		}
+	}
+
 	// Initialize the validators manager, which is our interface between the EVM
 	// implementation and the Flare logic.
 	vm.ftso = ftso
