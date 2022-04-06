@@ -18,19 +18,33 @@ type ValidatorsRetrieverMock struct {
 	ByEpochFunc func(epoch uint64) (map[ids.ShortID]uint64, error)
 }
 
-func (t *ValidatorsRetrieverMock) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, error) {
-	return t.ByEpochFunc(epoch)
+func (v *ValidatorsRetrieverMock) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, error) {
+	return v.ByEpochFunc(epoch)
+}
+
+type ValidatorsPersisterMock struct {
+	PersistFunc func(epoch uint64, validators map[ids.ShortID]uint64) error
+}
+
+func (v *ValidatorsPersisterMock) Persist(epoch uint64, validators map[ids.ShortID]uint64) error {
+	return v.PersistFunc(epoch, validators)
 }
 
 func TestNewValidatorsTransitioner(t *testing.T) {
 
 	validators := &ValidatorsRetrieverMock{}
 	providers := &ValidatorsRetrieverMock{}
+	active := &ValidatorsRetrieverMock{}
+	store := &ValidatorsPersisterMock{}
+	size := uint(8)
 
-	got := NewValidatorsTransitioner(logging.NoLog{}, validators, providers)
+	got := NewValidatorsTransitioner(logging.NoLog{}, active, validators, providers, store, WithStepSize(size))
 	require.NotNil(t, got)
+	assert.Equal(t, active, got.active)
 	assert.Equal(t, validators, got.validators)
 	assert.Equal(t, providers, got.providers)
+	assert.Equal(t, store, got.store)
+	assert.Equal(t, size, got.cfg.StepSize)
 }
 
 func TestValidatorsTransitioner_ByEpoch(t *testing.T) {

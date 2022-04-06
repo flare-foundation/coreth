@@ -7,8 +7,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/flare-foundation/flare/ids"
 	"github.com/syndtr/goleveldb/leveldb"
+
+	"github.com/flare-foundation/flare/ids"
 )
 
 type Validators interface {

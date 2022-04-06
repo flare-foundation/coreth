@@ -22,14 +22,19 @@ func (r retrieverMock) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, error) {
 }
 
 func TestNewValidatorsManager(t *testing.T) {
-	testRetriever := &retrieverMock{}
 
-	got := NewValidatorsManager(testRetriever, testRetriever, testRetriever)
+	defaultRetriever := &retrieverMock{}
+	ftsoRetriever := &retrieverMock{}
+	activeRetriever := &retrieverMock{}
+	transitionRetriever := &retrieverMock{}
+
+	got := NewValidatorsManager(defaultRetriever, ftsoRetriever, activeRetriever, transitionRetriever)
 
 	require.NotNil(t, got)
-	assert.Equal(t, testRetriever, got.defaultValidators)
-	assert.Equal(t, testRetriever, got.ftsoValidators)
-	assert.Equal(t, testRetriever, got.activeValidators)
+	assert.Equal(t, defaultRetriever, got.defaultValidators)
+	assert.Equal(t, ftsoRetriever, got.ftsoValidators)
+	assert.Equal(t, activeRetriever, got.activeValidators)
+	assert.Equal(t, transitionRetriever, got.transitionValidators)
 }
 
 func TestValidatorsManager_DefaultValidators(t *testing.T) {

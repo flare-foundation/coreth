@@ -76,6 +76,8 @@ func (v *ValidatorsStore) Persist(epoch uint64, validators map[ids.ShortID]uint6
 		return fmt.Errorf("could not put validator data: %w", err)
 	}
 
+	v.log.Debug("persisted validators for epoch %d", epoch)
+
 	return nil
 }
 
@@ -94,6 +96,8 @@ func (v *ValidatorsStore) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, error) 
 	if err != nil {
 		return nil, fmt.Errorf("could not decode validators: %w", err)
 	}
+
+	v.log.Debug("restored validators for epoch %d", epoch)
 
 	return validators, nil
 }

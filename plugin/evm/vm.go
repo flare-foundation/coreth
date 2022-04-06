@@ -418,7 +418,7 @@ func (vm *VM) Initialize(
 	if err != nil {
 		return fmt.Errorf("could not initialize active validators store: %w", err)
 	}
-	cacheActiveValidators := NewValidatorsCache(activeValidators,
+	cacheActiveValidators := NewValidatorsCache(ctx.Log, activeValidators,
 		WithCacheSize(10),
 	)
 
@@ -432,7 +432,7 @@ func (vm *VM) Initialize(
 	ftsoValidators := NewValidatorsFTSO(ctx.Log, blockchain, ftso,
 		WithRootDegree(4),
 	)
-	cacheFTSOValidators := NewValidatorsCache(ftsoValidators,
+	cacheFTSOValidators := NewValidatorsCache(ctx.Log, ftsoValidators,
 		WithCacheSize(10),
 	)
 

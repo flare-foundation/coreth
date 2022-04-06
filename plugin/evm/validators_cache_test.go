@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/flare-foundation/flare/ids"
+	"github.com/flare-foundation/flare/utils/logging"
 )
 
 func TestWithCacheSize(t *testing.T) {
@@ -42,7 +43,7 @@ func TestValidatorsCache_ByEpoch(t *testing.T) {
 				return testValidators[e], nil
 			},
 		}
-		valCache := NewValidatorsCache(mock, WithCacheSize(32))
+		valCache := NewValidatorsCache(logging.NoLog{}, mock, WithCacheSize(32))
 		for k, v := range testValidators {
 			valCache.cache.Add(k, v)
 		}
@@ -70,7 +71,7 @@ func TestValidatorsCache_ByEpoch(t *testing.T) {
 				return testEpochResult, nil
 			},
 		}
-		valCache := NewValidatorsCache(mock, WithCacheSize(32))
+		valCache := NewValidatorsCache(logging.NoLog{}, mock, WithCacheSize(32))
 		for k, v := range testValidators {
 			valCache.cache.Add(k, v)
 		}
@@ -91,7 +92,7 @@ func TestValidatorsCache_ByEpoch(t *testing.T) {
 				return testValidators[e], nil
 			},
 		}
-		valCache := NewValidatorsCache(mock, WithCacheSize(32))
+		valCache := NewValidatorsCache(logging.NoLog{}, mock, WithCacheSize(32))
 		for k, v := range testValidators {
 			valCache.cache.Add(k, v)
 		}
@@ -110,7 +111,7 @@ func TestValidatorsCache_ByEpoch(t *testing.T) {
 			},
 		}
 
-		valCache := NewValidatorsCache(mock, WithCacheSize(32))
+		valCache := NewValidatorsCache(logging.NoLog{}, mock, WithCacheSize(32))
 
 		_, err := valCache.ByEpoch(epoch)
 		assert.Error(t, err)

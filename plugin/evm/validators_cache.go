@@ -9,6 +9,7 @@ import (
 	lru "github.com/hashicorp/golang-lru"
 
 	"github.com/flare-foundation/flare/ids"
+	"github.com/flare-foundation/flare/utils/logging"
 )
 
 var DefaultCacheConfig = CacheConfig{
@@ -30,13 +31,14 @@ func WithCacheSize(slots uint) CacheOption {
 // ValidatorsCache wraps around a validator retriever and caches the results in
 // order to improve retrieval performance.
 type ValidatorsCache struct {
+	log        logging.Logger
 	validators ValidatorsRetriever
 	cache      *lru.Cache
 }
 
 // NewValidatorCache creates a new LRU cache for validator retrieval with the
 // configured cache size.
-func NewValidatorsCache(validators ValidatorsRetriever, opts ...CacheOption) *ValidatorsCache {
+func NewValidatorsCache(log logging.Logger, validators ValidatorsRetriever, opts ...CacheOption) *ValidatorsCache {
 
 	cfg := DefaultCacheConfig
 	for _, opt := range opts {
@@ -45,6 +47,7 @@ func NewValidatorsCache(validators ValidatorsRetriever, opts ...CacheOption) *Va
 
 	cache, _ := lru.New(int(cfg.CacheSize))
 	v := ValidatorsCache{
+		log:        log,
 		validators: validators,
 		cache:      cache,
 	}
@@ -65,6 +68,8 @@ func (v *ValidatorsCache) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, error) 
 	}
 
 	v.cache.Add(epoch, validators)
+
+	v.log.Debug("cached validators for epoch %d", epoch)
 
 	return validators, nil
 }

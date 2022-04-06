@@ -36,7 +36,7 @@ func TestValidatorsNormalizer_ByEpoch(t *testing.T) {
 				return m
 			},
 		}
-		valCache := NewValidatorsCache(mock, WithCacheSize(128))
+		valCache := NewValidatorsCache(logging.NoLog{}, mock, WithCacheSize(128))
 		for k, v := range testValidators {
 			valCache.cache.Add(k, v)
 		}
@@ -64,7 +64,7 @@ func TestValidatorsNormalizer_ByEpoch(t *testing.T) {
 				return testWeightRatios, nil
 			},
 		}
-		valCache := NewValidatorsCache(mock, WithCacheSize(128))
+		valCache := NewValidatorsCache(logging.NoLog{}, mock, WithCacheSize(128))
 		for k, v := range testValidators {
 			valCache.cache.Add(k, v)
 		}
@@ -86,7 +86,7 @@ func TestValidatorsNormalizer_ByEpoch(t *testing.T) {
 				return testValidators[e], nil
 			},
 		}
-		valCache := NewValidatorsCache(mock, WithCacheSize(128))
+		valCache := NewValidatorsCache(logging.NoLog{}, mock, WithCacheSize(128))
 		for k, v := range testValidators {
 			valCache.cache.Add(k, v)
 		}
@@ -104,7 +104,7 @@ func TestValidatorsNormalizer_ByEpoch(t *testing.T) {
 				return nil, errors.New("dummy error")
 			},
 		}
-		valCache := NewValidatorsCache(mock, WithCacheSize(128))
+		valCache := NewValidatorsCache(logging.NoLog{}, mock, WithCacheSize(128))
 		valNormalizer := NewValidatorsNormalizer(&logging.Log{}, valCache)
 
 		_, err := valNormalizer.ByEpoch(uint64(0))
@@ -124,7 +124,7 @@ func TestValidatorsNormalizer_CalcWeightRatio(t *testing.T) {
 				return vals
 			},
 		}
-		valCache := NewValidatorsCache(mock, WithCacheSize(128))
+		valCache := NewValidatorsCache(logging.NoLog{}, mock, WithCacheSize(128))
 		for k, v := range testValidators {
 			valCache.cache.Add(k, v)
 		}
