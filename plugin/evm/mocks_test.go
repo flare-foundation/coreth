@@ -27,7 +27,7 @@ var (
 // genericValidators creates a new ValidatoraTestData populated with random values
 // and separated by epochs.
 // The function takes the number of epochs to create a starting with 0th.
-func genericValidators(numValidators, epochs int) validatorsTestData {
+func genericValidators(numValidators int, epochs int) validatorsTestData {
 	data := validatorsTestData{}
 	if numValidators == 0 {
 		return data

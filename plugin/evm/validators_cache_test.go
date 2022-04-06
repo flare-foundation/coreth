@@ -4,6 +4,7 @@ import (
 	"errors"
 	"testing"
 
+	lru "github.com/hashicorp/golang-lru"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -20,100 +21,131 @@ func TestWithCacheSize(t *testing.T) {
 	assert.Equal(t, wantCacheSize, cfg.CacheSize)
 }
 
-type TestValidatorCache struct {
-	ByEpochFunc func(uint64) (map[ids.ShortID]uint64, error)
-}
-
-func (t TestValidatorCache) ByEpoch(e uint64) (map[ids.ShortID]uint64, error) {
-	return t.ByEpochFunc(e)
-}
-
 func TestValidatorsCache_ByEpoch(t *testing.T) {
+
 	t.Run("nominal case", func(t *testing.T) {
-		var (
-			numValidators        = 5
-			numEpochs            = 2
-			epoch         uint64 = 1
-		)
 
-		testValidators := genericValidators(numValidators, numEpochs)
+		epoch := uint64(1)
 
-		mock := TestValidatorCache{
+		testValidators := map[ids.ShortID]uint64{
+			{1}: 100,
+			{2}: 200,
+		}
+
+		mock := &ValidatorsRetrieverMock{
 			ByEpochFunc: func(e uint64) (map[ids.ShortID]uint64, error) {
-				return testValidators[e], nil
+				assert.Equal(t, e, epoch)
+				return testValidators, nil
 			},
 		}
-		valCache := NewValidatorsCache(logging.NoLog{}, mock, WithCacheSize(32))
-		for k, v := range testValidators {
-			valCache.cache.Add(k, v)
+
+		cache, _ := lru.New(1)
+
+		retrieve := ValidatorsCache{
+			log:        logging.NoLog{},
+			validators: mock,
+			cache:      cache,
 		}
-		got, err := valCache.ByEpoch(epoch)
+
+		got, err := retrieve.ByEpoch(epoch)
 		require.NoError(t, err)
-		for key, value := range testValidators[epoch] {
-			assert.Contains(t, got, key)
-			assert.Equal(t, got[key], value)
-		}
-		assert.Len(t, got, len(testValidators[epoch]))
+		assert.Equal(t, got, testValidators)
+
+		cached, ok := cache.Get(epoch)
+		require.True(t, ok)
+		assert.Equal(t, cached, testValidators)
 	})
 
-	t.Run("handles missing key", func(t *testing.T) {
-		var (
-			numValidators        = 5
-			numEpochs            = 2
-			epoch         uint64 = 7
-		)
+	t.Run("returns cached validators", func(t *testing.T) {
 
-		testValidators := genericValidators(numValidators, numEpochs)
-		testEpochResult := map[ids.ShortID]uint64{}
+		epoch := uint64(1)
 
-		mock := TestValidatorCache{
-			ByEpochFunc: func(uint64) (map[ids.ShortID]uint64, error) {
-				return testEpochResult, nil
-			},
-		}
-		valCache := NewValidatorsCache(logging.NoLog{}, mock, WithCacheSize(32))
-		for k, v := range testValidators {
-			valCache.cache.Add(k, v)
-		}
-		got, err := valCache.ByEpoch(epoch)
-		require.NoError(t, err)
-		assert.Empty(t, got)
-		assert.ElementsMatch(t, testEpochResult, got)
-	})
-
-	t.Run("handles empty validators map", func(t *testing.T) {
-		epoch := uint64(0)
-		testValidators := validatorsTestData{
-			epoch: map[ids.ShortID]uint64{},
+		testValidators := map[ids.ShortID]uint64{
+			{1}: 100,
+			{2}: 200,
 		}
 
-		mock := TestValidatorCache{
+		mock := &ValidatorsRetrieverMock{
 			ByEpochFunc: func(e uint64) (map[ids.ShortID]uint64, error) {
-				return testValidators[e], nil
+				return nil, errors.New("should not call retriever")
 			},
 		}
-		valCache := NewValidatorsCache(logging.NoLog{}, mock, WithCacheSize(32))
-		for k, v := range testValidators {
-			valCache.cache.Add(k, v)
+
+		cache, _ := lru.New(1)
+		cache.Add(epoch, testValidators)
+
+		retrieve := ValidatorsCache{
+			log:        logging.NoLog{},
+			validators: mock,
+			cache:      cache,
 		}
-		got, err := valCache.ByEpoch(epoch)
-		assert.NoError(t, err)
-		assert.Empty(t, got)
-		assert.ElementsMatch(t, testValidators[epoch], got)
+
+		got, err := retrieve.ByEpoch(epoch)
+		require.NoError(t, err)
+		assert.Equal(t, got, testValidators)
+
+		cached, ok := cache.Get(epoch)
+		require.True(t, ok)
+		assert.Equal(t, cached, testValidators)
 	})
 
-	t.Run("handles failure to retrieve validator by epoch", func(t *testing.T) {
-		epoch := uint64(9)
+	t.Run("ejects least recently used entry", func(t *testing.T) {
 
-		mock := TestValidatorsNormalizer{
-			ByEpochFunc: func(uint64) (map[ids.ShortID]uint64, error) {
+		epoch1 := uint64(1)
+		epoch2 := uint64(2)
+
+		testValidators := map[ids.ShortID]uint64{
+			{1}: 100,
+			{2}: 200,
+		}
+
+		mock := &ValidatorsRetrieverMock{
+			ByEpochFunc: func(e uint64) (map[ids.ShortID]uint64, error) {
+				assert.Equal(t, e, epoch2)
+				return testValidators, nil
+			},
+		}
+
+		cache, _ := lru.New(1)
+		cache.Add(epoch1, map[ids.ShortID]uint64{})
+
+		retrieve := ValidatorsCache{
+			log:        logging.NoLog{},
+			validators: mock,
+			cache:      cache,
+		}
+
+		got, err := retrieve.ByEpoch(epoch2)
+		require.NoError(t, err)
+		assert.Equal(t, got, testValidators)
+
+		cached, ok := cache.Get(epoch2)
+		require.True(t, ok)
+		assert.Equal(t, cached, testValidators)
+
+		_, ok = cache.Get(epoch1)
+		require.False(t, ok)
+	})
+
+	t.Run("handles retrieve failure correctly", func(t *testing.T) {
+
+		epoch := uint64(1)
+
+		mock := &ValidatorsRetrieverMock{
+			ByEpochFunc: func(e uint64) (map[ids.ShortID]uint64, error) {
 				return nil, errors.New("dummy error")
 			},
 		}
 
-		valCache := NewValidatorsCache(logging.NoLog{}, mock, WithCacheSize(32))
+		cache, _ := lru.New(1)
 
-		_, err := valCache.ByEpoch(epoch)
-		assert.Error(t, err)
+		retrieve := ValidatorsCache{
+			log:        logging.NoLog{},
+			validators: mock,
+			cache:      cache,
+		}
+
+		_, err := retrieve.ByEpoch(epoch)
+		require.Error(t, err)
 	})
 }
