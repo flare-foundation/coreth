@@ -61,7 +61,7 @@ func (v *ValidatorsCache) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, error) 
 
 	validators, err := v.validators.ByEpoch(epoch)
 	if err != nil {
-		return nil, fmt.Errorf("could not retrieve validators for caching: %w", err)
+		return nil, fmt.Errorf("could not retrieve validators before caching: %w", err)
 	}
 
 	v.cache.Add(epoch, validators)
