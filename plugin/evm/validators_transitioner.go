@@ -49,7 +49,7 @@ type ValidatorsTransitioner struct {
 
 // NewValidatorsTransitioner creates a transition from the given default validators
 // to the validators retrieved from the given FTSO validators retriever.
-func NewValidatorsTransitioner(log logging.Logger, retrieveActive ValidatorsRetriever, retrieveDefault ValidatorsRetriever, retrieveFTSO ValidatorsRetriever, store ValidatorsPersister, options ...TransitionOption) *ValidatorsTransitioner {
+func NewValidatorsTransitioner(log logging.Logger, retrieveDefault ValidatorsRetriever, retrieveFTSO ValidatorsRetriever, retrieveActive ValidatorsRetriever, store ValidatorsPersister, options ...TransitionOption) *ValidatorsTransitioner {
 
 	cfg := DefaultTransitionConfig
 	for _, opt := range options {
@@ -58,9 +58,9 @@ func NewValidatorsTransitioner(log logging.Logger, retrieveActive ValidatorsRetr
 
 	v := ValidatorsTransitioner{
 		log:             log,
-		retrieveActive:  retrieveActive,
 		retrieveDefault: retrieveDefault,
 		retrieveFTSO:    retrieveFTSO,
+		retrieveActive:  retrieveActive,
 		store:           store,
 		cfg:             cfg,
 	}
@@ -74,6 +74,8 @@ func NewValidatorsTransitioner(log logging.Logger, retrieveActive ValidatorsRetr
 // growing and continuously takes up more of the total set until the original static
 // validators have been entirely phased out.
 func (v *ValidatorsTransitioner) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, error) {
+
+	fmt.Println("=========================================")
 
 	// Get the default validators for the requested epoch.
 	defaultValidators, err := v.retrieveDefault.ByEpoch(epoch)
@@ -108,7 +110,7 @@ func (v *ValidatorsTransitioner) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, 
 	previousValidators, err := v.retrieveActive.ByEpoch(epoch - 1)
 	if errors.Is(err, leveldb.ErrNotFound) {
 		v.log.Debug("retrieveActive validators not available, recursing into epoch %d", epoch-1)
-		return v.ByEpoch(epoch - 1)
+		previousValidators, err = v.ByEpoch(epoch - 1)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("could not get previous active validators for transition: %w", err)
@@ -117,19 +119,11 @@ func (v *ValidatorsTransitioner) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, 
 	// We can then count the number of default validators that were included in the
 	// retrieveActive validators from the previous epoch.
 	included := 0
-	for validator := range previousValidators {
-		_, ok := defaultValidators[validator]
+	for validatorID := range previousValidators {
+		_, ok := defaultValidators[validatorID]
 		if ok {
 			included++
 		}
-	}
-
-	// If there were no default validators included in the previous epoch at all,
-	// we have already completed the transition from default validators to FTSO
-	// validators, and we simply return the FTSO validators as retrieveActive validators.
-	if included == 0 {
-		v.log.Debug("returning provider validators on completed transition (%d)", len(ftsoValidators))
-		return ftsoValidators, nil
 	}
 
 	// Now, we calculate how many additional default validators we can remove at
@@ -158,13 +152,21 @@ func (v *ValidatorsTransitioner) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, 
 		remove++
 	}
 
+	// If there were no default validators included in the previous epoch at all,
+	// we have already completed the transition from default validators to FTSO
+	// validators, and we simply return the FTSO validators as retrieveActive validators.
+	if remove == included {
+		v.log.Debug("returning FTSO validators on completed transition (%d)", len(ftsoValidators))
+		return ftsoValidators, nil
+	}
+
 	// We then select the given number of included default validators. In order to
 	// make the selection deterministic, we sort the validator IDs for all default
 	// validators and then cut it off at the number of included ones.
 	cutoff := included - remove
 	defaultIDs := make([]ids.ShortID, 0, len(defaultValidators))
-	for validatorID := range defaultValidators {
-		defaultIDs = append(defaultIDs, validatorID)
+	for defaultID := range defaultValidators {
+		defaultIDs = append(defaultIDs, defaultID)
 	}
 	sort.Slice(defaultIDs, func(i int, j int) bool {
 		return bytes.Compare(defaultIDs[i][:], defaultIDs[j][:]) < 0
@@ -189,13 +191,13 @@ func (v *ValidatorsTransitioner) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, 
 	// followed by the remaining default validators with the calculated proportional
 	// average weight.
 	transitionValidators := make(map[ids.ShortID]uint64, len(ftsoValidators)+len(defaultIDs))
-	for provider, weight := range ftsoValidators {
-		transitionValidators[provider] = weight
-		v.log.Debug("adding provider validator %s (weight: %d)", provider.PrefixedString(constants.NodeIDPrefix), weight)
+	for ftsoValidator, weight := range ftsoValidators {
+		transitionValidators[ftsoValidator] = weight
+		v.log.Debug("adding provider validator %s (weight: %d)", ftsoValidator.PrefixedString(constants.NodeIDPrefix), weight)
 	}
-	for _, validatorID := range defaultIDs {
-		transitionValidators[validatorID] = proportionalWeight
-		v.log.Debug("adding default validator %s (weight: %d)", validatorID.PrefixedString(constants.NodeIDPrefix), proportionalWeight)
+	for _, defaultID := range defaultIDs {
+		transitionValidators[defaultID] = proportionalWeight
+		v.log.Debug("adding default validator %s (weight: %d)", defaultID.PrefixedString(constants.NodeIDPrefix), proportionalWeight)
 	}
 
 	err = v.store.Persist(epoch, transitionValidators)
