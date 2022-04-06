@@ -42,6 +42,7 @@ var (
 	FlareChainID    = big.NewInt(14) // https://github.com/ethereum-lists/chains/blob/master/_data/chains/eip155-14.json
 
 	// Flare core contract addresses.
+	ConnectorAddress  = common.HexToAddress("0x1000000000000000000000000000000000000001")
 	DaemonAddress     = common.HexToAddress("0x1000000000000000000000000000000000000002")
 	SubmitterAddress  = common.HexToAddress("0x1000000000000000000000000000000000000003")
 	ValidationAddress = common.HexToAddress("0x1000000000000000000000000000000000000004")

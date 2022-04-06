@@ -234,6 +234,9 @@ func GenerateChain(config *params.ChainConfig, parent *types.Block, engine conse
 			misc.ApplyDAOHardFork(statedb)
 		}
 		if config.IsFlareHardFork1(big.NewInt(0).SetUint64(b.header.Time)) {
+			if !misc.StateConnectorUpgraded(statedb) {
+				misc.UpgradeStateConnector(statedb)
+			}
 			if !misc.FlareDaemonUpgraded(statedb) {
 				misc.UpgradeFlareDaemon(statedb)
 			}

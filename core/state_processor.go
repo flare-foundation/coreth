@@ -81,8 +81,19 @@ func (p *StateProcessor) Process(block *types.Block, parent *types.Header, state
 	if p.config.DAOForkSupport && p.config.DAOForkBlock != nil && p.config.DAOForkBlock.Cmp(block.Number()) == 0 {
 		misc.ApplyDAOHardFork(statedb)
 	}
-	if p.config.IsFlareHardFork1(big.NewInt(0).SetUint64(block.Header().Time)) && !misc.ValidatorRegistryCreated(statedb) {
-		misc.CreateValidatorRegistry(statedb)
+	if p.config.IsFlareHardFork1(big.NewInt(0).SetUint64(block.Header().Time)) {
+		if !misc.StateConnectorUpgraded(statedb) {
+			misc.UpgradeStateConnector(statedb)
+		}
+		if !misc.FlareDaemonUpgraded(statedb) {
+			misc.UpgradeFlareDaemon(statedb)
+		}
+		if !misc.PriceSubmitterUpgraded(statedb) {
+			misc.UpgradePriceSubmitter(statedb)
+		}
+		if !misc.ValidatorRegistryCreated(statedb) {
+			misc.CreateValidatorRegistry(statedb)
+		}
 	}
 	blockContext := NewEVMBlockContext(header, p.bc, nil)
 	vmenv := vm.NewEVM(blockContext, vm.TxContext{}, statedb, p.config, cfg)
