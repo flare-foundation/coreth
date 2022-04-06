@@ -460,7 +460,7 @@ func (vm *VM) Initialize(
 	// storage that is part of the transition logic, and will avoid long delays once
 	// we start processing blocks.
 	epoch, err := ftso.Current(lastAcceptedHash)
-	if err != nil && !errors.Is(err, errFTSONotDeployed) && !errors.Is(err, errFTSONotActive) {
+	if err != nil && !errors.Is(err, errNoPriceSubmitter) && !errors.Is(err, errFTSONotDeployed) && !errors.Is(err, errFTSONotActive) {
 		return fmt.Errorf("could not get current epoch: %w", err)
 	}
 	if err == nil {
@@ -1543,7 +1543,7 @@ func (vm *VM) GetValidators(blockID ids.ID) (validation.Set, error) {
 	// default validator set as of epoch zero, which corresponds to the hard-coded
 	// default validators from the older code base.
 	if !blockchain.Config().IsFlareHardFork1(big.NewInt(0).SetUint64(header.Time)) {
-		vm.ctx.Log.Debug("hard fork not active, using default validators")
+		vm.ctx.Log.Debug("hard fork not activated, using default validators")
 		return toSet(vm.validators.DefaultValidators(0))
 	}
 
@@ -1552,8 +1552,8 @@ func (vm *VM) GetValidators(blockID ids.ID) (validation.Set, error) {
 	// active, at the given block ID, we return the default validators as of epoch
 	// zero as well.
 	epoch, err := vm.ftso.Current(hash)
-	if errors.Is(err, errFTSONotDeployed) || errors.Is(err, errFTSONotActive) {
-		vm.ctx.Log.Debug("FTSO not active, using default validators")
+	if errors.Is(err, errNoPriceSubmitter) || errors.Is(err, errFTSONotDeployed) || errors.Is(err, errFTSONotActive) {
+		vm.ctx.Log.Debug("FTSO not available, using default validators")
 		return toSet(vm.validators.DefaultValidators(0))
 	}
 	if err != nil {
@@ -1562,7 +1562,7 @@ func (vm *VM) GetValidators(blockID ids.ID) (validation.Set, error) {
 
 	// Finally, if we were able to identify the current rewards epoch, we return
 	// the set of active validators as of that epoch.
-	vm.ctx.Log.Debug("hard fork and FTSO active, using active validators")
+	vm.ctx.Log.Debug("hard fork activated and FTSO available, using active validators")
 	return toSet(vm.validators.ActiveValidators(epoch))
 }
 

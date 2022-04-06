@@ -104,6 +104,7 @@ func TestValidatorsTransitioner_ByEpoch(t *testing.T) {
 	_ = returnError
 
 	t.Run("epoch zero returns default validators", func(t *testing.T) {
+		t.Parallel()
 
 		epoch := uint64(0)
 		stepSize := uint(1)
@@ -151,6 +152,7 @@ func TestValidatorsTransitioner_ByEpoch(t *testing.T) {
 	})
 
 	t.Run("no FTSO validators returns default validators", func(t *testing.T) {
+		t.Parallel()
 
 		epoch := uint64(1)
 		stepSize := uint(1)
@@ -198,6 +200,7 @@ func TestValidatorsTransitioner_ByEpoch(t *testing.T) {
 	})
 
 	t.Run("no previous validators recurses into self", func(t *testing.T) {
+		t.Parallel()
 
 		epoch := uint64(1)
 		stepSize := uint(1)
@@ -251,6 +254,7 @@ func TestValidatorsTransitioner_ByEpoch(t *testing.T) {
 	})
 
 	t.Run("no default validators in previous validators returns FTSO validators", func(t *testing.T) {
+		t.Parallel()
 
 		epoch := uint64(1)
 		stepSize := uint(1)
@@ -298,6 +302,7 @@ func TestValidatorsTransitioner_ByEpoch(t *testing.T) {
 	})
 
 	t.Run("removing all default validators returns FTSO validators", func(t *testing.T) {
+		t.Parallel()
 
 		epoch := uint64(1)
 		stepSize := uint(1)
@@ -345,6 +350,7 @@ func TestValidatorsTransitioner_ByEpoch(t *testing.T) {
 	})
 
 	t.Run("don't remove default validator when insufficient FTSOs", func(t *testing.T) {
+		t.Parallel()
 
 		epoch := uint64(1)
 		stepSize := uint(1)
@@ -401,6 +407,7 @@ func TestValidatorsTransitioner_ByEpoch(t *testing.T) {
 	})
 
 	t.Run("remove one default validator at start", func(t *testing.T) {
+		t.Parallel()
 
 		epoch := uint64(1)
 		stepSize := uint(1)
@@ -459,6 +466,7 @@ func TestValidatorsTransitioner_ByEpoch(t *testing.T) {
 	})
 
 	t.Run("remove one default validator at middle", func(t *testing.T) {
+		t.Parallel()
 
 		epoch := uint64(1)
 		stepSize := uint(1)
@@ -516,6 +524,7 @@ func TestValidatorsTransitioner_ByEpoch(t *testing.T) {
 	})
 
 	t.Run("remove two default validator at start", func(t *testing.T) {
+		t.Parallel()
 
 		epoch := uint64(1)
 		stepSize := uint(2)
@@ -576,6 +585,7 @@ func TestValidatorsTransitioner_ByEpoch(t *testing.T) {
 	})
 
 	t.Run("remove two default validator at middle", func(t *testing.T) {
+		t.Parallel()
 
 		epoch := uint64(1)
 		stepSize := uint(2)
@@ -634,6 +644,7 @@ func TestValidatorsTransitioner_ByEpoch(t *testing.T) {
 	})
 
 	t.Run("remove one default validator when insufficient for two", func(t *testing.T) {
+		t.Parallel()
 
 		epoch := uint64(1)
 		stepSize := uint(2)

@@ -36,7 +36,7 @@ func TestNewValidatorsDefault(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		init    func(t *testing.T)
+		setEnv  func(t *testing.T)
 		nodeIDs []string
 		chainID *big.Int
 		weight  uint64
@@ -65,7 +65,7 @@ func TestNewValidatorsDefault(t *testing.T) {
 		},
 		{
 			name:    "valid custom default validators",
-			init:    setValid,
+			setEnv:  setValid,
 			chainID: big.NewInt(1337),
 			nodeIDs: customNodeIDs,
 			weight:  customValidatorWeight,
@@ -73,7 +73,7 @@ func TestNewValidatorsDefault(t *testing.T) {
 		},
 		{
 			name:    "missing custom default validators",
-			init:    setInvalid,
+			setEnv:  setInvalid,
 			chainID: big.NewInt(1337),
 			nodeIDs: customNodeIDs,
 			weight:  customValidatorWeight,
@@ -91,13 +91,12 @@ func TestNewValidatorsDefault(t *testing.T) {
 	for _, test := range tests {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
 
 			err := os.Unsetenv("CUSTOM_VALIDATORS")
 			require.NoError(t, err)
 
-			if test.init != nil {
-				test.init(t)
+			if test.setEnv != nil {
+				test.setEnv(t)
 			}
 
 			got, err := NewValidatorsDefault(test.chainID)

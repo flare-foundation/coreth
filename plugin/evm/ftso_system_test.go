@@ -84,7 +84,7 @@ func TestFTSOSystem_Contracts(t *testing.T) {
 		latestBlock := be.Blockchain().LastAcceptedBlock()
 
 		_, err := ftsoSystem.Contracts(latestBlock.Hash())
-		assert.EqualError(t, err, "could not get manager address: no return data")
+		assert.EqualError(t, err, "no price submitter")
 	})
 
 	t.Run("handles FTSO not testcontracts.Deployed error", func(t *testing.T) {
@@ -218,7 +218,7 @@ func TestFTSOSystem_Details(t *testing.T) {
 		ftsoSystem := testFTSOSystem(t, be, common.Address{}, common.Address{})
 
 		_, err := ftsoSystem.Details(0)
-		assert.EqualError(t, err, fmt.Sprintf("could not get contracts (hash: %x): could not get manager address: no return data", ftsoSystem.blockchain.CurrentHeader().Hash()))
+		assert.EqualError(t, err, fmt.Sprintf("could not get contracts (hash: %x): no price submitter", ftsoSystem.blockchain.CurrentHeader().Hash()))
 	})
 
 }
@@ -257,7 +257,7 @@ func TestFTSOSystem_Snapshot(t *testing.T) {
 		ftsoSystem := testFTSOSystem(t, be, submitterAddr, validationAddr)
 
 		_, err := ftsoSystem.Snapshot(100)
-		assert.EqualError(t, err, fmt.Sprintf("could not get current epoch details: could not get contracts (hash: %x): could not get manager address: no return data", ftsoSystem.blockchain.CurrentHeader().Hash()))
+		assert.EqualError(t, err, fmt.Sprintf("could not get current epoch details: could not get contracts (hash: %x): no price submitter", ftsoSystem.blockchain.CurrentHeader().Hash()))
 	})
 
 	t.Run("handles unknown power block error", func(t *testing.T) {
@@ -365,7 +365,7 @@ func TestFTSOSystem_Current(t *testing.T) {
 		latestBlock := be.Blockchain().LastAcceptedBlock()
 
 		_, err := ftsoSystem.Current(latestBlock.Hash())
-		assert.EqualError(t, err, "could not get contracts: could not get manager address: no return data")
+		assert.EqualError(t, err, "could not get contracts: no price submitter")
 	})
 }
 

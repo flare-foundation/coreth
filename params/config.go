@@ -37,9 +37,10 @@ import (
 
 var (
 	// Flare Chain IDs.
-	CostonChainID   = big.NewInt(16) // https://github.com/ethereum-lists/chains/blob/master/_data/chains/eip155-16.json
-	SongbirdChainID = big.NewInt(19) // https://github.com/ethereum-lists/chains/blob/master/_data/chains/eip155-19.json
-	FlareChainID    = big.NewInt(14) // https://github.com/ethereum-lists/chains/blob/master/_data/chains/eip155-14.json
+	CostonChainID   = big.NewInt(16)    // https://github.com/ethereum-lists/chains/blob/master/_data/chains/eip155-16.json
+	SongbirdChainID = big.NewInt(19)    // https://github.com/ethereum-lists/chains/blob/master/_data/chains/eip155-19.json
+	FlareChainID    = big.NewInt(14)    // https://github.com/ethereum-lists/chains/blob/master/_data/chains/eip155-14.json
+	TestingChainID  = big.NewInt(12345) // used for sentinel value in tests
 
 	// Flare core contract addresses.
 	ConnectorAddress  = common.HexToAddress("0x1000000000000000000000000000000000000001")

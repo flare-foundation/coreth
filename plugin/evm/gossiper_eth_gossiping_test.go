@@ -7,7 +7,6 @@ import (
 	"crypto/ecdsa"
 	"encoding/json"
 	"math/big"
-	"os"
 	"strings"
 	"sync"
 	"testing"
@@ -20,7 +19,6 @@ import (
 	"github.com/ethereum/go-ethereum/rlp"
 
 	"github.com/flare-foundation/flare/ids"
-	"github.com/flare-foundation/flare/utils/constants"
 
 	"github.com/flare-foundation/coreth/core"
 	"github.com/flare-foundation/coreth/core/types"
@@ -33,6 +31,7 @@ func fundAddressByGenesis(addrs []common.Address) (string, error) {
 	genesis := &core.Genesis{
 		Difficulty: common.Big0,
 		GasLimit:   uint64(5000000),
+		Coinbase:   common.HexToAddress("0x0100000000000000000000000000000000000000"),
 	}
 	funds := make(map[common.Address]core.GenesisAccount)
 	for _, addr := range addrs {
@@ -43,7 +42,7 @@ func fundAddressByGenesis(addrs []common.Address) (string, error) {
 	genesis.Alloc = funds
 
 	genesis.Config = &params.ChainConfig{
-		ChainID:                     big.NewInt(12345),
+		ChainID:                     params.TestingChainID,
 		ApricotPhase1BlockTimestamp: big.NewInt(0),
 		ApricotPhase2BlockTimestamp: big.NewInt(0),
 		ApricotPhase3BlockTimestamp: big.NewInt(0),
@@ -284,10 +283,6 @@ func TestMempoolEthTxsAppGossipHandling(t *testing.T) {
 }
 
 func TestMempoolEthTxsRegossipSingleAccount(t *testing.T) {
-
-	// make sure we have a default validator available for initialization
-	nodeID := ids.GenerateTestShortID()
-	os.Setenv("CUSTOM_VALIDATORS", nodeID.PrefixedString(constants.NodeIDPrefix))
 
 	assert := assert.New(t)
 
