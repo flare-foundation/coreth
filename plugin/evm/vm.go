@@ -459,7 +459,7 @@ func (vm *VM) Initialize(
 	// Getting the active validators for the current epoch will bootstrap all of the
 	// storage that is part of the transition logic, and will avoid long delays once
 	// we start processing blocks.
-	epoch, err := ftso.Current(lastAccepted.Hash())
+	epoch, err := ftso.Current(lastAcceptedHash)
 	if err != nil && !errors.Is(err, errFTSONotDeployed) && !errors.Is(err, errFTSONotActive) {
 		return fmt.Errorf("could not get current epoch: %w", err)
 	}

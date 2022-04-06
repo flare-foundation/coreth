@@ -8,7 +8,6 @@ import (
 	"fmt"
 
 	"github.com/fxamacker/cbor/v2"
-	lru "github.com/hashicorp/golang-lru"
 
 	"github.com/flare-foundation/coreth/ethdb"
 	"github.com/flare-foundation/flare/ids"
@@ -16,19 +15,13 @@ import (
 )
 
 type ValidatorsStore struct {
-	log   logging.Logger
-	db    ethdb.Database
-	enc   cbor.EncMode
-	dec   cbor.DecMode
-	cache *lru.Cache
+	log logging.Logger
+	db  ethdb.Database
+	enc cbor.EncMode
+	dec cbor.DecMode
 }
 
-func NewValidatorsStore(log logging.Logger, db ethdb.Database, options ...CacheOption) (*ValidatorsStore, error) {
-
-	cfg := DefaultCacheConfig
-	for _, option := range options {
-		option(&cfg)
-	}
+func NewValidatorsStore(log logging.Logger, db ethdb.Database) (*ValidatorsStore, error) {
 
 	enc, err := cbor.EncOptions{
 		Sort:        cbor.SortCoreDeterministic,
@@ -49,13 +42,11 @@ func NewValidatorsStore(log logging.Logger, db ethdb.Database, options ...CacheO
 		return nil, fmt.Errorf("invalid decoding options: %w", err)
 	}
 
-	cache, _ := lru.New(int(cfg.CacheSize))
 	v := ValidatorsStore{
-		log:   log,
-		db:    db,
-		enc:   enc,
-		dec:   dec,
-		cache: cache,
+		log: log,
+		db:  db,
+		enc: enc,
+		dec: dec,
 	}
 
 	return &v, nil
