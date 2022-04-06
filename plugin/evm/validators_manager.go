@@ -10,6 +10,7 @@ import (
 	"github.com/syndtr/goleveldb/leveldb"
 
 	"github.com/flare-foundation/flare/ids"
+	"github.com/flare-foundation/flare/utils/logging"
 )
 
 type Validators interface {
@@ -27,6 +28,7 @@ type ValidatorsRetriever interface {
 // before the hard fork upgrade, or a dynamic set of validators based on a transition to
 // the FTSO validator set.
 type ValidatorsManager struct {
+	log                  logging.Logger
 	defaultValidators    ValidatorsRetriever
 	ftsoValidators       ValidatorsRetriever
 	activeValidators     ValidatorsRetriever
@@ -38,9 +40,10 @@ type ValidatorsManager struct {
 // block timestamps to FTSO rewards epochs, the given validators as the legacy static
 // validator set, and the given retriever to get the validator set based on FTSO
 // data providers.
-func NewValidatorsManager(defaultValidators ValidatorsRetriever, ftsoValidators ValidatorsRetriever, activeValidators ValidatorsRetriever, transitionValidators ValidatorsRetriever) *ValidatorsManager {
+func NewValidatorsManager(log logging.Logger, defaultValidators ValidatorsRetriever, ftsoValidators ValidatorsRetriever, activeValidators ValidatorsRetriever, transitionValidators ValidatorsRetriever) *ValidatorsManager {
 
 	v := ValidatorsManager{
+		log:                  log,
 		defaultValidators:    defaultValidators,
 		ftsoValidators:       ftsoValidators,
 		activeValidators:     activeValidators,
@@ -55,6 +58,7 @@ func (v *ValidatorsManager) DefaultValidators(epoch uint64) (map[ids.ShortID]uin
 	if err != nil {
 		return nil, fmt.Errorf("could not retrieve default validators: %w", err)
 	}
+	v.log.Debug("returning default validators")
 	return validators, nil
 }
 
@@ -63,12 +67,14 @@ func (v *ValidatorsManager) FTSOValidators(epoch uint64) (map[ids.ShortID]uint64
 	if err != nil {
 		return nil, fmt.Errorf("could not retrieve FTSO validators: %w", err)
 	}
+	v.log.Debug("returning FTSO validators")
 	return validators, nil
 }
 
 func (v *ValidatorsManager) ActiveValidators(epoch uint64) (map[ids.ShortID]uint64, error) {
 	validators, err := v.activeValidators.ByEpoch(epoch)
 	if err == nil {
+		v.log.Debug("returning active validators")
 		return validators, nil
 	}
 	if !errors.Is(err, leveldb.ErrNotFound) {
@@ -78,5 +84,6 @@ func (v *ValidatorsManager) ActiveValidators(epoch uint64) (map[ids.ShortID]uint
 	if err != nil {
 		return nil, fmt.Errorf("could not transition active validators: %w", err)
 	}
+	v.log.Debug("returning transitioned validators")
 	return validators, nil
 }

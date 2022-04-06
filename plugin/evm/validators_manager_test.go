@@ -9,8 +9,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/syndtr/goleveldb/leveldb"
 
 	"github.com/flare-foundation/flare/ids"
+	"github.com/flare-foundation/flare/utils/logging"
 )
 
 type retrieverMock struct {
@@ -28,7 +30,7 @@ func TestNewValidatorsManager(t *testing.T) {
 	activeRetriever := &retrieverMock{}
 	transitionRetriever := &retrieverMock{}
 
-	got := NewValidatorsManager(defaultRetriever, ftsoRetriever, activeRetriever, transitionRetriever)
+	got := NewValidatorsManager(logging.NoLog{}, defaultRetriever, ftsoRetriever, activeRetriever, transitionRetriever)
 
 	require.NotNil(t, got)
 	assert.Equal(t, defaultRetriever, got.defaultValidators)
@@ -38,6 +40,7 @@ func TestNewValidatorsManager(t *testing.T) {
 }
 
 func TestValidatorsManager_DefaultValidators(t *testing.T) {
+
 	testEpoch := uint64(1)
 	testValidators := map[ids.ShortID]uint64{
 		{13}: 37,
@@ -49,12 +52,12 @@ func TestValidatorsManager_DefaultValidators(t *testing.T) {
 		testRetriever := &retrieverMock{
 			ByEpochFunc: func(epoch uint64) (map[ids.ShortID]uint64, error) {
 				assert.Equal(t, testEpoch, epoch)
-
 				return testValidators, nil
 			},
 		}
 
 		subject := &ValidatorsManager{
+			log:               logging.NoLog{},
 			defaultValidators: testRetriever,
 		}
 
@@ -69,16 +72,172 @@ func TestValidatorsManager_DefaultValidators(t *testing.T) {
 		testRetriever := &retrieverMock{
 			ByEpochFunc: func(epoch uint64) (map[ids.ShortID]uint64, error) {
 				assert.Equal(t, testEpoch, epoch)
-
 				return nil, errors.New("dummy error")
 			},
 		}
 
 		subject := &ValidatorsManager{
+			log:               logging.NoLog{},
 			defaultValidators: testRetriever,
 		}
 
 		_, err := subject.DefaultValidators(testEpoch)
+		assert.Error(t, err)
+	})
+}
+
+func TestValidatorsManager_FTSOValidators(t *testing.T) {
+
+	testEpoch := uint64(1)
+	testValidators := map[ids.ShortID]uint64{
+		{13}: 37,
+	}
+
+	t.Run("nominal case", func(t *testing.T) {
+		t.Parallel()
+
+		testRetriever := &retrieverMock{
+			ByEpochFunc: func(epoch uint64) (map[ids.ShortID]uint64, error) {
+				assert.Equal(t, testEpoch, epoch)
+				return testValidators, nil
+			},
+		}
+
+		subject := &ValidatorsManager{
+			log:            logging.NoLog{},
+			ftsoValidators: testRetriever,
+		}
+
+		got, err := subject.FTSOValidators(testEpoch)
+		require.NoError(t, err)
+		assert.Equal(t, testValidators, got)
+	})
+
+	t.Run("handles failure to retrieve FTSO validators", func(t *testing.T) {
+		t.Parallel()
+
+		testRetriever := &retrieverMock{
+			ByEpochFunc: func(epoch uint64) (map[ids.ShortID]uint64, error) {
+				assert.Equal(t, testEpoch, epoch)
+				return nil, errors.New("dummy error")
+			},
+		}
+
+		subject := &ValidatorsManager{
+			log:            logging.NoLog{},
+			ftsoValidators: testRetriever,
+		}
+
+		_, err := subject.FTSOValidators(testEpoch)
+		assert.Error(t, err)
+	})
+}
+
+func TestValidatorsManager_ActiveValidators(t *testing.T) {
+
+	testEpoch := uint64(1)
+	testValidators := map[ids.ShortID]uint64{
+		{13}: 37,
+	}
+	t.Run("nominal case", func(t *testing.T) {
+		t.Parallel()
+
+		testRetriever := &retrieverMock{
+			ByEpochFunc: func(epoch uint64) (map[ids.ShortID]uint64, error) {
+				assert.Equal(t, testEpoch, epoch)
+				return testValidators, nil
+			},
+		}
+		testTransitioner := &retrieverMock{
+			ByEpochFunc: func(epoch uint64) (map[ids.ShortID]uint64, error) {
+				return nil, errors.New("dummy error")
+			},
+		}
+
+		subject := &ValidatorsManager{
+			log:                  logging.NoLog{},
+			activeValidators:     testRetriever,
+			transitionValidators: testTransitioner,
+		}
+
+		got, err := subject.ActiveValidators(testEpoch)
+		require.NoError(t, err)
+		assert.Equal(t, testValidators, got)
+	})
+
+	t.Run("gracefully falls back on transitioner", func(t *testing.T) {
+		t.Parallel()
+
+		testRetriever := &retrieverMock{
+			ByEpochFunc: func(epoch uint64) (map[ids.ShortID]uint64, error) {
+				assert.Equal(t, testEpoch, epoch)
+				return nil, leveldb.ErrNotFound
+			},
+		}
+		testTransitioner := &retrieverMock{
+			ByEpochFunc: func(epoch uint64) (map[ids.ShortID]uint64, error) {
+				return testValidators, nil
+			},
+		}
+
+		subject := &ValidatorsManager{
+			log:                  logging.NoLog{},
+			activeValidators:     testRetriever,
+			transitionValidators: testTransitioner,
+		}
+
+		got, err := subject.ActiveValidators(testEpoch)
+		require.NoError(t, err)
+		assert.Equal(t, testValidators, got)
+	})
+
+	t.Run("handles failure to retrieve active validators", func(t *testing.T) {
+		t.Parallel()
+
+		testRetriever := &retrieverMock{
+			ByEpochFunc: func(epoch uint64) (map[ids.ShortID]uint64, error) {
+				assert.Equal(t, testEpoch, epoch)
+				return nil, errors.New("dummy error")
+			},
+		}
+		testTransitioner := &retrieverMock{
+			ByEpochFunc: func(epoch uint64) (map[ids.ShortID]uint64, error) {
+				return testValidators, nil
+			},
+		}
+
+		subject := &ValidatorsManager{
+			log:                  logging.NoLog{},
+			activeValidators:     testRetriever,
+			transitionValidators: testTransitioner,
+		}
+
+		_, err := subject.ActiveValidators(testEpoch)
+		assert.Error(t, err)
+	})
+
+	t.Run("handles failure to retrieve active validators", func(t *testing.T) {
+		t.Parallel()
+
+		testRetriever := &retrieverMock{
+			ByEpochFunc: func(epoch uint64) (map[ids.ShortID]uint64, error) {
+				assert.Equal(t, testEpoch, epoch)
+				return nil, leveldb.ErrNotFound
+			},
+		}
+		testTransitioner := &retrieverMock{
+			ByEpochFunc: func(epoch uint64) (map[ids.ShortID]uint64, error) {
+				return nil, errors.New("dummy error")
+			},
+		}
+
+		subject := &ValidatorsManager{
+			log:                  logging.NoLog{},
+			activeValidators:     testRetriever,
+			transitionValidators: testTransitioner,
+		}
+
+		_, err := subject.ActiveValidators(testEpoch)
 		assert.Error(t, err)
 	})
 }
