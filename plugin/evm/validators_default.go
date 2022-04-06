@@ -18,11 +18,16 @@ import (
 )
 
 const (
+	testingValidatorWeight  = 10_000_000
 	costonValidatorWeight   = 200_000
 	songbirdValidatorWeight = 50_000
 	flareValidatorWeight    = 50_000
 	customValidatorWeight   = 200_000
 )
+
+var testingNodeIDs = []string{
+	"NodeID-MEHBQFqQnSz7KzS8u4t8nWy7fSaqN2Pdp",
+}
 
 var costonNodeIDs = []string{
 	"NodeID-5dDZXn99LCkDoEi6t9gTitZuQmhokxQTc",
@@ -91,6 +96,10 @@ func NewValidatorsDefault(chainID *big.Int) (*ValidatorsDefault, error) {
 	case chainID.Cmp(params.FlareChainID) == 0:
 		nodeIDs = flareNodeIDs
 		weight = flareValidatorWeight
+	case chainID.Cmp(params.TestingChainID) == 0:
+		nodeIDs = testingNodeIDs
+		weight = testingValidatorWeight
+
 	default:
 		customValidators := os.Getenv("CUSTOM_VALIDATORS")
 		if customValidators == "" {

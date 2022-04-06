@@ -125,6 +125,9 @@ func (f *FTSOSystem) Contracts(hash common.Hash) (FTSOContracts, error) {
 
 	var managerAddress common.Address
 	err := snap.OnContract(f.submitter).Execute(ManagerAddress).Decode(&managerAddress)
+	if errors.Is(err, errNoReturnData) {
+		return FTSOContracts{}, errNoPriceSubmitter
+	}
 	if err != nil {
 		return FTSOContracts{}, fmt.Errorf("could not get manager address: %w", err)
 	}

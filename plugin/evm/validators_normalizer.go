@@ -16,17 +16,17 @@ import (
 // weights come out to the same total, irrespective of their original weights or
 // how many validators are in a set.
 type ValidatorsNormalizer struct {
-	log        logging.Logger
-	validators ValidatorsRetriever
+	log      logging.Logger
+	retrieve ValidatorsRetriever
 }
 
 // NewValidatorsNormalizer wraps a new validators retriever in the normalizer, making
 // sure that all sets retrieved from the wrapper retriever have the same total weight.
-func NewValidatorsNormalizer(log logging.Logger, validators ValidatorsRetriever) *ValidatorsNormalizer {
+func NewValidatorsNormalizer(log logging.Logger, retrieve ValidatorsRetriever) *ValidatorsNormalizer {
 
 	v := ValidatorsNormalizer{
-		log:        log,
-		validators: validators,
+		log:      log,
+		retrieve: retrieve,
 	}
 
 	return &v
@@ -36,7 +36,7 @@ func NewValidatorsNormalizer(log logging.Logger, validators ValidatorsRetriever)
 // their weights so that they always have the same total approximate weight.
 func (v *ValidatorsNormalizer) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, error) {
 
-	validators, err := v.validators.ByEpoch(epoch)
+	validators, err := v.retrieve.ByEpoch(epoch)
 	if err != nil {
 		return nil, fmt.Errorf("could not retrieve validators for normalizing: %w", err)
 	}
@@ -44,11 +44,6 @@ func (v *ValidatorsNormalizer) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, er
 	if len(validators) == 0 {
 		return validators, nil
 	}
-
-	return v.calcWeightRatio(validators), nil
-}
-
-func (v *ValidatorsNormalizer) calcWeightRatio(validators map[ids.ShortID]uint64) map[ids.ShortID]uint64 {
 
 	var totalWeight uint64
 	for _, weight := range validators {
@@ -62,5 +57,5 @@ func (v *ValidatorsNormalizer) calcWeightRatio(validators map[ids.ShortID]uint64
 		normalized[validator] = weight * ratio
 	}
 
-	return normalized
+	return normalized, nil
 }

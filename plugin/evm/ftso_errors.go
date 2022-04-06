@@ -8,6 +8,7 @@ import (
 )
 
 var (
+	errNoPriceSubmitter    = errors.New("no price submitter")
 	errFTSONotDeployed     = errors.New("FTSO not deployed")
 	errFTSONotActive       = errors.New("FTSO not active")
 	errRegistryNotDeployed = errors.New("validators registry not deployed")
