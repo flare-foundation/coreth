@@ -9,8 +9,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/syndtr/goleveldb/leveldb"
 
+	"github.com/flare-foundation/flare/database"
 	"github.com/flare-foundation/flare/ids"
 	"github.com/flare-foundation/flare/utils/logging"
 )
@@ -97,7 +97,7 @@ func TestValidatorsTransitioner_ByEpoch(t *testing.T) {
 
 	returnNotFound := func() func(epoch uint64) (map[ids.ShortID]uint64, error) {
 		return func(epoch uint64) (map[ids.ShortID]uint64, error) {
-			return nil, leveldb.ErrNotFound
+			return nil, database.ErrNotFound
 		}
 	}
 

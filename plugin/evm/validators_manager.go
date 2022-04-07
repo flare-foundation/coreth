@@ -7,8 +7,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/syndtr/goleveldb/leveldb"
-
+	"github.com/flare-foundation/flare/database"
 	"github.com/flare-foundation/flare/ids"
 	"github.com/flare-foundation/flare/utils/logging"
 )
@@ -77,7 +76,7 @@ func (v *ValidatorsManager) ActiveValidators(epoch uint64) (map[ids.ShortID]uint
 		v.log.Debug("returning active validators")
 		return validators, nil
 	}
-	if !errors.Is(err, leveldb.ErrNotFound) {
+	if !errors.Is(err, database.ErrNotFound) {
 		return nil, fmt.Errorf("could not retrieve active validators: %w", err)
 	}
 	validators, err = v.transitionValidators.ByEpoch(epoch)

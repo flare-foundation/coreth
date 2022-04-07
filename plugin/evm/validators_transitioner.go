@@ -9,8 +9,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/syndtr/goleveldb/leveldb"
-
+	"github.com/flare-foundation/flare/database"
 	"github.com/flare-foundation/flare/ids"
 	"github.com/flare-foundation/flare/utils/constants"
 	"github.com/flare-foundation/flare/utils/logging"
@@ -108,7 +107,7 @@ func (v *ValidatorsTransitioner) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, 
 	// Otherwise, get the retrieveActive validators from the previous epoch to see how
 	// many we have to transition. If none are available, we have to recurse.
 	previousValidators, err := v.retrieveActive.ByEpoch(epoch - 1)
-	if errors.Is(err, leveldb.ErrNotFound) {
+	if errors.Is(err, database.ErrNotFound) {
 		v.log.Debug("retrieveActive validators not available, recursing into epoch %d", epoch-1)
 		previousValidators, err = v.ByEpoch(epoch - 1)
 	}

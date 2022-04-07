@@ -9,8 +9,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/syndtr/goleveldb/leveldb"
 
+	"github.com/flare-foundation/flare/database"
 	"github.com/flare-foundation/flare/ids"
 	"github.com/flare-foundation/flare/utils/logging"
 )
@@ -171,7 +171,7 @@ func TestValidatorsManager_ActiveValidators(t *testing.T) {
 		testRetriever := &retrieverMock{
 			ByEpochFunc: func(epoch uint64) (map[ids.ShortID]uint64, error) {
 				assert.Equal(t, testEpoch, epoch)
-				return nil, leveldb.ErrNotFound
+				return nil, database.ErrNotFound
 			},
 		}
 		testTransitioner := &retrieverMock{
@@ -222,7 +222,7 @@ func TestValidatorsManager_ActiveValidators(t *testing.T) {
 		testRetriever := &retrieverMock{
 			ByEpochFunc: func(epoch uint64) (map[ids.ShortID]uint64, error) {
 				assert.Equal(t, testEpoch, epoch)
-				return nil, leveldb.ErrNotFound
+				return nil, database.ErrNotFound
 			},
 		}
 		testTransitioner := &retrieverMock{
