@@ -43,6 +43,13 @@ func TestNewValidatorsDefault(t *testing.T) {
 		wantErr require.ErrorAssertionFunc
 	}{
 		{
+			name:    "testing default validators",
+			chainID: params.TestingChainID,
+			nodeIDs: testingNodeIDs,
+			weight:  testingValidatorWeight,
+			wantErr: require.NoError,
+		},
+		{
 			name:    "coston default validators",
 			chainID: params.CostonChainID,
 			nodeIDs: costonNodeIDs,

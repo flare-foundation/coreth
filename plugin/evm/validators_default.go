@@ -78,6 +78,11 @@ func NewValidatorsDefault(chainID *big.Int) (*ValidatorsDefault, error) {
 	var nodeIDs []string
 	var steps []Step
 	switch {
+
+	case chainID.Cmp(params.TestingChainID) == 0:
+		nodeIDs = testingNodeIDs
+		weight = testingValidatorWeight
+
 	case chainID.Cmp(params.CostonChainID) == 0:
 		nodeIDs = costonNodeIDs
 		weight = costonValidatorWeight
@@ -85,6 +90,7 @@ func NewValidatorsDefault(chainID *big.Int) (*ValidatorsDefault, error) {
 			{Epoch: 1604, Cutoff: 4}, // go down to 4 default validators one week after hard fork
 			{Epoch: 1772, Cutoff: 3}, // go down to 3 default validators two weeks after hard fork
 		}
+
 	case chainID.Cmp(params.SongbirdChainID) == 0:
 		nodeIDs = songbirdNodeIDs
 		weight = songbirdValidatorWeight
@@ -93,12 +99,10 @@ func NewValidatorsDefault(chainID *big.Int) (*ValidatorsDefault, error) {
 			{Epoch: 44, Cutoff: 10}, // go down to 10 default validators four weeks after main net launch
 			{Epoch: 46, Cutoff: 5},  // go down to 5 default validators six weeks after main net launch
 		}
+
 	case chainID.Cmp(params.FlareChainID) == 0:
 		nodeIDs = flareNodeIDs
 		weight = flareValidatorWeight
-	case chainID.Cmp(params.TestingChainID) == 0:
-		nodeIDs = testingNodeIDs
-		weight = testingValidatorWeight
 
 	default:
 		customValidators := os.Getenv("CUSTOM_VALIDATORS")

@@ -413,7 +413,7 @@ func (vm *VM) Initialize(
 	}
 
 	// Load the persisted active validator sets from the on-disk database.
-	validatorDB := Database{prefixdb.NewNested(validatorPrefix, baseDB)}
+	validatorDB := prefixdb.New(validatorPrefix, vm.db)
 	activeValidators, err := NewValidatorsStore(ctx.Log, validatorDB, validatorDB)
 	if err != nil {
 		return fmt.Errorf("could not initialize active validators store: %w", err)
