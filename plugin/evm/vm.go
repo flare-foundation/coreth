@@ -451,7 +451,7 @@ func (vm *VM) Initialize(
 	default:
 		stepSize = 1 // as incremental as possible for testing purposes
 	}
-	transitionValidators := NewValidatorsTransitioner(ctx.Log, cacheActiveValidators, defaultValidators, cacheFTSOValidators, activeValidators,
+	transitionValidators := NewValidatorsTransitioner(ctx.Log, defaultValidators, cacheFTSOValidators, cacheActiveValidators, activeValidators,
 		WithStepSize(stepSize),
 	)
 	normalizeTransitionValidators := NewValidatorsNormalizer(ctx.Log, transitionValidators)
