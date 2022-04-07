@@ -40,6 +40,7 @@ import (
 	"github.com/flare-foundation/coreth/accounts/abi/bind/backends"
 	"github.com/flare-foundation/coreth/core"
 	"github.com/flare-foundation/coreth/core/types"
+	"github.com/flare-foundation/coreth/params"
 )
 
 var testKey, _ = crypto.HexToECDSA("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
@@ -78,7 +79,7 @@ func TestWaitDeployed(t *testing.T) {
 		gasPrice := new(big.Int).Add(head.BaseFee, big.NewInt(1))
 
 		tx := types.NewContractCreation(0, big.NewInt(0), test.gas, gasPrice, common.FromHex(test.code))
-		signer := types.NewLondonSigner(big.NewInt(1337))
+		signer := types.NewLondonSigner(params.TestingChainID)
 		tx, _ = types.SignTx(tx, signer, testKey)
 
 		// Wait for it to get mined in the background.

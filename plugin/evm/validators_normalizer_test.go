@@ -8,10 +8,11 @@ import (
 	"math"
 	"testing"
 
-	"github.com/flare-foundation/flare/ids"
-	"github.com/flare-foundation/flare/utils/logging"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/flare-foundation/flare/ids"
+	"github.com/flare-foundation/flare/utils/logging"
 )
 
 func TestNewValidatorsNormalizer(t *testing.T) {

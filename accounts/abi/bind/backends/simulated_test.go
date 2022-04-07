@@ -51,7 +51,7 @@ import (
 func TestSimulatedBackend(t *testing.T) {
 	var gasLimit uint64 = 8000029
 	key, _ := crypto.GenerateKey() // nolint: gosec
-	auth, _ := bind.NewKeyedTransactorWithChainID(key, big.NewInt(1337))
+	auth, _ := bind.NewKeyedTransactorWithChainID(key, params.TestingChainID)
 	genAlloc := make(core.GenesisAlloc)
 	genAlloc[auth.From] = core.GenesisAccount{Balance: big.NewInt(9223372036854775807)}
 
@@ -76,7 +76,7 @@ func TestSimulatedBackend(t *testing.T) {
 	code := `6060604052600a8060106000396000f360606040526008565b00`
 	var gas uint64 = 3000000
 	tx := types.NewContractCreation(0, big.NewInt(0), gas, gasPrice, common.FromHex(code))
-	signer := types.NewLondonSigner(big.NewInt(1337))
+	signer := types.NewLondonSigner(params.TestingChainID)
 	tx, _ = types.SignTx(tx, signer, key)
 
 	err = sim.SendTransaction(context.Background(), tx)
@@ -178,7 +178,7 @@ func TestNewAdjustTimeFail(t *testing.T) {
 	gasPrice := new(big.Int).Add(head.BaseFee, big.NewInt(1))
 
 	tx := types.NewTransaction(0, testAddr, big.NewInt(1000), params.TxGas, gasPrice, nil)
-	signer := types.NewLondonSigner(big.NewInt(1337))
+	signer := types.NewLondonSigner(params.TestingChainID)
 	signedTx, err := types.SignTx(tx, signer, testKey)
 	if err != nil {
 		t.Errorf("could not sign tx: %v", err)
@@ -200,7 +200,7 @@ func TestNewAdjustTimeFail(t *testing.T) {
 	}
 	// Put a transaction after adjusting time
 	tx2 := types.NewTransaction(1, testAddr, big.NewInt(1000), params.TxGas, gasPrice, nil)
-	signer = types.NewLondonSigner(big.NewInt(1337))
+	signer = types.NewLondonSigner(params.TestingChainID)
 	signedTx2, err := types.SignTx(tx2, signer, testKey)
 	if err != nil {
 		t.Errorf("could not sign tx: %v", err)
@@ -307,7 +307,7 @@ func TestNonceAt(t *testing.T) {
 	gasPrice := new(big.Int).Add(head.BaseFee, big.NewInt(1))
 
 	tx := types.NewTransaction(nonce, testAddr, big.NewInt(1000), params.TxGas, gasPrice, nil)
-	signer := types.NewLondonSigner(big.NewInt(1337))
+	signer := types.NewLondonSigner(params.TestingChainID)
 	signedTx, err := types.SignTx(tx, signer, testKey)
 	if err != nil {
 		t.Errorf("could not sign tx: %v", err)
@@ -352,7 +352,7 @@ func TestSendTransaction(t *testing.T) {
 	gasPrice := new(big.Int).Add(head.BaseFee, big.NewInt(1))
 
 	tx := types.NewTransaction(uint64(0), testAddr, big.NewInt(1000), params.TxGas, gasPrice, nil)
-	signer := types.NewLondonSigner(big.NewInt(1337))
+	signer := types.NewLondonSigner(params.TestingChainID)
 	signedTx, err := types.SignTx(tx, signer, testKey)
 	if err != nil {
 		t.Errorf("could not sign tx: %v", err)
@@ -391,7 +391,7 @@ func TestTransactionByHash(t *testing.T) {
 	gasPrice := new(big.Int).Add(head.BaseFee, big.NewInt(1))
 
 	tx := types.NewTransaction(uint64(0), testAddr, big.NewInt(1000), params.TxGas, gasPrice, nil)
-	signer := types.NewLondonSigner(big.NewInt(1337))
+	signer := types.NewLondonSigner(params.TestingChainID)
 	signedTx, err := types.SignTx(tx, signer, testKey)
 	if err != nil {
 		t.Errorf("could not sign tx: %v", err)
@@ -445,7 +445,7 @@ func TestEstimateGas(t *testing.T) {
 
 	key, _ := crypto.GenerateKey()
 	addr := crypto.PubkeyToAddress(key.PublicKey)
-	opts, _ := bind.NewKeyedTransactorWithChainID(key, big.NewInt(1337))
+	opts, _ := bind.NewKeyedTransactorWithChainID(key, params.TestingChainID)
 
 	sim := NewSimulatedBackend(core.GenesisAlloc{addr: {Balance: big.NewInt(params.Ether)}}, 10000000)
 	defer sim.Close()
@@ -730,7 +730,7 @@ func TestTransactionCount(t *testing.T) {
 	gasPrice := new(big.Int).Add(head.BaseFee, big.NewInt(1))
 
 	tx := types.NewTransaction(uint64(0), testAddr, big.NewInt(1000), params.TxGas, gasPrice, nil)
-	signer := types.NewLondonSigner(big.NewInt(1337))
+	signer := types.NewLondonSigner(params.TestingChainID)
 	signedTx, err := types.SignTx(tx, signer, testKey)
 	if err != nil {
 		t.Errorf("could not sign tx: %v", err)
@@ -788,7 +788,7 @@ func TestTransactionInBlock(t *testing.T) {
 	gasPrice := new(big.Int).Add(head.BaseFee, big.NewInt(1))
 
 	tx := types.NewTransaction(uint64(0), testAddr, big.NewInt(1000), params.TxGas, gasPrice, nil)
-	signer := types.NewLondonSigner(big.NewInt(1337))
+	signer := types.NewLondonSigner(params.TestingChainID)
 	signedTx, err := types.SignTx(tx, signer, testKey)
 	if err != nil {
 		t.Errorf("could not sign tx: %v", err)
@@ -847,7 +847,7 @@ func TestAcceptedNonceAt(t *testing.T) {
 	gasPrice := new(big.Int).Add(head.BaseFee, big.NewInt(1))
 
 	tx := types.NewTransaction(uint64(0), testAddr, big.NewInt(1000), params.TxGas, gasPrice, nil)
-	signer := types.NewLondonSigner(big.NewInt(1337))
+	signer := types.NewLondonSigner(params.TestingChainID)
 	signedTx, err := types.SignTx(tx, signer, testKey)
 	if err != nil {
 		t.Errorf("could not sign tx: %v", err)
@@ -871,7 +871,7 @@ func TestAcceptedNonceAt(t *testing.T) {
 
 	// make a new transaction with a nonce of 1
 	tx = types.NewTransaction(uint64(1), testAddr, big.NewInt(1000), params.TxGas, gasPrice, nil)
-	signer = types.NewLondonSigner(big.NewInt(1337))
+	signer = types.NewLondonSigner(params.TestingChainID)
 	signedTx, err = types.SignTx(tx, signer, testKey)
 	if err != nil {
 		t.Errorf("could not sign tx: %v", err)
@@ -904,7 +904,7 @@ func TestTransactionReceipt(t *testing.T) {
 	gasPrice := new(big.Int).Add(head.BaseFee, big.NewInt(1))
 
 	tx := types.NewTransaction(uint64(0), testAddr, big.NewInt(1000), params.TxGas, gasPrice, nil)
-	signer := types.NewLondonSigner(big.NewInt(1337))
+	signer := types.NewLondonSigner(params.TestingChainID)
 	signedTx, err := types.SignTx(tx, signer, testKey)
 	if err != nil {
 		t.Errorf("could not sign tx: %v", err)
@@ -960,7 +960,7 @@ func TestAcceptedCodeAt(t *testing.T) {
 	if err != nil {
 		t.Errorf("could not get code at test addr: %v", err)
 	}
-	auth, _ := bind.NewKeyedTransactorWithChainID(testKey, big.NewInt(1337))
+	auth, _ := bind.NewKeyedTransactorWithChainID(testKey, params.TestingChainID)
 	contractAddr, tx, contract, err := bind.DeployContract(auth, parsed, common.FromHex(abiBin), sim)
 	if err != nil {
 		t.Errorf("could not deploy contract: %v tx: %v contract: %v", err, tx, contract)
@@ -996,7 +996,7 @@ func TestCodeAt(t *testing.T) {
 	if err != nil {
 		t.Errorf("could not get code at test addr: %v", err)
 	}
-	auth, _ := bind.NewKeyedTransactorWithChainID(testKey, big.NewInt(1337))
+	auth, _ := bind.NewKeyedTransactorWithChainID(testKey, params.TestingChainID)
 	contractAddr, tx, contract, err := bind.DeployContract(auth, parsed, common.FromHex(abiBin), sim)
 	if err != nil {
 		t.Errorf("could not deploy contract: %v tx: %v contract: %v", err, tx, contract)
@@ -1028,7 +1028,7 @@ func TestPendingAndCallContract(t *testing.T) {
 	if err != nil {
 		t.Errorf("could not get code at test addr: %v", err)
 	}
-	contractAuth, _ := bind.NewKeyedTransactorWithChainID(testKey, big.NewInt(1337))
+	contractAuth, _ := bind.NewKeyedTransactorWithChainID(testKey, params.TestingChainID)
 	addr, _, _, err := bind.DeployContract(contractAuth, parsed, common.FromHex(abiBin), sim)
 	if err != nil {
 		t.Errorf("could not deploy contract: %v", err)
@@ -1115,7 +1115,7 @@ func TestCallContractRevert(t *testing.T) {
 	if err != nil {
 		t.Errorf("could not get code at test addr: %v", err)
 	}
-	contractAuth, _ := bind.NewKeyedTransactorWithChainID(testKey, big.NewInt(1337))
+	contractAuth, _ := bind.NewKeyedTransactorWithChainID(testKey, params.TestingChainID)
 	addr, _, _, err := bind.DeployContract(contractAuth, parsed, common.FromHex(reverterBin), sim)
 	if err != nil {
 		t.Errorf("could not deploy contract: %v", err)
@@ -1258,7 +1258,7 @@ contract Callable {
 // 	defer sim.Close()
 // 	// 1.
 // 	parsed, _ := abi.JSON(strings.NewReader(callableAbi))
-// 	auth, _ := bind.NewKeyedTransactorWithChainID(testKey, big.NewInt(1337))
+// 	auth, _ := bind.NewKeyedTransactorWithChainID(testKey, params.TestingChainID)
 // 	_, _, contract, err := bind.DeployContract(auth, parsed, common.FromHex(callableBin), sim)
 // 	if err != nil {
 // 		t.Errorf("deploying contract: %v", err)
@@ -1336,7 +1336,7 @@ contract Callable {
 // 	gasPrice := new(big.Int).Add(head.BaseFee, big.NewInt(1))
 
 // 	_tx := types.NewTransaction(0, testAddr, big.NewInt(1000), params.TxGas, gasPrice, nil)
-// 	signer := types.NewLondonSigner(big.NewInt(1337))
+// 	signer := types.NewLondonSigner(params.TestingChainID)
 // 	tx, _ := types.SignTx(_tx, signer, testKey)
 // 	sim.SendTransaction(context.Background(), tx)
 // 	sim.Commit(false)

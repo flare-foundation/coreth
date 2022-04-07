@@ -72,7 +72,7 @@ func TestNewValidatorsDefault(t *testing.T) {
 			wantErr: require.NoError,
 		},
 		{
-			name:    "missing custom default validators",
+			name:    "invalid custom default validators",
 			setEnv:  setInvalid,
 			chainID: big.NewInt(1337),
 			nodeIDs: customNodeIDs,

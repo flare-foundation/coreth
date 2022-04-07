@@ -33,6 +33,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/flare-foundation/coreth/params"
 )
 
 type devnull struct{ len int }
@@ -53,7 +54,7 @@ func BenchmarkDecodeRLP(b *testing.B) {
 func benchRLP(b *testing.B, encode bool) {
 	key, _ := crypto.HexToECDSA("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
 	to := common.HexToAddress("0x00000000000000000000000000000000deadbeef")
-	signer := NewLondonSigner(big.NewInt(1337))
+	signer := NewLondonSigner(params.TestingChainID)
 	for _, tc := range []struct {
 		name string
 		obj  interface{}

@@ -14,6 +14,7 @@ import (
 	"github.com/flare-foundation/coreth/accounts/abi/bind"
 	"github.com/flare-foundation/coreth/accounts/abi/bind/backends"
 	"github.com/flare-foundation/coreth/core"
+	"github.com/flare-foundation/coreth/params"
 )
 
 func simulatedBlockchain(t *testing.T) (*bind.TransactOpts, *backends.SimulatedBackend) {
@@ -22,7 +23,7 @@ func simulatedBlockchain(t *testing.T) (*bind.TransactOpts, *backends.SimulatedB
 	key, err := crypto.GenerateKey()
 	require.NoError(t, err)
 
-	auth, err := bind.NewKeyedTransactorWithChainID(key, big.NewInt(1337))
+	auth, err := bind.NewKeyedTransactorWithChainID(key, params.TestingChainID)
 	require.NoError(t, err)
 
 	balance := big.NewInt(0).SetUint64(math.MaxUint64)
