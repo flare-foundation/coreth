@@ -48,7 +48,7 @@ type ValidatorsTransitioner struct {
 
 // NewValidatorsTransitioner creates a transition from the given default validators
 // to the validators retrieved from the given FTSO validators retriever.
-func NewValidatorsTransitioner(log logging.Logger, retrieveDefault ValidatorsRetriever, retrieveFTSO ValidatorsRetriever, retrieveActive ValidatorsRetriever, store ValidatorsPersister, options ...TransitionOption) *ValidatorsTransitioner {
+func NewValidatorsTransitioner(log logging.Logger, retrieveDefault ValidatorsRetriever, retrieveFTSO ValidatorsRetriever, retrieveActive ValidatorsRetriever, options ...TransitionOption) *ValidatorsTransitioner {
 
 	cfg := DefaultTransitionConfig
 	for _, opt := range options {
@@ -60,7 +60,6 @@ func NewValidatorsTransitioner(log logging.Logger, retrieveDefault ValidatorsRet
 		retrieveDefault: retrieveDefault,
 		retrieveFTSO:    retrieveFTSO,
 		retrieveActive:  retrieveActive,
-		store:           store,
 		cfg:             cfg,
 	}
 
@@ -193,11 +192,6 @@ func (v *ValidatorsTransitioner) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, 
 	for _, defaultID := range defaultIDs {
 		transitionValidators[defaultID] = proportionalWeight
 		v.log.Debug("adding default validator %s (weight: %d)", defaultID.PrefixedString(constants.NodeIDPrefix), proportionalWeight)
-	}
-
-	err = v.store.Persist(epoch, transitionValidators)
-	if err != nil {
-		return nil, fmt.Errorf("could not persist active validators after transition: %w", err)
 	}
 
 	return transitionValidators, nil

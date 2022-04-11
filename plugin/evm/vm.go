@@ -432,8 +432,7 @@ func (vm *VM) Initialize(
 	if err != nil {
 		return fmt.Errorf("could not initialize active validators store: %w", err)
 	}
-	normalizeActiveValidators := NewValidatorsNormalizer(ctx.Log, activeValidators)
-	cacheActiveValidators := NewValidatorsCache(ctx.Log, normalizeActiveValidators,
+	cacheActiveValidators := NewValidatorsCache(ctx.Log, activeValidators,
 		WithCacheSize(10),
 	)
 
@@ -452,10 +451,11 @@ func (vm *VM) Initialize(
 	default:
 		stepSize = 1 // as incremental as possible for testing purposes
 	}
-	transitionValidators := NewValidatorsTransitioner(ctx.Log, defaultValidators, cacheFTSOValidators, cacheActiveValidators, activeValidators,
+	transitionValidators := NewValidatorsTransitioner(ctx.Log, defaultValidators, cacheFTSOValidators, cacheActiveValidators,
 		WithStepSize(stepSize),
 	)
 	normalizeTransitionValidators := NewValidatorsNormalizer(ctx.Log, transitionValidators)
+	storeTransitionValidators := NewValidatorsStorer(normalizeTransitionValidators, activeValidators)
 
 	// Getting the active validators for the current epoch will bootstrap all of the
 	// storage that is part of the transition logic, and will avoid long delays once
@@ -465,7 +465,7 @@ func (vm *VM) Initialize(
 		return fmt.Errorf("could not get current epoch: %w", err)
 	}
 	if err == nil {
-		_, err = normalizeTransitionValidators.ByEpoch(epoch)
+		_, err = storeTransitionValidators.ByEpoch(epoch)
 		if err != nil {
 			return fmt.Errorf("could not bootstrap validator caches: %w", err)
 		}
@@ -474,7 +474,7 @@ func (vm *VM) Initialize(
 	// Initialize the validators manager, which is our interface between the EVM
 	// implementation and the Flare logic.
 	vm.ftso = ftso
-	vm.validators = NewValidatorsManager(ctx.Log, defaultValidators, cacheFTSOValidators, cacheActiveValidators, normalizeTransitionValidators)
+	vm.validators = NewValidatorsManager(ctx.Log, defaultValidators, cacheFTSOValidators, cacheActiveValidators, storeTransitionValidators)
 
 	vm.atomicTxRepository, err = NewAtomicTxRepository(vm.db, vm.codec, lastAccepted.NumberU64())
 	if err != nil {

@@ -36,15 +36,13 @@ func TestNewValidatorsTransitioner(t *testing.T) {
 	retrieveDefault := &ValidatorsRetrieverMock{}
 	retrieveFTSO := &ValidatorsRetrieverMock{}
 	retrieveActive := &ValidatorsRetrieverMock{}
-	store := &ValidatorsPersisterMock{}
 	size := uint(8)
 
-	got := NewValidatorsTransitioner(logging.NoLog{}, retrieveDefault, retrieveFTSO, retrieveActive, store, WithStepSize(size))
+	got := NewValidatorsTransitioner(logging.NoLog{}, retrieveDefault, retrieveFTSO, retrieveActive, WithStepSize(size))
 	require.NotNil(t, got)
 	assert.Equal(t, retrieveDefault, got.retrieveDefault)
 	assert.Equal(t, retrieveFTSO, got.retrieveFTSO)
 	assert.Equal(t, retrieveActive, got.retrieveActive)
-	assert.Equal(t, store, got.store)
 	assert.Equal(t, size, got.cfg.StepSize)
 }
 

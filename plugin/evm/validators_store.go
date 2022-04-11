@@ -94,3 +94,33 @@ func (v *ValidatorsStore) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, error) 
 
 	return validators, nil
 }
+
+type ValidatorsStorer struct {
+	retrieve ValidatorsRetriever
+	store    ValidatorsPersister
+}
+
+func NewValidatorsStorer(retrieve ValidatorsRetriever, store ValidatorsPersister) *ValidatorsStorer {
+
+	v := ValidatorsStorer{
+		retrieve: retrieve,
+		store:    store,
+	}
+
+	return &v
+}
+
+func (v *ValidatorsStorer) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, error) {
+
+	validators, err := v.retrieve.ByEpoch(epoch)
+	if err != nil {
+		return nil, fmt.Errorf("could not retrieve validators for persisting: %w", err)
+	}
+
+	err = v.store.Persist(epoch, validators)
+	if err != nil {
+		return nil, fmt.Errorf("could not persist validators: %w", err)
+	}
+
+	return validators, nil
+}
