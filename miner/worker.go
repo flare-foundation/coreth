@@ -164,7 +164,7 @@ func (w *worker) commitNewWork() (*types.Block, error) {
 	if w.chainConfig.DAOForkSupport && w.chainConfig.DAOForkBlock != nil && w.chainConfig.DAOForkBlock.Cmp(header.Number) == 0 {
 		misc.ApplyDAOHardFork(env.state)
 	}
-	if w.chainConfig.IsFlareHardFork1(big.NewInt(0).SetUint64(header.Time)) {
+	if false {
 		if !misc.StateConnectorUpgraded(env.state) {
 			misc.UpgradeStateConnector(env.state)
 		}

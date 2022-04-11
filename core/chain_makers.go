@@ -233,7 +233,7 @@ func GenerateChain(config *params.ChainConfig, parent *types.Block, engine conse
 		if config.DAOForkSupport && config.DAOForkBlock != nil && config.DAOForkBlock.Cmp(b.header.Number) == 0 {
 			misc.ApplyDAOHardFork(statedb)
 		}
-		if config.IsFlareHardFork1(big.NewInt(0).SetUint64(b.header.Time)) {
+		if false {
 			if !misc.StateConnectorUpgraded(statedb) {
 				misc.UpgradeStateConnector(statedb)
 			}
