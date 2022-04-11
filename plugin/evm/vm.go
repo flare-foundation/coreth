@@ -412,16 +412,6 @@ func (vm *VM) Initialize(
 		return fmt.Errorf("could not initialize default validators: %w", err)
 	}
 
-	// Load the persisted active validator sets from the on-disk database.
-	validatorDB := prefixdb.New(validatorPrefix, vm.db)
-	activeValidators, err := NewValidatorsStore(ctx.Log, validatorDB, validatorDB)
-	if err != nil {
-		return fmt.Errorf("could not initialize active validators store: %w", err)
-	}
-	cacheActiveValidators := NewValidatorsCache(ctx.Log, activeValidators,
-		WithCacheSize(10),
-	)
-
 	// Initialize the FTSO validator retriever, which retrieves validators for the
 	// FTSO data providers, and wrap it in a cache to avoid unnecessary retrievals.
 	blockchain := vm.chain.BlockChain()
@@ -433,6 +423,17 @@ func (vm *VM) Initialize(
 		WithRootDegree(4),
 	)
 	cacheFTSOValidators := NewValidatorsCache(ctx.Log, ftsoValidators,
+		WithCacheSize(10),
+	)
+
+	// Load the persisted active validator sets from the on-disk database.
+	validatorDB := prefixdb.New(validatorPrefix, vm.db)
+	activeValidators, err := NewValidatorsStore(ctx.Log, validatorDB, validatorDB)
+	if err != nil {
+		return fmt.Errorf("could not initialize active validators store: %w", err)
+	}
+	normalizeActiveValidators := NewValidatorsNormalizer(ctx.Log, activeValidators)
+	cacheActiveValidators := NewValidatorsCache(ctx.Log, normalizeActiveValidators,
 		WithCacheSize(10),
 	)
 
