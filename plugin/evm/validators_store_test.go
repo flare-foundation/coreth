@@ -7,14 +7,21 @@ import (
 	"encoding/binary"
 	"errors"
 	"io"
+	"io/ioutil"
+	"math/rand"
+	"os"
 	"testing"
+	"time"
 
 	"github.com/fxamacker/cbor/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/flare-foundation/flare/database/manager"
+	"github.com/flare-foundation/flare/database/prefixdb"
 	"github.com/flare-foundation/flare/ids"
 	"github.com/flare-foundation/flare/utils/logging"
+	"github.com/flare-foundation/flare/version"
 )
 
 type ReaderMock struct {
@@ -268,6 +275,7 @@ func TestValidatorsStore_Persist(t *testing.T) {
 
 		err := store.Persist(epoch, wantValidators)
 		require.Error(t, err)
+
 	})
 
 	t.Run("handles writing failure", func(t *testing.T) {
@@ -304,4 +312,49 @@ func TestValidatorsStore_Persist(t *testing.T) {
 		require.Error(t, err)
 	})
 
+}
+
+func TestValidatorsStore_Encoding(t *testing.T) {
+
+	rand.Seed(time.Now().UnixNano())
+
+	path, err := ioutil.TempDir(os.TempDir(), "validator-encoding")
+	require.NoError(t, err)
+	defer os.RemoveAll(path)
+
+	manager, err := manager.NewLevelDB(path, nil, logging.NoLog{}, version.DatabaseVersion1_4_5)
+	require.NoError(t, err)
+
+	db := manager.Current().Database
+	validatorDB := prefixdb.New(validatorPrefix, db)
+	store, err := NewValidatorsStore(logging.NoLog{}, validatorDB, validatorDB)
+	require.NoError(t, err)
+
+	numEpochs := 128
+	numValidators := 16
+
+	validatorSets := make([](map[ids.ShortID]uint64), 0, numEpochs)
+	for i := 0; i < numEpochs; i++ {
+		validators := make(map[ids.ShortID]uint64)
+		for j := 0; j < numValidators; j++ {
+			validator := ids.GenerateTestShortID()
+			weight := rand.Uint32()
+			validators[validator] = uint64(weight)
+		}
+		validatorSets = append(validatorSets, validators)
+	}
+
+	for i := 0; i < numEpochs; i++ {
+		validators := validatorSets[i]
+		err := store.Persist(uint64(i), validators)
+		require.NoError(t, err)
+	}
+
+	for i := 0; i < numEpochs; i++ {
+		wantValidators := validatorSets[i]
+		gotValidators, err := store.ByEpoch(uint64(i))
+		require.NoError(t, err)
+
+		assert.Equal(t, wantValidators, gotValidators)
+	}
 }

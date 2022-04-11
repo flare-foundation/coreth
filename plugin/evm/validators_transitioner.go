@@ -153,7 +153,7 @@ func (v *ValidatorsTransitioner) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, 
 	// we have already completed the transition from default validators to FTSO
 	// validators, and we simply return the FTSO validators as active validators.
 	if remove == included {
-		v.log.Debug("returning FTSO validators (transition complete)", len(ftsoValidators))
+		v.log.Debug("returning FTSO validators (transition complete)")
 		return ftsoValidators, nil
 	}
 
