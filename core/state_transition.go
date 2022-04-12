@@ -62,17 +62,18 @@ The state transitioning model does all the necessary work to work out a valid ne
 6) Derive new state root
 */
 type StateTransition struct {
-	gp         *GasPool
-	msg        Message
-	gas        uint64
-	gasPrice   *big.Int
-	gasFeeCap  *big.Int
-	gasTipCap  *big.Int
-	initialGas uint64
-	value      *big.Int
-	data       []byte
-	state      vm.StateDB
-	evm        *vm.EVM
+	gp          *GasPool
+	msg         Message
+	gas         uint64
+	gasPrice    *big.Int
+	gasFeeCap   *big.Int
+	gasTipCap   *big.Int
+	initialGas  uint64
+	value       *big.Int
+	data        []byte
+	state       vm.StateDB
+	evm         *vm.EVM
+	flareConfig *params.FlareConfig
 }
 
 // Message represents a message sent to a contract.
@@ -192,15 +193,16 @@ func IntrinsicGas(data []byte, accessList types.AccessList, isContractCreation b
 // NewStateTransition initialises and returns a new state transition object.
 func NewStateTransition(evm *vm.EVM, msg Message, gp *GasPool) *StateTransition {
 	return &StateTransition{
-		gp:        gp,
-		evm:       evm,
-		msg:       msg,
-		gasPrice:  msg.GasPrice(),
-		gasFeeCap: msg.GasFeeCap(),
-		gasTipCap: msg.GasTipCap(),
-		value:     msg.Value(),
-		data:      msg.Data(),
-		state:     evm.StateDB,
+		gp:          gp,
+		evm:         evm,
+		msg:         msg,
+		gasPrice:    msg.GasPrice(),
+		gasFeeCap:   msg.GasFeeCap(),
+		gasTipCap:   msg.GasTipCap(),
+		value:       msg.Value(),
+		data:        msg.Data(),
+		state:       evm.StateDB,
+		flareConfig: params.NewFlareConfig(evm.ChainConfig().ChainID),
 	}
 }
 
@@ -372,8 +374,8 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 	} else {
 		// Increment the nonce for the next transaction
 		st.state.SetNonce(msg.From(), st.state.GetNonce(sender.Address())+1)
-		activated := GetStateConnectorActivated(chainID, timestamp)
-		connector := GetStateConnectorContract(chainID, timestamp)
+		activated := st.flareConfig.IsStateConnectorActivated(timestamp)
+		connector := st.flareConfig.StateConnectorContract()
 		ret, st.gas, vmerr = st.evm.Call(sender, st.to(), st.data, st.gas, st.value)
 		if vmerr == nil &&
 			activated &&
