@@ -406,8 +406,10 @@ func (vm *VM) Initialize(
 	vm.chain = ethChain
 	lastAccepted := vm.chain.LastAcceptedBlock()
 
+	flareParams := params.NewFlareConfig(g.Config.ChainID)
+
 	// Load the default validators for the given chain ID.
-	defaultValidators, err := NewValidatorsDefault(g.Config.ChainID)
+	defaultValidators, err := flareParams.DefaultValidators()
 	if err != nil {
 		return fmt.Errorf("could not initialize default validators: %w", err)
 	}
@@ -440,17 +442,8 @@ func (vm *VM) Initialize(
 	// transitioning validators from the default set to the FTSO set, wrap it in
 	// a normalizer to have uniform weights across epochs, and wrap it in a cache
 	// to avoid unnecessary recomputation.
-	stepSize := uint(0)
-	switch {
-	case g.Config.ChainID.Cmp(params.CostonChainID) == 0:
-		stepSize = 1 // with 1 hour reward epochs, doesn't matter much
-	case g.Config.ChainID.Cmp(params.SongbirdChainID) == 0:
-		stepSize = 2 // only FTSO validators ~1 week after main net launch
-	case g.Config.ChainID.Cmp(params.FlareChainID) == 0:
-		stepSize = 1 // doing as slow as possible on main net makes senes
-	default:
-		stepSize = 1 // as incremental as possible for testing purposes
-	}
+	stepSize := flareParams.StepSize()
+
 	transitionValidators := NewValidatorsTransitioner(ctx.Log, defaultValidators, cacheFTSOValidators, cacheActiveValidators,
 		WithStepSize(stepSize),
 	)

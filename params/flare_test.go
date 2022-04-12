@@ -1,7 +1,7 @@
 // (c) 2019-2021, Ava Labs, Inc. All rights reserved.
 // See the file LICENSE for licensing terms.
 
-package evm
+package params
 
 import (
 	"math/big"
@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/flare-foundation/coreth/params"
 	"github.com/flare-foundation/flare/ids"
 	"github.com/flare-foundation/flare/utils/constants"
 )
@@ -44,28 +43,28 @@ func TestNewValidatorsDefault(t *testing.T) {
 	}{
 		{
 			name:    "testing default validators",
-			chainID: params.TestingChainID,
+			chainID: TestingChainID,
 			nodeIDs: testingNodeIDs,
 			weight:  testingValidatorWeight,
 			wantErr: require.NoError,
 		},
 		{
 			name:    "coston default validators",
-			chainID: params.CostonChainID,
+			chainID: CostonChainID,
 			nodeIDs: costonNodeIDs,
 			weight:  costonValidatorWeight,
 			wantErr: require.NoError,
 		},
 		{
 			name:    "songbird default validators",
-			chainID: params.SongbirdChainID,
+			chainID: SongbirdChainID,
 			nodeIDs: songbirdNodeIDs,
 			weight:  songbirdValidatorWeight,
 			wantErr: require.NoError,
 		},
 		{
 			name:    "flare default validators",
-			chainID: params.FlareChainID,
+			chainID: FlareChainID,
 			nodeIDs: flareNodeIDs,
 			weight:  flareValidatorWeight,
 			wantErr: require.Error, // flare main network not active yet
@@ -106,7 +105,7 @@ func TestNewValidatorsDefault(t *testing.T) {
 				test.setEnv(t)
 			}
 
-			got, err := NewValidatorsDefault(test.chainID)
+			got, err := NewFlareConfig(test.chainID).DefaultValidators()
 			test.wantErr(t, err)
 
 			if err != nil {
