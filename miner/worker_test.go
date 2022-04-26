@@ -74,6 +74,8 @@ func TestWorkerCommitNewWork(t *testing.T) {
 	blockchain, err := core.NewBlockChain(database, cacheConfig, genesis.Config, dummy.NewFaker(), vm.Config{}, common.Hash{})
 	require.NoError(t, err)
 
+	defer blockchain.Stop()
+
 	pool := core.NewTxPool(core.DefaultTxPoolConfig, blockchain.Config(), blockchain)
 
 	be := &mockBackend{
