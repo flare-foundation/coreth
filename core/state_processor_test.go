@@ -360,7 +360,7 @@ func GenerateBadBlock(parent *types.Block, engine consensus.Engine, txs types.Tr
 	return types.NewBlock(header, txs, nil, receipts, trie.NewStackTrie(nil), nil, true)
 }
 
-func TestStateProcessor_Process(t *testing.T) {
+func TestStateProcessor_Process_UpdateContracts(t *testing.T) {
 	database := rawdb.NewMemoryDatabase()
 	gasLimit := uint64(math.MaxUint64)
 
@@ -381,7 +381,9 @@ func TestStateProcessor_Process(t *testing.T) {
 	genesis := Genesis{Config: cpcfg, GasLimit: gasLimit, Alloc: alloc, Coinbase: common.HexToAddress("0x0100000000000000000000000000000000000000")}
 	b := genesis.MustCommit(database)
 	cacheConfig := &CacheConfig{}
-	blockchain, _ := NewBlockChain(database, cacheConfig, genesis.Config, dummy.NewFaker(), vm.Config{}, common.Hash{})
+	blockchain, err := NewBlockChain(database, cacheConfig, genesis.Config, dummy.NewFaker(), vm.Config{}, common.Hash{})
+	require.NoError(t, err)
+	defer blockchain.Stop()
 
 	chain, _, err := GenerateChain(genesis.Config, b, dummy.NewFaker(), database, 3, 10, func(i int, gen *BlockGen) {})
 	require.NoError(t, err)

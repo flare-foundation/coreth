@@ -6,9 +6,13 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/event"
+
 	"github.com/flare-foundation/coreth/accounts/abi/bind"
 	"github.com/flare-foundation/coreth/consensus/dummy"
 	"github.com/flare-foundation/coreth/consensus/misc"
@@ -19,8 +23,6 @@ import (
 	"github.com/flare-foundation/coreth/core/vm"
 	"github.com/flare-foundation/coreth/params"
 	"github.com/flare-foundation/flare/utils/timer/mockable"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 type mockBackend struct {
