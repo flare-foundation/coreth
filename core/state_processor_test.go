@@ -386,7 +386,7 @@ func TestStateProcessor_Process_UpdateContracts(t *testing.T) {
 	defer blockchain.Stop()
 
 	numBlocks := 1
-	chain, _, err := GenerateChain(genesis.Config, b, dummy.NewFaker(), database, numBlocks, 10, func(i int, gen *BlockGen) {})
+	chain, _, err := GenerateChain(genesis.Config, b, dummy.NewFaker(), database, numBlocks, 0, func(i int, gen *BlockGen) {})
 	require.NoError(t, err)
 	require.Len(t, chain, numBlocks)
 
