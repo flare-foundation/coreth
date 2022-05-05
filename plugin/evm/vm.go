@@ -125,6 +125,7 @@ var (
 	acceptedPrefix  = []byte("snowman_accepted")
 	ethDBPrefix     = []byte("ethdb")
 	validatorPrefix = []byte("validator")
+	lastEpochPrefix = []byte("last_epoch")
 
 	// Prefixes for atomic trie
 	atomicTrieDBPrefix     = []byte("atomicTrieDB")
@@ -415,7 +416,7 @@ func (vm *VM) Initialize(
 	// Initialize the FTSO validator retriever, which retrieves validators for the
 	// FTSO data providers, and wrap it in a cache to avoid unnecessary retrievals.
 	blockchain := vm.chain.BlockChain()
-	ftso, err := NewFTSOSystem(blockchain, params.SubmitterAddress, params.ValidationAddress)
+	ftso, err := NewFTSOSystem(blockchain, params.SubmitterAddress)
 	if err != nil {
 		return fmt.Errorf("could not initialize FTSO system: %w", err)
 	}
@@ -1534,7 +1535,7 @@ func (vm *VM) GetValidators(blockID ids.ID) (validation.Set, error) {
 	// First, we get the header for the given block ID, so that we can determine
 	// activation of the hard fork by the header's timestamp.
 	hash := common.Hash(blockID)
-	blockchain := vm.chain.BlockChain()
+	state := vm.chain.BlockChain().StateAt(blockID)
 	header := blockchain.GetHeaderByHash(hash)
 	if header == nil {
 		return nil, fmt.Errorf("unknown block (hash: %x)", hash)

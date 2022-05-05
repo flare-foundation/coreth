@@ -12,15 +12,13 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/flare-foundation/coreth/accounts/abi"
-	"github.com/flare-foundation/coreth/core"
 	"github.com/flare-foundation/coreth/core/vm"
 )
 
 type FTSOSystem struct {
-	blockchain *core.BlockChain
-	submitter  EVMContract
-	validation EVMContract
-	abis       FTSOABIs
+	evm       *vm.EVM
+	submitter EVMContract
+	abis      FTSOABIs
 }
 
 type FTSOABIs struct {
@@ -48,7 +46,13 @@ type FTSOEpoch struct {
 	StartTime   uint64
 }
 
-func NewFTSOSystem(blockchain *core.BlockChain, addressSubmitter common.Address, addressValidation common.Address) (*FTSOSystem, error) {
+func NewFTSOSystem(evm *vm.EVM, addressSubmitter common.Address) (*FTSOSystem, error) {
+
+	// TODO
+	// 1) The `AtBlock` goes away, and we always work directly on the EVM handle.
+	// 2) This means `FTSOSnapshot` goes away, as we work on a single snapshot.
+	// 3) All calls related to `ValidatorRegistry` go away, because that's in the precompiled now.
+	// 4) Should we move all this to the `core/vm` package with the precompiled contracts?
 
 	abiSubmitter, err := abi.JSON(strings.NewReader(jsonSubmitter))
 	if err != nil {
@@ -85,19 +89,9 @@ func NewFTSOSystem(blockchain *core.BlockChain, addressSubmitter common.Address,
 		return nil, fmt.Errorf("could not parse votepower ABI: %w", err)
 	}
 
-	abiValidation, err := abi.JSON(strings.NewReader(jsonValidation))
-	if err != nil {
-		return nil, fmt.Errorf("could not get validation ABI: %w", err)
-	}
-
 	submitter := EVMContract{
 		address: addressSubmitter,
 		abi:     abiSubmitter,
-	}
-
-	validation := EVMContract{
-		address: addressValidation,
-		abi:     abiValidation,
 	}
 
 	abis := FTSOABIs{
@@ -110,18 +104,15 @@ func NewFTSOSystem(blockchain *core.BlockChain, addressSubmitter common.Address,
 	}
 
 	f := FTSOSystem{
-		blockchain: blockchain,
-		submitter:  submitter,
-		validation: validation,
-		abis:       abis,
+		evm:       evm,
+		submitter: submitter,
+		abis:      abis,
 	}
 
 	return &f, nil
 }
 
-func (f *FTSOSystem) Contracts(hash common.Hash) (FTSOContracts, error) {
-
-	snap := BindEVM(f.blockchain).AtBlock(hash)
+func (f *FTSOSystem) Contracts() (FTSOContracts, error) {
 
 	var managerAddress common.Address
 	err := snap.OnContract(f.submitter).Execute(ManagerAddress).Decode(&managerAddress)
