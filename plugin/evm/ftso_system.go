@@ -4,307 +4,38 @@
 package evm
 
 import (
-	"errors"
 	"fmt"
-	"math/big"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/flare-foundation/coreth/accounts/abi"
 	"github.com/flare-foundation/coreth/core/vm"
+	"github.com/flare-foundation/coreth/params"
+	"github.com/flare-foundation/flare/ids"
 )
 
-type FTSOSystem struct {
-	evm       *vm.EVM
-	submitter EVMContract
-	abis      FTSOABIs
+const jsonManager = `[{"type":"constructor","stateMutability":"nonpayable","inputs":[{"type":"address","name":"_governance","internalType":"address"},{"type":"address","name":"_flareDaemon","internalType":"contract FlareDaemon"},{"type":"address","name":"_priceSubmitter","internalType":"contract IIPriceSubmitter"},{"type":"uint256","name":"_firstEpochStartTs","internalType":"uint256"},{"type":"uint256","name":"_priceEpochDurationSeconds","internalType":"uint256"},{"type":"uint256","name":"_revealEpochDurationSeconds","internalType":"uint256"},{"type":"uint256","name":"_rewardEpochsStartTs","internalType":"uint256"},{"type":"uint256","name":"_rewardEpochDurationSeconds","internalType":"uint256"},{"type":"uint256","name":"_votePowerIntervalFraction","internalType":"uint256"}]},{"type":"event","name":"CleanupBlockNumberManagerFailedForBlock","inputs":[{"type":"uint256","name":"blockNumber","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"event","name":"CleanupBlockNumberManagerUnset","inputs":[],"anonymous":false},{"type":"event","name":"ClosingExpiredRewardEpochFailed","inputs":[{"type":"uint256","name":"_rewardEpoch","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"event","name":"ContractRevertError","inputs":[{"type":"address","name":"theContract","internalType":"address","indexed":false},{"type":"uint256","name":"atBlock","internalType":"uint256","indexed":false},{"type":"string","name":"theMessage","internalType":"string","indexed":false}],"anonymous":false},{"type":"event","name":"DistributingRewardsFailed","inputs":[{"type":"address","name":"ftso","internalType":"address","indexed":false},{"type":"uint256","name":"epochId","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"event","name":"FallbackMode","inputs":[{"type":"bool","name":"fallbackMode","internalType":"bool","indexed":false}],"anonymous":false},{"type":"event","name":"FinalizingPriceEpochFailed","inputs":[{"type":"address","name":"ftso","internalType":"contract IIFtso","indexed":false},{"type":"uint256","name":"epochId","internalType":"uint256","indexed":false},{"type":"uint8","name":"failingType","internalType":"enum IFtso.PriceFinalizationType","indexed":false}],"anonymous":false},{"type":"event","name":"FtsoAdded","inputs":[{"type":"address","name":"ftso","internalType":"contract IIFtso","indexed":false},{"type":"bool","name":"add","internalType":"bool","indexed":false}],"anonymous":false},{"type":"event","name":"FtsoFallbackMode","inputs":[{"type":"address","name":"ftso","internalType":"contract IIFtso","indexed":false},{"type":"bool","name":"fallbackMode","internalType":"bool","indexed":false}],"anonymous":false},{"type":"event","name":"GovernanceProposed","inputs":[{"type":"address","name":"proposedGovernance","internalType":"address","indexed":false}],"anonymous":false},{"type":"event","name":"GovernanceUpdated","inputs":[{"type":"address","name":"oldGovernance","internalType":"address","indexed":false},{"type":"address","name":"newGoveranance","internalType":"address","indexed":false}],"anonymous":false},{"type":"event","name":"InitializingCurrentEpochStateForRevealFailed","inputs":[{"type":"address","name":"ftso","internalType":"contract IIFtso","indexed":false},{"type":"uint256","name":"epochId","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"event","name":"PriceEpochFinalized","inputs":[{"type":"address","name":"chosenFtso","internalType":"address","indexed":false},{"type":"uint256","name":"rewardEpochId","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"event","name":"RewardEpochFinalized","inputs":[{"type":"uint256","name":"votepowerBlock","internalType":"uint256","indexed":false},{"type":"uint256","name":"startBlock","internalType":"uint256","indexed":false}],"anonymous":false},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"","internalType":"uint256"}],"name":"MAX_TRUSTED_ADDRESSES_LENGTH","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"activate","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"bool","name":"","internalType":"bool"}],"name":"active","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"addFtso","inputs":[{"type":"address","name":"_ftso","internalType":"contract IIFtso"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"addRevertError","inputs":[{"type":"address","name":"revertedContract","internalType":"address"},{"type":"string","name":"message","internalType":"string"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"claimGovernance","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract CleanupBlockNumberManager"}],"name":"cleanupBlockNumberManager","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[{"type":"bool","name":"","internalType":"bool"}],"name":"daemonize","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint192","name":"totalRevertedErrors","internalType":"uint192"},{"type":"uint64","name":"lastErrorTypeIndex","internalType":"uint64"}],"name":"errorData","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract FlareDaemon"}],"name":"flareDaemon","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IIFtsoRegistry"}],"name":"ftsoRegistry","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"priceEpochId","internalType":"uint256"},{"type":"uint256","name":"priceEpochStartTimestamp","internalType":"uint256"},{"type":"uint256","name":"priceEpochEndTimestamp","internalType":"uint256"},{"type":"uint256","name":"priceEpochRevealEndTimestamp","internalType":"uint256"},{"type":"uint256","name":"currentTimestamp","internalType":"uint256"}],"name":"getCurrentPriceEpochData","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"","internalType":"uint256"}],"name":"getCurrentRewardEpoch","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"bool","name":"_fallbackMode","internalType":"bool"},{"type":"address[]","name":"_ftsos","internalType":"contract IIFtso[]"},{"type":"bool[]","name":"_ftsoInFallbackMode","internalType":"bool[]"}],"name":"getFallbackMode","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address[]","name":"_ftsos","internalType":"contract IIFtso[]"}],"name":"getFtsos","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"_firstPriceEpochStartTs","internalType":"uint256"},{"type":"uint256","name":"_priceEpochDurationSeconds","internalType":"uint256"},{"type":"uint256","name":"_revealEpochDurationSeconds","internalType":"uint256"}],"name":"getPriceEpochConfiguration","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IPriceSubmitter"}],"name":"getPriceSubmitter","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"","internalType":"uint256"}],"name":"getRewardEpochVotePowerBlock","inputs":[{"type":"uint256","name":"_rewardEpoch","internalType":"uint256"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"","internalType":"uint256"}],"name":"getVotePowerIntervalFraction","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"address"}],"name":"governance","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"initialise","inputs":[{"type":"address","name":"_governance","internalType":"address"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"address"}],"name":"lastRewardedFtsoAddress","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IIPriceSubmitter"}],"name":"priceSubmitter","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"proposeGovernance","inputs":[{"type":"address","name":"_governance","internalType":"address"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"address"}],"name":"proposedGovernance","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"removeFtso","inputs":[{"type":"address","name":"_ftso","internalType":"contract IIFtso"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"replaceFtso","inputs":[{"type":"address","name":"_ftsoToRemove","internalType":"contract IIFtso"},{"type":"address","name":"_ftsoToAdd","internalType":"contract IIFtso"},{"type":"bool","name":"_copyCurrentPrice","internalType":"bool"},{"type":"bool","name":"_copyAssetOrAssetFtsos","internalType":"bool"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"","internalType":"uint256"}],"name":"rewardEpochDurationSeconds","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"votepowerBlock","internalType":"uint256"},{"type":"uint256","name":"startBlock","internalType":"uint256"},{"type":"uint256","name":"startTimestamp","internalType":"uint256"}],"name":"rewardEpochs","inputs":[{"type":"uint256","name":"","internalType":"uint256"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"","internalType":"uint256"}],"name":"rewardEpochsStartTs","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IIFtsoRewardManager"}],"name":"rewardManager","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"setContractAddresses","inputs":[{"type":"address","name":"_rewardManager","internalType":"contract IIFtsoRewardManager"},{"type":"address","name":"_ftsoRegistry","internalType":"contract IIFtsoRegistry"},{"type":"address","name":"_voterWhitelister","internalType":"contract IIVoterWhitelister"},{"type":"address","name":"_supply","internalType":"contract IISupply"},{"type":"address","name":"_cleanupBlockNumberManager","internalType":"contract CleanupBlockNumberManager"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"setFallbackMode","inputs":[{"type":"bool","name":"_fallbackMode","internalType":"bool"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"setFtsoAsset","inputs":[{"type":"address","name":"_ftso","internalType":"contract IIFtso"},{"type":"address","name":"_asset","internalType":"contract IIVPToken"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"setFtsoAssetFtsos","inputs":[{"type":"address","name":"_ftso","internalType":"contract IIFtso"},{"type":"address[]","name":"_assetFtsos","internalType":"contract IIFtso[]"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"setFtsoFallbackMode","inputs":[{"type":"address","name":"_ftso","internalType":"contract IIFtso"},{"type":"bool","name":"_fallbackMode","internalType":"bool"}]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"setGovernanceParameters","inputs":[{"type":"uint256","name":"_maxVotePowerNatThresholdFraction","internalType":"uint256"},{"type":"uint256","name":"_maxVotePowerAssetThresholdFraction","internalType":"uint256"},{"type":"uint256","name":"_lowAssetUSDThreshold","internalType":"uint256"},{"type":"uint256","name":"_highAssetUSDThreshold","internalType":"uint256"},{"type":"uint256","name":"_highAssetTurnoutThresholdBIPS","internalType":"uint256"},{"type":"uint256","name":"_lowNatTurnoutThresholdBIPS","internalType":"uint256"},{"type":"uint256","name":"_rewardExpiryOffsetSeconds","internalType":"uint256"},{"type":"address[]","name":"_trustedAddresses","internalType":"address[]"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256","name":"maxVotePowerNatThresholdFraction","internalType":"uint256"},{"type":"uint256","name":"maxVotePowerAssetThresholdFraction","internalType":"uint256"},{"type":"uint256","name":"lowAssetUSDThreshold","internalType":"uint256"},{"type":"uint256","name":"highAssetUSDThreshold","internalType":"uint256"},{"type":"uint256","name":"highAssetTurnoutThresholdBIPS","internalType":"uint256"},{"type":"uint256","name":"lowNatTurnoutThresholdBIPS","internalType":"uint256"},{"type":"uint256","name":"rewardExpiryOffsetSeconds","internalType":"uint256"},{"type":"bool","name":"changed","internalType":"bool"},{"type":"bool","name":"initialized","internalType":"bool"}],"name":"settings","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256[]","name":"_lastErrorBlock","internalType":"uint256[]"},{"type":"uint256[]","name":"_numErrors","internalType":"uint256[]"},{"type":"string[]","name":"_errorString","internalType":"string[]"},{"type":"address[]","name":"_erroringContract","internalType":"address[]"},{"type":"uint256","name":"_totalRevertedErrors","internalType":"uint256"}],"name":"showLastRevertedError","inputs":[]},{"type":"function","stateMutability":"view","outputs":[{"type":"uint256[]","name":"_lastErrorBlock","internalType":"uint256[]"},{"type":"uint256[]","name":"_numErrors","internalType":"uint256[]"},{"type":"string[]","name":"_errorString","internalType":"string[]"},{"type":"address[]","name":"_erroringContract","internalType":"address[]"},{"type":"uint256","name":"_totalRevertedErrors","internalType":"uint256"}],"name":"showRevertedErrors","inputs":[{"type":"uint256","name":"startIndex","internalType":"uint256"},{"type":"uint256","name":"numErrorTypesToShow","internalType":"uint256"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IISupply"}],"name":"supply","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[{"type":"bool","name":"","internalType":"bool"}],"name":"switchToFallbackMode","inputs":[]},{"type":"function","stateMutability":"nonpayable","outputs":[],"name":"transferGovernance","inputs":[{"type":"address","name":"_governance","internalType":"address"}]},{"type":"function","stateMutability":"view","outputs":[{"type":"address","name":"","internalType":"contract IIVoterWhitelister"}],"name":"voterWhitelister","inputs":[]}]`
+
+type Validation struct {
+	evm     *vm.EVM
+	address common.Address
+	abi     abi.ABI
 }
 
-type FTSOABIs struct {
-	Registry  abi.ABI
-	Manager   abi.ABI
-	Rewards   abi.ABI
-	Whitelist abi.ABI
-	WNAT      abi.ABI
-	Votepower abi.ABI
-}
-
-type FTSOContracts struct {
-	Registry   EVMContract
-	Manager    EVMContract
-	Rewards    EVMContract
-	Whitelist  EVMContract
-	WNAT       EVMContract
-	Votepower  EVMContract
-	Validation EVMContract
-}
-
-type FTSOEpoch struct {
-	PowerHeight uint64
-	StartHeight uint64
-	StartTime   uint64
-}
-
-func NewFTSOSystem(evm *vm.EVM, addressSubmitter common.Address) (*FTSOSystem, error) {
-
-	// TODO
-	// 1) The `AtBlock` goes away, and we always work directly on the EVM handle.
-	// 2) This means `FTSOSnapshot` goes away, as we work on a single snapshot.
-	// 3) All calls related to `ValidatorRegistry` go away, because that's in the precompiled now.
-	// 4) Should we move all this to the `core/vm` package with the precompiled contracts?
-
-	abiSubmitter, err := abi.JSON(strings.NewReader(jsonSubmitter))
-	if err != nil {
-		return nil, fmt.Errorf("could not parse submitter ABI: %w", err)
-	}
-
-	abiRegistry, err := abi.JSON(strings.NewReader(jsonRegistry))
-	if err != nil {
-		return nil, fmt.Errorf("could not parse registry ABI: %w", err)
-	}
-
+func NewValidation(evm *vm.EVM) (*Validation, error) {
 	abiManager, err := abi.JSON(strings.NewReader(jsonManager))
 	if err != nil {
-		return nil, fmt.Errorf("could not parse manager ABI: %w", err)
+		return nil, fmt.Errorf("could not parse validation manager ABI: %w", err)
 	}
 
-	abiRewards, err := abi.JSON(strings.NewReader(jsonRewards))
-	if err != nil {
-		return nil, fmt.Errorf("could not parse rewards ABI: %w", err)
-	}
-
-	abiWhitelist, err := abi.JSON(strings.NewReader(jsonWhitelist))
-	if err != nil {
-		return nil, fmt.Errorf("could not parse whitelist ABI: %w", err)
-	}
-
-	abiWNAT, err := abi.JSON(strings.NewReader(jsonWNAT))
-	if err != nil {
-		return nil, fmt.Errorf("could not parse WNAT ABI: %w", err)
-	}
-
-	abiVotepower, err := abi.JSON(strings.NewReader(jsonVotepower))
-	if err != nil {
-		return nil, fmt.Errorf("could not parse votepower ABI: %w", err)
-	}
-
-	submitter := EVMContract{
-		address: addressSubmitter,
-		abi:     abiSubmitter,
-	}
-
-	abis := FTSOABIs{
-		Registry:  abiRegistry,
-		Manager:   abiManager,
-		Rewards:   abiRewards,
-		WNAT:      abiWNAT,
-		Whitelist: abiWhitelist,
-		Votepower: abiVotepower,
-	}
-
-	f := FTSOSystem{
-		evm:       evm,
-		submitter: submitter,
-		abis:      abis,
-	}
-
-	return &f, nil
+	return &Validation{
+		evm:     evm,
+		address: params.ValidationAddress,
+		abi:     abiManager,
+	}, nil
 }
 
-func (f *FTSOSystem) Contracts() (FTSOContracts, error) {
+func (v *Validation) Validators() (map[ids.ShortID]uint64, error) {
 
-	var managerAddress common.Address
-	err := snap.OnContract(f.submitter).Execute(ManagerAddress).Decode(&managerAddress)
-	if errors.Is(err, errNoReturnData) {
-		return FTSOContracts{}, errNoPriceSubmitter
-	}
-	if err != nil {
-		return FTSOContracts{}, fmt.Errorf("could not get manager address: %w", err)
-	}
-
-	empty := common.Address{}
-	if managerAddress == empty {
-		return FTSOContracts{}, errFTSONotDeployed
-	}
-
-	manager := EVMContract{
-		address: managerAddress,
-		abi:     f.abis.Manager,
-	}
-
-	height := &big.Int{}
-	err = snap.OnContract(manager).Execute(RewardEpoch, big.NewInt(0)).Decode(nil, &height, nil)
-	if errors.Is(err, vm.ErrExecutionReverted) || height.Uint64() == 0 {
-		return FTSOContracts{}, errFTSONotActive
-	}
-	if err != nil {
-		return FTSOContracts{}, fmt.Errorf("could not get first epoch: %w", err)
-	}
-
-	var rewardsAddress common.Address
-	err = snap.OnContract(manager).Execute(RewardsAddress).Decode(&rewardsAddress)
-	if err != nil {
-		return FTSOContracts{}, fmt.Errorf("could not get rewards address: %w", err)
-	}
-
-	rewards := EVMContract{
-		address: rewardsAddress,
-		abi:     f.abis.Rewards,
-	}
-
-	var registryAddress common.Address
-	err = snap.OnContract(f.submitter).Execute(RegistryAddress).Decode(&registryAddress)
-	if err != nil {
-		return FTSOContracts{}, fmt.Errorf("could not get registry address: %w", err)
-	}
-
-	registry := EVMContract{
-		address: registryAddress,
-		abi:     f.abis.Registry,
-	}
-
-	var whitelistAddress common.Address
-	err = snap.OnContract(f.submitter).Execute(WhitelistAddress).Decode(&whitelistAddress)
-	if err != nil {
-		return FTSOContracts{}, fmt.Errorf("could not get whitelist address: %w", err)
-	}
-
-	whitelist := EVMContract{
-		address: whitelistAddress,
-		abi:     f.abis.Whitelist,
-	}
-
-	var wnatAddress common.Address
-	err = snap.OnContract(rewards).Execute(WNATAddress).Decode(&wnatAddress)
-	if err != nil {
-		return FTSOContracts{}, fmt.Errorf("could not get WNAT address: %w", err)
-	}
-
-	wnat := EVMContract{
-		address: wnatAddress,
-		abi:     f.abis.WNAT,
-	}
-
-	var votepowerAddress common.Address
-	err = snap.OnContract(wnat).Execute(VotepowerAddress).Decode(&votepowerAddress)
-	if err != nil {
-		return FTSOContracts{}, fmt.Errorf("could not get votepower address: %w", err)
-	}
-
-	votepower := EVMContract{
-		address: votepowerAddress,
-		abi:     f.abis.Votepower,
-	}
-
-	contracts := FTSOContracts{
-		Registry:   registry,
-		Manager:    manager,
-		Rewards:    rewards,
-		Whitelist:  whitelist,
-		WNAT:       wnat,
-		Votepower:  votepower,
-		Validation: f.validation,
-	}
-
-	return contracts, nil
-}
-
-func (f *FTSOSystem) Current(hash common.Hash) (uint64, error) {
-
-	contracts, err := f.Contracts(hash)
-	if err != nil {
-		return 0, fmt.Errorf("could not get contracts: %w", err)
-	}
-
-	epoch := &big.Int{}
-	err = BindEVM(f.blockchain).
-		AtBlock(hash).
-		OnContract(contracts.Manager).
-		Execute(CurrentEpoch).
-		Decode(&epoch)
-	if err != nil {
-		return 0, fmt.Errorf("could not execute current epoch retrieval: %w", err)
-	}
-
-	return epoch.Uint64(), nil
-}
-
-func (f *FTSOSystem) Details(epoch uint64) (FTSOEpoch, error) {
-
-	header := f.blockchain.CurrentHeader()
-	if header == nil {
-		return FTSOEpoch{}, fmt.Errorf("no current header")
-	}
-
-	hash := header.Hash()
-	contracts, err := f.Contracts(hash)
-	if err != nil {
-		return FTSOEpoch{}, fmt.Errorf("could not get contracts (hash: %x): %w", hash, err)
-	}
-
-	call := BindEVM(f.blockchain).AtBlock(hash).OnContract(contracts.Manager)
-
-	powerHeight := &big.Int{}
-	startHeight := &big.Int{}
-	startTime := &big.Int{}
-	err = call.
-		Execute(RewardEpoch, big.NewInt(0).SetUint64(epoch)).
-		Decode(&powerHeight, &startHeight, &startTime)
-	if err != nil {
-		return FTSOEpoch{}, fmt.Errorf("could not execute epoch info retrieval (hash: %x): %w", hash, err)
-	}
-
-	info := FTSOEpoch{
-		PowerHeight: powerHeight.Uint64(),
-		StartHeight: startHeight.Uint64(),
-		StartTime:   startTime.Uint64(),
-	}
-
-	return info, nil
-}
-
-func (f *FTSOSystem) Snapshot(epoch uint64) (Snapshot, error) {
-
-	currentEpoch, err := f.Details(epoch)
-	if err != nil {
-		return nil, fmt.Errorf("could not get current epoch details: %w", err)
-	}
-
-	powerHeader := f.blockchain.GetHeaderByNumber(currentEpoch.PowerHeight)
-	if powerHeader == nil {
-		return nil, fmt.Errorf("unknown power block (height: %d)", currentEpoch.PowerHeight)
-	}
-
-	startHeader := f.blockchain.GetHeaderByNumber(currentEpoch.StartHeight)
-	if startHeader == nil {
-		return nil, fmt.Errorf("unknown current block (height: %d)", currentEpoch.StartHeight)
-	}
-
-	nextEpoch, err := f.Details(epoch + 1)
-	if err != nil {
-		return nil, fmt.Errorf("could not get next epoch details: %w", err)
-	}
-
-	endHeader := f.blockchain.GetHeaderByNumber(nextEpoch.StartHeight)
-	if endHeader == nil {
-		return nil, fmt.Errorf("unknown next block (height: %d)", nextEpoch.StartHeight)
-	}
-
-	startHash := startHeader.Hash()
-	contracts, err := f.Contracts(startHash)
-	if err != nil {
-		return nil, fmt.Errorf("could not get contracts (hash: %x): %w", startHash, err)
-	}
-
-	snap := FTSOSnapshot{
-		system:    f,
-		epoch:     epoch,
-		power:     powerHeader.Hash(),
-		start:     startHash,
-		end:       endHeader.Hash(),
-		contracts: contracts,
-	}
-
-	return &snap, nil
+	return map[ids.ShortID]uint64{}, nil
 }

@@ -8,12 +8,12 @@ import (
 	"reflect"
 )
 
-type EVMReturn struct {
+type ContractReturn struct {
 	values []interface{}
 	err    error
 }
 
-func (e *EVMReturn) Decode(values ...interface{}) error {
+func (e *ContractReturn) Decode(values ...interface{}) error {
 
 	if e.err != nil {
 		return e.err

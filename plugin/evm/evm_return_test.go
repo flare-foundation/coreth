@@ -22,7 +22,7 @@ func TestEVMReturn_Decode(t *testing.T) {
 	inAddress := common.HexToAddress("0xE93012B9d91b3C8F7C81eb1A4B92AaE06698DDda")
 	inAddresses := []common.Address{{1}, {2}, {3}}
 
-	ret := &EVMReturn{values: []interface{}{
+	ret := &ContractReturn{values: []interface{}{
 		inInt,
 		inInts,
 		inBytes,

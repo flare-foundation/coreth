@@ -107,7 +107,7 @@ var PrecompiledContractsApricotPhase2 = map[common.Address]StatefulPrecompiledCo
 }
 
 // PrecompiledContractsFlareHardFork1 contains the default set of pre-compiled Ethereum
-// contracts used in the Apricot Phase 2 release.
+// contracts used in the FlareHardFork1 release.
 var PrecompiledContractsFlareHardFork1 = map[common.Address]StatefulPrecompiledContract{
 	common.BytesToAddress([]byte{1}): newWrappedPrecompiledContract(&ecrecover{}),
 	common.BytesToAddress([]byte{2}): newWrappedPrecompiledContract(&sha256hash{}),
@@ -122,10 +122,11 @@ var PrecompiledContractsFlareHardFork1 = map[common.Address]StatefulPrecompiledC
 }
 
 var (
-	PrecompiledAddressesApricotPhase2 []common.Address
-	PrecompiledAddressesIstanbul      []common.Address
-	PrecompiledAddressesByzantium     []common.Address
-	PrecompiledAddressesHomestead     []common.Address
+	PrecompiledAddressesFlareHardFork1 []common.Address
+	PrecompiledAddressesApricotPhase2  []common.Address
+	PrecompiledAddressesIstanbul       []common.Address
+	PrecompiledAddressesByzantium      []common.Address
+	PrecompiledAddressesHomestead      []common.Address
 )
 
 func init() {
@@ -141,13 +142,16 @@ func init() {
 	for k := range PrecompiledContractsApricotPhase2 {
 		PrecompiledAddressesApricotPhase2 = append(PrecompiledAddressesApricotPhase2, k)
 	}
+	for k := range PrecompiledContractsFlareHardFork1 {
+		PrecompiledAddressesFlareHardFork1 = append(PrecompiledAddressesFlareHardFork1, k)
+	}
 }
 
 // ActivePrecompiles returns the precompiles enabled with the current configuration.
 func ActivePrecompiles(rules params.Rules) []common.Address {
 	switch {
 	case rules.IsFlareHardFork1:
-		return PrecompiledAddressesIstanbul
+		return PrecompiledAddressesFlareHardFork1
 	case rules.IsApricotPhase2:
 		return PrecompiledAddressesApricotPhase2
 	case rules.IsIstanbul:
@@ -352,7 +356,7 @@ func (c *bigModExp) RequiredGas(input []byte) uint64 {
 		// def mult_complexity(x):
 		//    ceiling(x/8)^2
 		//
-		//where is x is max(length_of_MODULUS, length_of_BASE)
+		// where is x is max(length_of_MODULUS, length_of_BASE)
 		gas = gas.Add(gas, big7)
 		gas = gas.Div(gas, big8)
 		gas.Mul(gas, gas)

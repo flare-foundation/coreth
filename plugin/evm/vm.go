@@ -57,6 +57,7 @@ import (
 	"github.com/flare-foundation/coreth/core"
 	"github.com/flare-foundation/coreth/core/state"
 	"github.com/flare-foundation/coreth/core/types"
+	corevm "github.com/flare-foundation/coreth/core/vm"
 	"github.com/flare-foundation/coreth/eth/ethconfig"
 	"github.com/flare-foundation/coreth/node"
 	"github.com/flare-foundation/coreth/params"
@@ -227,7 +228,7 @@ type VM struct {
 
 	bootstrapped bool
 
-	ftso       FTSO
+	// ftso       FTSO
 	validators Validators
 }
 
@@ -416,7 +417,8 @@ func (vm *VM) Initialize(
 	// Initialize the FTSO validator retriever, which retrieves validators for the
 	// FTSO data providers, and wrap it in a cache to avoid unnecessary retrievals.
 	blockchain := vm.chain.BlockChain()
-	ftso, err := NewFTSOSystem(blockchain, params.SubmitterAddress)
+
+	ftso, err := NewFTSOSystem(nil, params.SubmitterAddress)
 	if err != nil {
 		return fmt.Errorf("could not initialize FTSO system: %w", err)
 	}
@@ -474,7 +476,7 @@ func (vm *VM) Initialize(
 
 	// Initialize the validators manager, which is our interface between the EVM
 	// implementation and the Flare logic.
-	vm.ftso = ftso
+	// vm.ftso = ftso
 	vm.validators = NewValidatorsManager(ctx.Log, defaultValidators, cacheFTSOValidators, cacheActiveValidators, storeTransitionValidators)
 
 	vm.atomicTxRepository, err = NewAtomicTxRepository(vm.db, vm.codec, lastAccepted.NumberU64())
@@ -1535,7 +1537,7 @@ func (vm *VM) GetValidators(blockID ids.ID) (validation.Set, error) {
 	// First, we get the header for the given block ID, so that we can determine
 	// activation of the hard fork by the header's timestamp.
 	hash := common.Hash(blockID)
-	state := vm.chain.BlockChain().StateAt(blockID)
+	blockchain := vm.chain.BlockChain()
 	header := blockchain.GetHeaderByHash(hash)
 	if header == nil {
 		return nil, fmt.Errorf("unknown block (hash: %x)", hash)
@@ -1549,23 +1551,26 @@ func (vm *VM) GetValidators(blockID ids.ID) (validation.Set, error) {
 		return toSet(vm.validators.DefaultValidators(0))
 	}
 
-	// If the hard fork is active, we retrieve the active reward epoch from the state
-	// as it was at the given block ID. If the FTSO was not yet deployed, or not yet
-	// active, at the given block ID, we return the default validators as of epoch
-	// zero as well.
-	epoch, err := vm.ftso.Current(hash)
+	stateDB, err := blockchain.StateAt(header.Root)
+	if err != nil {
+		return nil, fmt.Errorf("could not get blockchain state (root: %x): %w", header.Root, err)
+	}
+	blkContext := core.NewEVMBlockContext(header, blockchain, nil)
+	chainConfig := blockchain.Config()
+	evm := corevm.NewEVM(blkContext, corevm.TxContext{}, stateDB, chainConfig, corevm.Config{NoBaseFee: true})
+
+	v, err := NewValidation(evm)
+	if err != nil {
+		return nil, fmt.Errorf("could not initialize FTSO system: %w", err)
+	}
+
+	l, err := v.Validators()
 	if errors.Is(err, errNoPriceSubmitter) || errors.Is(err, errFTSONotDeployed) || errors.Is(err, errFTSONotActive) {
 		vm.ctx.Log.Debug("FTSO not available, using default validators")
 		return toSet(vm.validators.DefaultValidators(0))
 	}
-	if err != nil {
-		return nil, fmt.Errorf("could not get epoch (timestamp: %d): %w", header.Time, err)
-	}
 
-	// Finally, if we were able to identify the current rewards epoch, we return
-	// the set of active validators as of that epoch.
-	vm.ctx.Log.Debug("hard fork activated and FTSO available, using active validators")
-	return toSet(vm.validators.ActiveValidators(epoch))
+	return toSet(l, nil)
 }
 
 func toSet(validatorMap map[ids.ShortID]uint64, err error) (validation.Set, error) {
