@@ -130,6 +130,12 @@ var (
 )
 
 func init() {
+
+	// This needs to be initialized before we get the addresses, so we do it in
+	// the same `init` function.
+	registry = &validatorRegistry{}
+	PrecompiledContractsFlareHardFork1[params.ValidationAddress] = registry
+
 	for k := range PrecompiledContractsHomestead {
 		PrecompiledAddressesHomestead = append(PrecompiledAddressesHomestead, k)
 	}

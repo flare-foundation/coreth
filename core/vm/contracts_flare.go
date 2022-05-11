@@ -11,11 +11,17 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/vm"
+
+	"github.com/flare-foundation/flare/ids"
+
 	"github.com/flare-foundation/coreth/accounts/abi"
 	"github.com/flare-foundation/coreth/internal/ethapi"
 	"github.com/flare-foundation/coreth/params"
 	"github.com/flare-foundation/coreth/plugin/evm/ftso"
-	"github.com/flare-foundation/flare/ids"
+)
+
+var (
+	registry *validatorRegistry
 )
 
 var (
@@ -31,7 +37,26 @@ const (
 	RatioMultiplier = 100.0
 )
 
+type ValidatorStorage interface {
+	WithEVM(evm *EVM) ValidatorManager
+}
+
+type ValidatorManager interface {
+	SetValidatorNodeID(address common.Address, nodeID ids.ShortID) error
+	UpdateActiveValidators() error
+	GetActiveValidators() (map[ids.ShortID]uint64, error)
+}
+
 type validatorRegistry struct {
+	storage ValidatorStorage
+}
+
+func InitializeValidatorStorage(storage ValidatorStorage) {
+	registry.SetValidatorStorage(storage)
+}
+
+func (v *validatorRegistry) SetValidatorStorage(storage ValidatorStorage) {
+	v.storage = storage
 }
 
 // 1) Initialize FTSO system around the EVM.

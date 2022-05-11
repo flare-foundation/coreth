@@ -63,6 +63,7 @@ import (
 	"github.com/flare-foundation/coreth/params"
 	"github.com/flare-foundation/coreth/peer"
 	"github.com/flare-foundation/coreth/plugin/evm/message"
+	"github.com/flare-foundation/coreth/plugin/evm/validators"
 	"github.com/flare-foundation/coreth/rpc"
 
 	coreth "github.com/flare-foundation/coreth/chain"
@@ -122,11 +123,11 @@ const (
 
 var (
 	// Set last accepted key to be longer than the keys used to store accepted block IDs.
-	lastAcceptedKey = []byte("last_accepted_key")
-	acceptedPrefix  = []byte("snowman_accepted")
-	ethDBPrefix     = []byte("ethdb")
-	validatorPrefix = []byte("validator")
-	lastEpochPrefix = []byte("last_epoch")
+	lastAcceptedKey   = []byte("last_accepted_key")
+	acceptedPrefix    = []byte("snowman_accepted")
+	ethDBPrefix       = []byte("ethdb")
+	validatorDBPrefix = []byte("validator")
+	lastEpochPrefix   = []byte("last_epoch")
 
 	// Prefixes for atomic trie
 	atomicTrieDBPrefix     = []byte("atomicTrieDB")
@@ -189,8 +190,7 @@ type VM struct {
 	db *versiondb.Database
 	// [chaindb] is the database supplied to the Ethereum backend
 	chaindb Database
-	// [acceptedBlockDB] is the database to store the last accepted
-	// block.
+	// [acceptedBlockDB] is the database to store the last accepted block.
 	acceptedBlockDB database.Database
 
 	// [atomicTxRepository] maintains two indexes on accepted atomic txs.
@@ -228,8 +228,8 @@ type VM struct {
 
 	bootstrapped bool
 
-	// ftso       FTSO
-	validators Validators
+	// Validator storage
+	validators corevm.ValidatorStorage
 }
 
 // Codec implements the secp256k1fx interface
@@ -408,77 +408,6 @@ func (vm *VM) Initialize(
 	vm.chain = ethChain
 	lastAccepted := vm.chain.LastAcceptedBlock()
 
-	// Load the default validators for the given chain ID.
-	defaultValidators, err := NewValidatorsDefault(g.Config.ChainID)
-	if err != nil {
-		return fmt.Errorf("could not initialize default validators: %w", err)
-	}
-
-	// Initialize the FTSO validator retriever, which retrieves validators for the
-	// FTSO data providers, and wrap it in a cache to avoid unnecessary retrievals.
-	blockchain := vm.chain.BlockChain()
-
-	ftso, err := NewFTSOSystem(nil, params.SubmitterAddress)
-	if err != nil {
-		return fmt.Errorf("could not initialize FTSO system: %w", err)
-	}
-	ftsoValidators := NewValidatorsFTSO(ctx.Log, blockchain, ftso,
-		WithRootDegree(4),
-	)
-	cacheFTSOValidators := NewValidatorsCache(ctx.Log, ftsoValidators,
-		WithCacheSize(10),
-	)
-
-	// Load the persisted active validator sets from the on-disk database.
-	validatorDB := prefixdb.New(validatorPrefix, vm.db)
-	activeValidators, err := NewValidatorsStore(ctx.Log, validatorDB, validatorDB)
-	if err != nil {
-		return fmt.Errorf("could not initialize active validators store: %w", err)
-	}
-	cacheActiveValidators := NewValidatorsCache(ctx.Log, activeValidators,
-		WithCacheSize(10),
-	)
-
-	// Initialize the validator transitioner, which is responsible for smoothly
-	// transitioning validators from the default set to the FTSO set, wrap it in
-	// a normalizer to have uniform weights across epochs, and wrap it in a cache
-	// to avoid unnecessary recomputation.
-	stepSize := uint(0)
-	switch {
-	case g.Config.ChainID.Cmp(params.CostonChainID) == 0:
-		stepSize = 1 // with 1 hour reward epochs, doesn't matter much
-	case g.Config.ChainID.Cmp(params.SongbirdChainID) == 0:
-		stepSize = 2 // only FTSO validators ~1 week after main net launch
-	case g.Config.ChainID.Cmp(params.FlareChainID) == 0:
-		stepSize = 1 // doing as slow as possible on main net makes senes
-	default:
-		stepSize = 1 // as incremental as possible for testing purposes
-	}
-	transitionValidators := NewValidatorsTransitioner(ctx.Log, defaultValidators, cacheFTSOValidators, cacheActiveValidators,
-		WithStepSize(stepSize),
-	)
-	normalizeTransitionValidators := NewValidatorsNormalizer(ctx.Log, transitionValidators)
-	storeTransitionValidators := NewValidatorsStorer(normalizeTransitionValidators, activeValidators)
-
-	// Getting the active validators for the current epoch will bootstrap all of the
-	// storage that is part of the transition logic, and will avoid long delays once
-	// we start processing blocks.
-	epoch, err := ftso.Current(lastAcceptedHash)
-	if err != nil && !errors.Is(err, errNoPriceSubmitter) && !errors.Is(err, errFTSONotDeployed) && !errors.Is(err, errFTSONotActive) {
-		return fmt.Errorf("could not get current epoch: %w", err)
-	}
-	if err == nil {
-		_, err = storeTransitionValidators.ByEpoch(epoch)
-		if err != nil {
-			return fmt.Errorf("could not bootstrap validator caches: %w", err)
-		}
-	}
-
-	// Initialize the validators manager, which is our interface between the EVM
-	// implementation and the Flare logic.
-	// vm.ftso = ftso
-	vm.validators = NewValidatorsManager(ctx.Log, defaultValidators, cacheFTSOValidators, cacheActiveValidators, storeTransitionValidators)
-
 	vm.atomicTxRepository, err = NewAtomicTxRepository(vm.db, vm.codec, lastAccepted.NumberU64())
 	if err != nil {
 		return fmt.Errorf("failed to create atomic repository: %w", err)
@@ -497,6 +426,17 @@ func (vm *VM) Initialize(
 	if err != nil {
 		return fmt.Errorf("failed to create atomic trie: %w", err)
 	}
+
+	// Initialize a database to hold data related to validators.
+	validatorDB := prefixdb.New(validatorDBPrefix, vm.db)
+
+	// TODO: create and initialize component that interfaces with the on-disk DB
+	// to store and retrieve validator data
+	vm.validators = validators.NewStorage(validatorDB)
+
+	// Set the validator storage on the Core VM package, which will inject it into
+	// the precompiled contract for validator interfacing from blockchain transactions.
+	corevm.InitializeValidatorStorage(vm.validators)
 
 	// start goroutines to update the tx pool gas minimum gas price when upgrades go into effect
 	vm.handleGasPriceUpdates()
@@ -1548,7 +1488,7 @@ func (vm *VM) GetValidators(blockID ids.ID) (validation.Set, error) {
 	// default validators from the older code base.
 	if !blockchain.Config().IsFlareHardFork1(big.NewInt(0).SetUint64(header.Time)) {
 		vm.ctx.Log.Debug("hard fork not activated, using default validators")
-		return toSet(vm.validators.DefaultValidators(0))
+		// TODO: new easier approach to handle default validators
 	}
 
 	stateDB, err := blockchain.StateAt(header.Root)
@@ -1559,24 +1499,15 @@ func (vm *VM) GetValidators(blockID ids.ID) (validation.Set, error) {
 	chainConfig := blockchain.Config()
 	evm := corevm.NewEVM(blkContext, corevm.TxContext{}, stateDB, chainConfig, corevm.Config{NoBaseFee: true})
 
-	v, err := NewValidation(evm)
+	validators, err := vm.validators.WithEVM(evm).GetActiveValidators()
 	if err != nil {
-		return nil, fmt.Errorf("could not initialize FTSO system: %w", err)
+		return nil, fmt.Errorf("could not get active validators: %w", err)
 	}
 
-	l, err := v.Validators()
-	if errors.Is(err, errNoPriceSubmitter) || errors.Is(err, errFTSONotDeployed) || errors.Is(err, errFTSONotActive) {
-		vm.ctx.Log.Debug("FTSO not available, using default validators")
-		return toSet(vm.validators.DefaultValidators(0))
-	}
-
-	return toSet(l, nil)
+	return toSet(validators)
 }
 
-func toSet(validatorMap map[ids.ShortID]uint64, err error) (validation.Set, error) {
-	if err != nil {
-		return nil, err
-	}
+func toSet(validatorMap map[ids.ShortID]uint64) (validation.Set, error) {
 	set := validation.NewSet()
 	for validator, weight := range validatorMap {
 		err := set.AddWeight(validator, weight)
