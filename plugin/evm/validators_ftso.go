@@ -105,7 +105,7 @@ func (v *ValidatorsFTSO) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, error) {
 			return nil, fmt.Errorf("could not get FTSO validator (provider: %s): %w", provider, err)
 		}
 		if validator == ids.ShortEmpty {
-			v.log.Debug("skipping provider %s (validator not set)", provider.Hex())
+			v.log.Debug("skipping provider %s (validator not set)", provider)
 			continue
 		}
 
@@ -114,12 +114,12 @@ func (v *ValidatorsFTSO) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, error) {
 			return nil, fmt.Errorf("could not get vote power (provider: %s): %w", provider, err)
 		}
 		if votepower == 0 {
-			v.log.Verbo("skipping provider %s (validator: %s, no vote power)", provider.Hex(), validator.PrefixedString(constants.NodeIDPrefix))
+			v.log.Verbo("skipping provider %s (validator: %s, no vote power)", provider, validator.PrefixedString(constants.NodeIDPrefix))
 			continue
 		}
 
 		if votepower > cap {
-			v.log.Verbo("capping provider %s (validator: %s, votepower: %f, cap: %f)", provider.Hex(), validator.PrefixedString(constants.NodeIDPrefix), votepower, cap)
+			v.log.Verbo("capping provider %s (validator: %s, votepower: %f, cap: %f)", provider, validator.PrefixedString(constants.NodeIDPrefix), votepower, cap)
 			votepower = cap
 		}
 
@@ -128,13 +128,13 @@ func (v *ValidatorsFTSO) ByEpoch(epoch uint64) (map[ids.ShortID]uint64, error) {
 			return nil, fmt.Errorf("could not get rewards (provider: %s): %w", provider, err)
 		}
 		if rewards == 0 {
-			v.log.Debug("skipping provider %s (validator: %s, votepower: %f, no rewards)", provider.Hex(), validator.PrefixedString(constants.NodeIDPrefix), votepower)
+			v.log.Debug("skipping provider %s (validator: %s, votepower: %f, no rewards)", provider, validator.PrefixedString(constants.NodeIDPrefix), votepower)
 			continue
 		}
 
 		weight := uint64(math.Pow(votepower, 1.0/float64(v.cfg.RootDegree)) * (v.cfg.RatioMultiplier * rewards / votepower))
 
-		v.log.Debug("adding provider %s (validator: %s, votepower: %f, rewards: %f, weight: %d)", provider.Hex(), validator.PrefixedString(constants.NodeIDPrefix), votepower, rewards, weight)
+		v.log.Debug("adding provider %s (validator: %s, votepower: %f, rewards: %f, weight: %d)", provider, validator.PrefixedString(constants.NodeIDPrefix), votepower, rewards, weight)
 
 		validators[validator] = weight
 	}
