@@ -18,12 +18,17 @@ const (
 type ValidatorRepository interface {
 	Epoch() (uint64, error)
 	Pending() (map[common.Address]ids.ShortID, error)
-	Active() (map[ids.ShortID]uint64, error)
-	Lookup(address common.Address) (ids.ShortID, error)
+	Active() (map[common.Address]ids.ShortID, error)
+	Weights() (map[ids.ShortID]uint64, error)
+	Lookup(provider common.Address) (ids.ShortID, error)
 
+	SetPending(provider common.Address, nodeID ids.ShortID) error
 	SetEpoch(epoch uint64) error
-	SetNodeID(address common.Address, nodeID ids.ShortID) error
+	SetActive(provider common.Address, nodeID ids.ShortID) error
 	SetWeight(nodeID ids.ShortID, weight uint64) error
+
+	UnsetPending() error
+	UnsetActive(address common.Address) error
 }
 
 type Manager struct {
@@ -32,15 +37,17 @@ type Manager struct {
 	ftso *FTSO
 }
 
-func (m *Manager) SetValidatorNodeID(address common.Address, nodeID ids.ShortID) error {
+func (m *Manager) SetValidatorNodeID(provider common.Address, nodeID ids.ShortID) error {
 	// TODO: add to pending validator map stored under pending key in underlying DB
 	return fmt.Errorf("not implemented")
 }
 
 func (m *Manager) UpdateActiveValidators() error {
 
-	last, err := m.repo.LastEpoch()
-	// TODO: check for bootstrapping state
+	// TODO: do proper error handling on missing repository entries or undeployed
+	// FTSO contracts
+
+	epoch, err := m.repo.Epoch()
 	if err != nil {
 		return fmt.Errorf("could not get last epoch: %w", err)
 	}
@@ -50,70 +57,79 @@ func (m *Manager) UpdateActiveValidators() error {
 		return fmt.Errorf("could not get current epoch: %w", err)
 	}
 
-	if current < last {
+	if current < epoch {
 		m.log.Warn().
+			Uint64("epoch", epoch).
 			Uint64("current", current).
-			Uint64("last", last).
-			Msg("skipping active validators update (current bigger than last")
+			Msg("skipping active validators update (current epoch below active epoch)")
 		return nil
 	}
 
-	if current == last {
+	if current == epoch {
 		m.log.Debug().
-			Uint64("epoch", current).
+			Uint64("epoch", epoch).
 			Msg("skipping active validators update (epoch unchanged)")
 		return nil
 	}
 
-	pending, err := m.repo.ActiveValidators()
+	pending, err := m.repo.Pending()
+	if err != nil {
+		return fmt.Errorf("could not get pending validators: %w", err)
+	}
+
+	for provider, nodeID := range pending {
+
+		if nodeID == ids.ShortEmpty {
+			err = m.repo.UnsetActive(provider)
+			if err != nil {
+				return fmt.Errorf("could not unset active (provider: %s)", provider)
+			}
+			continue
+		}
+
+		err = m.repo.SetActive(provider, nodeID)
+		if err != nil {
+			return fmt.Errorf("could not set active (provider: %s, node: %s)", provider, nodeID)
+		}
+	}
+
+	err = m.repo.UnsetPending()
+	if err != nil {
+		return fmt.Errorf("could not unset pending: %w", err)
+	}
+
+	active, err := m.repo.Active()
 	if err != nil {
 		return fmt.Errorf("could not get active validators: %w", err)
 	}
 
-	for 
-	// TODO: for each validator node ID in the pending validator map, move it to the
-	// same key in the active validator map; if the node ID is empty, delete the entry
-	// from the active validator map instead
-	// TODO: for each validator in the active map, recalculate its weight using the
-	// the unclaimed rewards and the votepower (reuse the code we had)
-	// TODO: compute the root hash of all new active validators, and hash together
-	// with the hash stored as code in the EVM under the validator registry address,
-	// and replace the previous hash with that new hash - this will ensure that the
-	// full validator set and history is part of the consensus
-	return fmt.Errorf("not implemented")
-}
-
-func (m *Manager) GetActiveValidators() (map[ids.ShortID]uint64, error) {
-	// TODO: return the active validator map stored under the active key in underlying DB
-	return nil, fmt.Errorf("not implemented")
-}
-
-func (m *Manager) recalculateWeight(validators map[ids.ShortID]uint64, lastRewardEpoch uint64) error {
-	votepowerCap, err := m.votepowerCap()
+	supply, err := m.ftso.Supply()
 	if err != nil {
-		return fmt.Errorf("could not get votepower cap: %w", err)
+		return fmt.Errorf("could not get FTSO supply: %w", err)
 	}
 
-	for validatorID := range validators {
+	fraction, err := m.ftso.Fraction()
+	if err != nil {
+		return fmt.Errorf("could not get votepower cap fraction: %w", err)
+	}
 
-		provider, err := m.validatorAddress(validatorID)
-		if err != nil {
-			return fmt.Errorf("could not get FTSO validator (provider: %s): %w", provider, err)
-		}
+	cap := supply / float64(fraction)
 
-		votepower, err := m.votepower(provider, lastRewardEpoch)
+	for provider, nodeID := range active {
+
+		votepower, err := m.ftso.Votepower(provider)
 		if err != nil {
-			return fmt.Errorf("could not get vote power (provider: %s): %w", provider, err)
+			return fmt.Errorf("could not get votepower (provider: %s): %w", provider, err)
 		}
 		if votepower == 0 {
 			continue
 		}
 
-		if votepower > votepowerCap {
-			votepower = votepowerCap
+		if votepower > cap {
+			votepower = cap
 		}
 
-		rewards, err := m.rewards(provider, lastRewardEpoch)
+		rewards, err := m.ftso.Rewards(provider, current)
 		if err != nil {
 			return fmt.Errorf("could not get rewards (provider: %s): %w", provider, err)
 		}
@@ -123,10 +139,23 @@ func (m *Manager) recalculateWeight(validators map[ids.ShortID]uint64, lastRewar
 
 		weight := uint64(math.Pow(votepower, 1.0/float64(RootDegree)) * (RatioMultiplier * rewards / votepower))
 
-		validators[validatorID] = weight
+		err = m.repo.SetWeight(nodeID, weight)
+		if err != nil {
+			return fmt.Errorf("could not set validator weight (node: %s): %w", nodeID, err)
+		}
+	}
+
+	err = m.repo.SetEpoch(current)
+	if err != nil {
+		return fmt.Errorf("could not set epoch: %w", err)
 	}
 
 	return nil
+}
+
+func (m *Manager) GetActiveValidators() (map[ids.ShortID]uint64, error) {
+	// TODO: return the active validator map stored under the active key in underlying DB
+	return nil, fmt.Errorf("not implemented")
 }
 
 func newValidatorRootHash(validators map[ids.ShortID]uint64, h common.Hash) []byte {

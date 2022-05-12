@@ -153,7 +153,7 @@ func (s *FTSO) Fraction() (uint64, error) {
 	return fraction.Uint64(), nil
 }
 
-func (s *FTSO) Votepower(provider common.Address, epoch uint64) (float64, error) {
+func (s *FTSO) Votepower(provider common.Address) (float64, error) {
 
 	var votepowerInt big.Int
 	err := newContractCall(s.evm, s.contracts.Votepower).
