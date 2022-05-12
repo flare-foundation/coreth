@@ -1,4 +1,4 @@
-package ftso
+package validators
 
 import (
 	"errors"
@@ -17,63 +17,63 @@ import (
 
 var errNoReturnData = errors.New("no return data")
 
-type ContractCall struct {
-	contract EVMContract
+type contractCall struct {
+	contract evmContract
 	evm      *vm.EVM
 }
 
-type EVMContract struct {
+type evmContract struct {
 	address common.Address
 	abi     abi.ABI
 }
 
-func NewContractCall(evm *vm.EVM, contract EVMContract) *ContractCall {
-	ec := &ContractCall{
+func newContractCall(evm *vm.EVM, contract evmContract) *contractCall {
+	ec := &contractCall{
 		contract: contract,
 		evm:      evm,
 	}
 	return ec
 }
 
-func (e *ContractCall) Execute(method string, params ...interface{}) *ContractReturn {
+func (e *contractCall) execute(method string, params ...interface{}) *contractReturn {
 	data, err := e.contract.abi.Pack(method, params...)
 	if err != nil {
-		return &ContractReturn{err: fmt.Errorf("could not pack parameters: %w", err)}
+		return &contractReturn{err: fmt.Errorf("could not pack parameters: %w", err)}
 	}
 
 	input := hexutil.Bytes(data)
 	args := ethapi.TransactionArgs{To: &e.contract.address, Input: &input}
 	msg, err := args.ToMessage(0, nil)
 	if err != nil {
-		return &ContractReturn{err: fmt.Errorf("could not convert arguments to message: %w", err)}
+		return &contractReturn{err: fmt.Errorf("could not convert arguments to message: %w", err)}
 	}
 
 	gp := new(core.GasPool).AddGas(math.MaxUint64)
 	result, err := core.ApplyMessage(e.evm, msg, gp)
 	if err != nil {
-		return &ContractReturn{err: fmt.Errorf("could not apply message: %w", err)}
+		return &contractReturn{err: fmt.Errorf("could not apply message: %w", err)}
 	}
 	if result.Err != nil {
-		return &ContractReturn{err: fmt.Errorf("could not execute transaction: %w", result.Err)}
+		return &contractReturn{err: fmt.Errorf("could not execute transaction: %w", result.Err)}
 	}
 	if len(result.ReturnData) == 0 {
-		return &ContractReturn{err: errNoReturnData}
+		return &contractReturn{err: errNoReturnData}
 	}
 
 	values, err := e.contract.abi.Unpack(method, result.ReturnData)
 	if err != nil {
-		return &ContractReturn{err: fmt.Errorf("could not unpack return data: %w", err)}
+		return &contractReturn{err: fmt.Errorf("could not unpack return data: %w", err)}
 	}
 
-	return &ContractReturn{values: values}
+	return &contractReturn{values: values}
 }
 
-type ContractReturn struct {
+type contractReturn struct {
 	values []interface{}
 	err    error
 }
 
-func (e *ContractReturn) Decode(values ...interface{}) error {
+func (e *contractReturn) decode(values ...interface{}) error {
 
 	if e.err != nil {
 		return e.err

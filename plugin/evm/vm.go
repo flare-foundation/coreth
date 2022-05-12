@@ -1499,7 +1499,12 @@ func (vm *VM) GetValidators(blockID ids.ID) (validation.Set, error) {
 	chainConfig := blockchain.Config()
 	evm := corevm.NewEVM(blkContext, corevm.TxContext{}, stateDB, chainConfig, corevm.Config{NoBaseFee: true})
 
-	validators, err := vm.validators.WithEVM(evm).GetActiveValidators()
+	valManager, err := vm.validators.WithEVM(evm)
+	if err != nil {
+		return nil, fmt.Errorf("could not create validador manager: %w", err)
+	}
+
+	validators, err := valManager.GetActiveValidators()
 	if err != nil {
 		return nil, fmt.Errorf("could not get active validators: %w", err)
 	}
