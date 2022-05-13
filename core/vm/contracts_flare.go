@@ -3,8 +3,12 @@ package vm
 import (
 	"fmt"
 
+	"github.com/aws/smithy-go/logging"
 	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/flare-foundation/flare/ids"
+
+	"github.com/flare-foundation/coreth/plugin/evm/validators"
 )
 
 var (
@@ -20,10 +24,6 @@ var (
 	sigGetPendingValidator    = [4]byte{0x00, 0x00, 0x00, 0x00}
 )
 
-type ValidatorStorage interface {
-	WithEVM(evm *EVM) (ValidatorManager, error)
-}
-
 type ValidatorManager interface {
 	SetValidatorNodeID(provider common.Address, nodeID ids.ShortID) error
 	UpdateActiveValidators() error
@@ -34,31 +34,28 @@ type ValidatorManager interface {
 	GetPendingValidator(nodeID ids.ShortID) (common.Address, error)
 }
 
+type ValidatorStorage interface {
+}
+
 type validatorRegistry struct {
-	gasCost uint64
+	log     logging.Logger
 	storage ValidatorStorage
 }
 
-func InitializeValidatorStorage(storage ValidatorStorage) {
-	registry.SetValidatorStorage(storage)
+func InjectDependencies(log logging.Logger, storage ValidatorStorage) {
+	registry.log = log
+	registry.storage = storage
 }
 
-func (v *validatorRegistry) SetValidatorStorage(storage ValidatorStorage) {
-	v.storage = storage
-}
-
-func (v *validatorRegistry) Run(evm *EVM, caller ContractRef, address common.Address, input []byte, suppliedGas uint64, read bool) ([]byte, uint64, error) {
+func (v *validatorRegistry) Run(evm *EVM, caller ContractRef, address common.Address, input []byte, gas uint64, read bool) ([]byte, uint64, error) {
 
 	// TODO: define gas cost per function and check there is sufficient
-	if suppliedGas < v.gasCost {
-		return nil, 0, ErrOutOfGas
-	}
-	remainingGas := suppliedGas - v.gasCost
-
-	manager, err := v.storage.WithEVM(evm)
+	ftso, err := NewFTSO(evm)
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, fmt.Errorf("could not initialize FTSO system: %w", err)
 	}
+
+	manager := validators.NewManager(v.log, v.storage, ftso)
 
 	var sig [4]byte
 	copy(sig[:], input[:4])
@@ -71,7 +68,7 @@ func (v *validatorRegistry) Run(evm *EVM, caller ContractRef, address common.Add
 		// TODO: unpack node ID
 		var nodeID ids.ShortID
 
-		err = manager.SetValidatorNodeID(provider, nodeID)
+		err := manager.SetValidatorNodeID(provider, nodeID)
 		if err != nil {
 			return nil, 0, fmt.Errorf("could not set provider node: %w", err)
 		}
@@ -141,5 +138,5 @@ func (v *validatorRegistry) Run(evm *EVM, caller ContractRef, address common.Add
 
 	}
 
-	return nil, remainingGas, nil
+	return nil, gas, nil
 }

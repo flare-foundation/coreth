@@ -1,4 +1,4 @@
-package validators
+package vm
 
 import (
 	"errors"
@@ -16,7 +16,7 @@ type FTSO struct {
 	contracts Contracts
 }
 
-func NewFTSO(evm *vm.EVM) (*FTSO, error) {
+func NewFTSO(evm *EVM) (*FTSO, error) {
 
 	submitter := evmContract{
 		address: params.SubmitterAddress,
@@ -42,7 +42,7 @@ func NewFTSO(evm *vm.EVM) (*FTSO, error) {
 		abi:     abis.manager,
 	}
 
-	height := &big.Int{}
+	height := big.NewInt(0)
 	err = newContractCall(evm, manager).execute(getEpochInfo, big.NewInt(0)).decode(nil, &height, nil)
 	if errors.Is(err, vm.ErrExecutionReverted) || height.Uint64() == 0 {
 		return nil, errFTSONotActive
@@ -125,7 +125,7 @@ func NewFTSO(evm *vm.EVM) (*FTSO, error) {
 
 func (s *FTSO) Supply() (float64, error) {
 
-	var supplyInt big.Int
+	supplyInt := big.NewInt(0)
 	err := newContractCall(s.evm, s.contracts.WNAT).
 		execute(getFTSOSupply).
 		decode(&supplyInt)
@@ -133,7 +133,7 @@ func (s *FTSO) Supply() (float64, error) {
 		return 0, fmt.Errorf("could not get total supply: %w", err)
 	}
 
-	supplyFloat := big.NewFloat(0).SetInt(&supplyInt)
+	supplyFloat := big.NewFloat(0).SetInt(supplyInt)
 	supply, _ := supplyFloat.Float64()
 
 	return supply, nil
@@ -142,7 +142,7 @@ func (s *FTSO) Supply() (float64, error) {
 
 func (s *FTSO) Fraction() (uint64, error) {
 
-	var fraction big.Int
+	fraction := big.NewInt(0)
 	err := newContractCall(s.evm, s.contracts.Manager).
 		execute(getFTSOSettings).
 		decode(&fraction, nil, nil, nil, nil, nil, nil, nil, nil)
@@ -161,23 +161,23 @@ func (s *FTSO) Votepower(provider common.Address) (float64, error) {
 	}
 	epoch := big.NewInt(0).SetUint64(current - 1)
 
-	var start big.Int
+	height := big.NewInt(0)
 	err = newContractCall(s.evm, s.contracts.Manager).
 		execute(getEpochInfo, epoch).
-		decode(nil, &start, nil)
+		decode(&height, nil, nil)
 	if err != nil {
-		return 0, fmt.Errorf("could not get epoch info (epoch: %s)", &start)
+		return 0, fmt.Errorf("could not get epoch info (epoch: %s)", epoch)
 	}
 
-	var votepowerInt big.Int
+	votepowerInt := big.NewInt(0)
 	err = newContractCall(s.evm, s.contracts.Votepower).
-		execute(getProviderVotepower, provider, start).
+		execute(getProviderVotepower, provider, height).
 		decode(&votepowerInt)
 	if err != nil {
 		return 0, fmt.Errorf("could not get provider votepower: %w", err)
 	}
 
-	votepowerFloat := big.NewFloat(0).SetInt(&votepowerInt)
+	votepowerFloat := big.NewFloat(0).SetInt(votepowerInt)
 	votepower, _ := votepowerFloat.Float64()
 
 	return votepower, nil
@@ -191,7 +191,7 @@ func (s *FTSO) Rewards(provider common.Address) (float64, error) {
 	}
 	epoch := big.NewInt(0).SetUint64(current)
 
-	var rewardsInt big.Int
+	rewardsInt := big.NewInt(0)
 	err = newContractCall(s.evm, s.contracts.Rewards).
 		execute(getProviderRewards, epoch, provider).
 		decode(&rewardsInt, nil)
@@ -199,7 +199,7 @@ func (s *FTSO) Rewards(provider common.Address) (float64, error) {
 		return 0, fmt.Errorf("could not get provider rewards: %w", err)
 	}
 
-	rewardsFloat := big.NewFloat(0).SetInt(&rewardsInt)
+	rewardsFloat := big.NewFloat(0).SetInt(rewardsInt)
 	rewards, _ := rewardsFloat.Float64()
 
 	return rewards, nil
@@ -242,7 +242,7 @@ func (s *FTSO) Providers() ([]common.Address, error) {
 
 func (s *FTSO) Current() (uint64, error) {
 
-	var epoch big.Int
+	epoch := big.NewInt(0)
 	err := newContractCall(s.evm, s.contracts.Rewards).
 		execute(getEpochCurrent).
 		decode(&epoch)

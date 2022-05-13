@@ -80,7 +80,7 @@ func (m *Manager) GetPendingValidator(nodeID ids.ShortID) (common.Address, error
 	panic("implement me")
 }
 
-func NewManager(log logging.Logger, repo ValidatorRepository, ftso *FTSO) *Manager {
+func NewManager(log logging.Logger, repo ValidatorRepository, ftso FTSOSystem) *Manager {
 
 	m := Manager{
 		log:  log,
@@ -133,16 +133,14 @@ func (m *Manager) UpdateActiveValidators() error {
 
 	// Get the list of whitelisted FTSO data providers with their votepower, as it
 	// was stored in the previous reward epoch switchover.
-	// TODO: check if this was not stored before, in which case we don't update the
-	// validators, but we should still store this info for the next epoch in the
-	// subsequent code.
 	entries, err := m.repo.GetEntries()
+	// TODO: check if this doesn't exist in the DB yet; if so, we should bootstrap the system
 	if err != nil {
 		return fmt.Errorf("could not get providers: %w", err)
 	}
 
 	// For each of these providers, we now get the rewards that they accumulated over
-	// the previous epoch.
+	// the previous epoch and calculate its validator weight.
 	for _, entry := range entries {
 
 		rewards, err := m.ftso.Rewards(entry.Provider)

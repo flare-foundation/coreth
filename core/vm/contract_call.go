@@ -1,4 +1,4 @@
-package validators
+package vm
 
 import (
 	"errors"
@@ -36,6 +36,7 @@ func newContractCall(evm *vm.EVM, contract evmContract) *contractCall {
 }
 
 func (e *contractCall) execute(method string, params ...interface{}) *contractReturn {
+
 	data, err := e.contract.abi.Pack(method, params...)
 	if err != nil {
 		return &contractReturn{err: fmt.Errorf("could not pack parameters: %w", err)}

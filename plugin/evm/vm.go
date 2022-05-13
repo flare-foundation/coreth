@@ -63,7 +63,6 @@ import (
 	"github.com/flare-foundation/coreth/params"
 	"github.com/flare-foundation/coreth/peer"
 	"github.com/flare-foundation/coreth/plugin/evm/message"
-	"github.com/flare-foundation/coreth/plugin/evm/validators"
 	"github.com/flare-foundation/coreth/rpc"
 
 	coreth "github.com/flare-foundation/coreth/chain"
@@ -192,6 +191,8 @@ type VM struct {
 	chaindb Database
 	// [acceptedBlockDB] is the database to store the last accepted block.
 	acceptedBlockDB database.Database
+	// [validatorDB] is the database to store validator-related data.
+	validatorDB database.Database
 
 	// [atomicTxRepository] maintains two indexes on accepted atomic txs.
 	// - txID to accepted atomic tx
@@ -227,9 +228,6 @@ type VM struct {
 	multiGatherer avalanchegoMetrics.MultiGatherer
 
 	bootstrapped bool
-
-	// Validator storage
-	validators corevm.ValidatorStorage
 }
 
 // Codec implements the secp256k1fx interface
@@ -428,15 +426,11 @@ func (vm *VM) Initialize(
 	}
 
 	// Initialize a database to hold data related to validators.
-	validatorDB := prefixdb.New(validatorDBPrefix, vm.db)
-
-	// TODO: create and initialize component that interfaces with the on-disk DB
-	// to store and retrieve validator data
-	vm.validators = validators.NewStorage(validatorDB)
+	vm.validatorDB = prefixdb.New(validatorDBPrefix, vm.db)
 
 	// Set the validator storage on the Core VM package, which will inject it into
 	// the precompiled contract for validator interfacing from blockchain transactions.
-	corevm.InitializeValidatorStorage(vm.validators)
+	corevm.LinkValidatorDB(vm.validatorDB)
 
 	// start goroutines to update the tx pool gas minimum gas price when upgrades go into effect
 	vm.handleGasPriceUpdates()
@@ -1499,7 +1493,7 @@ func (vm *VM) GetValidators(blockID ids.ID) (validation.Set, error) {
 	chainConfig := blockchain.Config()
 	evm := corevm.NewEVM(blkContext, corevm.TxContext{}, stateDB, chainConfig, corevm.Config{NoBaseFee: true})
 
-	valManager, err := vm.validators.WithEVM(evm)
+	valManager, err := vm.validators.NewManager(evm)
 	if err != nil {
 		return nil, fmt.Errorf("could not create validador manager: %w", err)
 	}
