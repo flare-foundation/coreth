@@ -35,6 +35,7 @@ type ValidatorManager interface {
 }
 
 type validatorRegistry struct {
+	gasCost uint64
 	storage ValidatorStorage
 }
 
@@ -46,9 +47,13 @@ func (v *validatorRegistry) SetValidatorStorage(storage ValidatorStorage) {
 	v.storage = storage
 }
 
-func (v *validatorRegistry) Run(evm *EVM, caller ContractRef, address common.Address, input []byte, gas uint64, read bool) ([]byte, uint64, error) {
+func (v *validatorRegistry) Run(evm *EVM, caller ContractRef, address common.Address, input []byte, suppliedGas uint64, read bool) ([]byte, uint64, error) {
 
 	// TODO: define gas cost per function and check there is sufficient
+	if suppliedGas < v.gasCost {
+		return nil, 0, ErrOutOfGas
+	}
+	remainingGas := suppliedGas - v.gasCost
 
 	manager, err := v.storage.WithEVM(evm)
 	if err != nil {
@@ -136,5 +141,5 @@ func (v *validatorRegistry) Run(evm *EVM, caller ContractRef, address common.Add
 
 	}
 
-	return nil, 0, nil
+	return nil, remainingGas, nil
 }

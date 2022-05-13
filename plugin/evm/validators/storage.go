@@ -7,16 +7,17 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/flare-foundation/flare/database"
-
 	"github.com/flare-foundation/coreth/core/vm"
-	"github.com/flare-foundation/coreth/params"
+	"github.com/flare-foundation/flare/database"
+	"github.com/flare-foundation/flare/ids"
 )
 
 var (
 	errNoPriceSubmitter = errors.New("no price submitter")
 	errFTSONotDeployed  = errors.New("FTSO not deployed")
 	errFTSONotActive    = errors.New("FTSO not active")
+
+	epochKey = []byte("epoch")
 )
 
 type Storage struct {
@@ -34,108 +35,83 @@ func NewStorage(db database.Database) *Storage {
 
 func (s *Storage) WithEVM(evm *vm.EVM) (vm.ValidatorManager, error) {
 
-	submitter := evmContract{
-		address: params.SubmitterAddress,
-		abi:     abis.submitter,
-	}
-
-	var managerAddress common.Address
-	err := newContractCall(evm, submitter).execute(getAddressManager).decode(&managerAddress)
-	if errors.Is(err, errNoReturnData) {
-		return nil, errNoPriceSubmitter
-	}
+	ftso, err := NewFTSO(evm)
 	if err != nil {
-		return nil, fmt.Errorf("could not get manager address: %w", err)
-	}
-
-	empty := common.Address{}
-	if managerAddress == empty {
-		return nil, errFTSONotDeployed
-	}
-
-	manager := evmContract{
-		address: managerAddress,
-		abi:     abis.manager,
-	}
-
-	height := &big.Int{}
-	err = newContractCall(evm, manager).execute(getEpochInfo, big.NewInt(0)).decode(nil, &height, nil)
-	if errors.Is(err, vm.ErrExecutionReverted) || height.Uint64() == 0 {
-		return nil, errFTSONotActive
-	}
-	if err != nil {
-		return nil, fmt.Errorf("could not get first epoch info: %w", err)
-	}
-
-	var rewardsAddress common.Address
-	err = newContractCall(evm, manager).execute(getAddressRewards).decode(&rewardsAddress)
-	if err != nil {
-		return nil, fmt.Errorf("could not get rewards address: %w", err)
-	}
-
-	rewards := evmContract{
-		address: rewardsAddress,
-		abi:     abis.rewards,
-	}
-
-	var registryAddress common.Address
-	err = newContractCall(evm, submitter).execute(getAddressRegistry).decode(&registryAddress)
-	if err != nil {
-		return nil, fmt.Errorf("could not get registry address: %w", err)
-	}
-
-	registry := evmContract{
-		address: registryAddress,
-		abi:     abis.registry,
-	}
-
-	var whitelistAddress common.Address
-	err = newContractCall(evm, submitter).execute(getAddressWhitelist).decode(&whitelistAddress)
-	if err != nil {
-		return nil, fmt.Errorf("could not get whitelist address: %w", err)
-	}
-
-	whitelist := evmContract{
-		address: whitelistAddress,
-		abi:     abis.whitelist,
-	}
-
-	var wnatAddress common.Address
-	err = newContractCall(evm, rewards).execute(getAddressWNAT).decode(&wnatAddress)
-	if err != nil {
-		return nil, fmt.Errorf("could not get WNAT address: %w", err)
-	}
-
-	wnat := evmContract{
-		address: wnatAddress,
-		abi:     abis.wnat,
-	}
-
-	var votepowerAddress common.Address
-	err = newContractCall(evm, wnat).execute(getAddressVotepower).decode(&votepowerAddress)
-	if err != nil {
-		return nil, fmt.Errorf("could not get votepower address: %w", err)
-	}
-
-	votepower := evmContract{
-		address: votepowerAddress,
-		abi:     abis.votepower,
-	}
-
-	contracts := Contracts{
-		Registry:  registry,
-		Manager:   manager,
-		Rewards:   rewards,
-		Whitelist: whitelist,
-		WNAT:      wnat,
-		Votepower: votepower,
+		return nil, fmt.Errorf("could not create FTSO: %w", err)
 	}
 
 	m := Manager{
-		db:        s.db,
-		evm:       evm,
-		contracts: contracts,
+		log:  nil,
+		repo: s,
+		ftso: ftso,
 	}
 
 	return &m, nil
+}
+
+func (s *Storage) Epoch() (uint64, error) {
+	e, err := s.db.Get(epochKey)
+	if err != nil {
+		return 0, fmt.Errorf("could not get epoch: %w", err)
+	}
+
+	epochInt := big.NewInt(0).SetBytes(e)
+
+	return epochInt.Uint64(), nil
+}
+
+func (s *Storage) Pending() (map[common.Address]ids.ShortID, error) {
+	// TODO implement me
+	panic("implement me")
+}
+
+func (s *Storage) Active() (map[common.Address]ids.ShortID, error) {
+	// TODO implement me
+	panic("implement me")
+}
+
+func (s *Storage) Weights(epoch uint64) (map[ids.ShortID]uint64, error) {
+	// TODO implement me
+	panic("implement me")
+}
+
+func (s *Storage) Lookup(provider common.Address) (ids.ShortID, error) {
+	// TODO implement me
+	panic("implement me")
+}
+
+func (s *Storage) SetPending(provider common.Address, nodeID ids.ShortID) error {
+	// TODO implement me
+	panic("implement me")
+}
+
+func (s *Storage) SetEpoch(epoch uint64) error {
+	epochData := big.NewInt(0).SetUint64(epoch).Bytes()
+
+	err := s.db.Put(epochKey, epochData)
+	if err != nil {
+		return fmt.Errorf("could not set epoch: %w", err)
+	}
+
+	return nil
+}
+
+func (s *Storage) SetActive(provider common.Address, nodeID ids.ShortID) error {
+	// TODO implement me
+	panic("implement me")
+}
+
+func (s *Storage) SetWeight(epoch uint64, nodeID ids.ShortID, weight uint64) error {
+	// TODO implement me
+	panic("implement me")
+}
+
+func (s *Storage) UnsetPending() error {
+	// TODO implement me
+	panic("implement me")
+}
+
+func (s *Storage) UnsetActive(address common.Address) error {
+	// TODO implement me
+	panic("implement me")
 }

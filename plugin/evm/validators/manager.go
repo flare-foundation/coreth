@@ -37,6 +37,26 @@ type Manager struct {
 	ftso *FTSO
 }
 
+func (m *Manager) GetActiveNodeID(provider common.Address) (ids.ShortID, error) {
+	// TODO implement me
+	panic("implement me")
+}
+
+func (m *Manager) GetPendingNodeID(provider common.Address) (ids.ShortID, error) {
+	// TODO implement me
+	panic("implement me")
+}
+
+func (m *Manager) GetActiveValidator(nodeID ids.ShortID) (common.Address, error) {
+	// TODO implement me
+	panic("implement me")
+}
+
+func (m *Manager) GetPendingValidator(nodeID ids.ShortID) (common.Address, error) {
+	// TODO implement me
+	panic("implement me")
+}
+
 func NewManager(log logging.Logger, repo ValidatorRepository, ftso *FTSO) *Manager {
 
 	m := Manager{
