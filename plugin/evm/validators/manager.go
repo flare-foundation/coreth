@@ -2,6 +2,7 @@ package validators
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"math"
 	"sort"
@@ -24,8 +25,8 @@ type Entry struct {
 }
 
 type ValidatorRepository interface {
-	SetEntries(entries []Entry) error
-	GetEntries() ([]Entry, error)
+	SetEntries(epoch uint64, entries []Entry) error
+	GetEntries(epoch uint64) ([]Entry, error)
 
 	SetPending(provider common.Address, nodeID ids.ShortID) error
 	GetPending(provider common.Address) (ids.ShortID, error)
@@ -58,26 +59,6 @@ type Manager struct {
 	log  logging.Logger
 	repo ValidatorRepository
 	ftso FTSOSystem
-}
-
-func (m *Manager) GetActiveNodeID(provider common.Address) (ids.ShortID, error) {
-	// TODO implement me
-	panic("implement me")
-}
-
-func (m *Manager) GetPendingNodeID(provider common.Address) (ids.ShortID, error) {
-	// TODO implement me
-	panic("implement me")
-}
-
-func (m *Manager) GetActiveValidator(nodeID ids.ShortID) (common.Address, error) {
-	// TODO implement me
-	panic("implement me")
-}
-
-func (m *Manager) GetPendingValidator(nodeID ids.ShortID) (common.Address, error) {
-	// TODO implement me
-	panic("implement me")
 }
 
 func NewManager(log logging.Logger, repo ValidatorRepository, ftso FTSOSystem) *Manager {
@@ -133,8 +114,10 @@ func (m *Manager) UpdateActiveValidators() error {
 
 	// Get the list of whitelisted FTSO data providers with their votepower, as it
 	// was stored in the previous reward epoch switchover.
-	entries, err := m.repo.GetEntries()
-	// TODO: check if this doesn't exist in the DB yet; if so, we should bootstrap the system
+	entries, err := m.repo.GetEntries(active)
+	if errors.Is(err, errNoEntries) {
+		// TODO: check if this doesn't exist in the DB yet; if so, we should bootstrap the system
+	}
 	if err != nil {
 		return fmt.Errorf("could not get providers: %w", err)
 	}
@@ -250,7 +233,7 @@ func (m *Manager) UpdateActiveValidators() error {
 	// Store the mapping of FTSO data providers to votepower; this will be used when
 	// we calculate the validator weighting for the new reward epoch on the switchover
 	// to the next reward epoch
-	err = m.repo.SetEntries(entries)
+	err = m.repo.SetEntries(current, entries)
 	if err != nil {
 		return fmt.Errorf("could not set providers: %w", err)
 	}
@@ -283,4 +266,24 @@ func (m *Manager) GetActiveValidators() (map[ids.ShortID]uint64, error) {
 	}
 
 	return validators, nil
+}
+
+func (m *Manager) GetActiveNodeID(provider common.Address) (ids.ShortID, error) {
+	// TODO implement me
+	panic("implement me")
+}
+
+func (m *Manager) GetPendingNodeID(provider common.Address) (ids.ShortID, error) {
+	// TODO implement me
+	panic("implement me")
+}
+
+func (m *Manager) GetActiveValidator(nodeID ids.ShortID) (common.Address, error) {
+	// TODO implement me
+	panic("implement me")
+}
+
+func (m *Manager) GetPendingValidator(nodeID ids.ShortID) (common.Address, error) {
+	// TODO implement me
+	panic("implement me")
 }

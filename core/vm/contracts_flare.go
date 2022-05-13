@@ -3,10 +3,10 @@ package vm
 import (
 	"fmt"
 
-	"github.com/aws/smithy-go/logging"
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/flare-foundation/flare/ids"
+	"github.com/flare-foundation/flare/utils/logging"
 
 	"github.com/flare-foundation/coreth/plugin/evm/validators"
 )

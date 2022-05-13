@@ -6,15 +6,36 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/vm"
 
-	"github.com/flare-foundation/coreth/core/vm"
 	"github.com/flare-foundation/coreth/params"
 )
 
+var (
+	errNoPriceSubmitter = errors.New("no price submitter")
+	errFTSONotDeployed  = errors.New("FTSO not deployed")
+	errFTSONotActive    = errors.New("FTSO not active")
+)
+
 type FTSO struct {
-	evm       *vm.EVM
+	evm       *EVM
 	contracts Contracts
 }
+
+type Contracts struct {
+	Registry  evmContract
+	Manager   evmContract
+	Rewards   evmContract
+	Whitelist evmContract
+	WNAT      evmContract
+	Votepower evmContract
+}
+
+// 	Current() (uint64, error)
+//	Cap() (float64, error)
+//	Whitelist() ([]common.Address, error)
+//	Votepower(provider common.Address) (float64, error)
+//	Rewards(provider common.Address) (float64, error)
 
 func NewFTSO(evm *EVM) (*FTSO, error) {
 
@@ -121,6 +142,27 @@ func NewFTSO(evm *EVM) (*FTSO, error) {
 	}
 
 	return &f, nil
+}
+
+func (s *FTSO) Current() (uint64, error) {
+
+	epoch := big.NewInt(0)
+	err := newContractCall(s.evm, s.contracts.Rewards).
+		execute(getEpochCurrent).
+		decode(&epoch)
+	if err != nil {
+		return 0, fmt.Errorf("could not execute current epoch retrieval: %w", err)
+	}
+
+	return epoch.Uint64(), nil
+}
+
+func (s *FTSO) Cap() (float64, error) {
+	panic("implement me")
+}
+
+func (s *FTSO) Whitelist() ([]common.Address, error) {
+	panic("implement me")
 }
 
 func (s *FTSO) Supply() (float64, error) {
@@ -238,17 +280,4 @@ func (s *FTSO) Providers() ([]common.Address, error) {
 	}
 
 	return providers, nil
-}
-
-func (s *FTSO) Current() (uint64, error) {
-
-	epoch := big.NewInt(0)
-	err := newContractCall(s.evm, s.contracts.Rewards).
-		execute(getEpochCurrent).
-		decode(&epoch)
-	if err != nil {
-		return 0, fmt.Errorf("could not execute current epoch retrieval: %w", err)
-	}
-
-	return epoch.Uint64(), nil
 }
