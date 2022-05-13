@@ -155,9 +155,23 @@ func (s *FTSO) Fraction() (uint64, error) {
 
 func (s *FTSO) Votepower(provider common.Address) (float64, error) {
 
+	current, err := s.Current()
+	if err != nil {
+		return 0, fmt.Errorf("could not get current epoch: %w", err)
+	}
+	epoch := big.NewInt(0).SetUint64(current - 1)
+
+	var start big.Int
+	err = newContractCall(s.evm, s.contracts.Manager).
+		execute(getEpochInfo, epoch).
+		decode(nil, &start, nil)
+	if err != nil {
+		return 0, fmt.Errorf("could not get epoch info (epoch: %s)", &start)
+	}
+
 	var votepowerInt big.Int
-	err := newContractCall(s.evm, s.contracts.Votepower).
-		execute(getProviderVotepower, provider).
+	err = newContractCall(s.evm, s.contracts.Votepower).
+		execute(getProviderVotepower, provider, start).
 		decode(&votepowerInt)
 	if err != nil {
 		return 0, fmt.Errorf("could not get provider votepower: %w", err)
@@ -169,11 +183,17 @@ func (s *FTSO) Votepower(provider common.Address) (float64, error) {
 	return votepower, nil
 }
 
-func (s *FTSO) Rewards(provider common.Address, epoch uint64) (float64, error) {
+func (s *FTSO) Rewards(provider common.Address) (float64, error) {
+
+	current, err := s.Current()
+	if err != nil {
+		return 0, fmt.Errorf("could not get current epoch: %w", err)
+	}
+	epoch := big.NewInt(0).SetUint64(current)
 
 	var rewardsInt big.Int
-	err := newContractCall(s.evm, s.contracts.Rewards).
-		execute(getProviderRewards, big.NewInt(0).SetUint64(epoch), provider).
+	err = newContractCall(s.evm, s.contracts.Rewards).
+		execute(getProviderRewards, epoch, provider).
 		decode(&rewardsInt, nil)
 	if err != nil {
 		return 0, fmt.Errorf("could not get provider rewards: %w", err)
@@ -186,6 +206,9 @@ func (s *FTSO) Rewards(provider common.Address, epoch uint64) (float64, error) {
 }
 
 func (s *FTSO) Providers() ([]common.Address, error) {
+
+	// TODO: we need to get the list of providers from the previous rewards epoch,
+	// not the list of providers from the current one.
 
 	var indices []*big.Int
 	err := newContractCall(s.evm, s.contracts.Registry).

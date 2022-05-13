@@ -13,10 +13,9 @@ const (
 	getFTSOSettings  = "settings"
 	getFTSOProviders = "getFtsoWhitelistedPriceProviders"
 
-	getEpochCurrent  = "getCurrentRewardEpoch"
-	getEpochInfo     = "rewardEpochs"
-	getEpochDuration = "rewardEpochDurationSeconds"
+	getEpochCurrent = "getCurrentRewardEpoch"
+	getEpochInfo    = "rewardEpochs"
 
-	getProviderVotepower = "votePowerOf"
+	getProviderVotepower = "votePowerOfAt"
 	getProviderRewards   = "getUnclaimedReward"
 )

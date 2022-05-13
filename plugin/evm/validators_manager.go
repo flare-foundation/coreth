@@ -52,25 +52,8 @@ func NewValidatorsManager(log logging.Logger, defaultValidators ValidatorsRetrie
 	return &v
 }
 
-func (v *ValidatorsManager) DefaultValidators(epoch uint64) (map[ids.ShortID]uint64, error) {
-	validators, err := v.defaultValidators.ByEpoch(epoch)
-	if err != nil {
-		return nil, fmt.Errorf("could not retrieve default validators: %w", err)
-	}
-	v.log.Debug("returning default validators")
-	return validators, nil
-}
-
-func (v *ValidatorsManager) FTSOValidators(epoch uint64) (map[ids.ShortID]uint64, error) {
-	validators, err := v.ftsoValidators.ByEpoch(epoch)
-	if err != nil {
-		return nil, fmt.Errorf("could not retrieve FTSO validators: %w", err)
-	}
-	v.log.Debug("returning FTSO validators")
-	return validators, nil
-}
-
 func (v *ValidatorsManager) ActiveValidators(epoch uint64) (map[ids.ShortID]uint64, error) {
+
 	validators, err := v.activeValidators.ByEpoch(epoch)
 	if err == nil {
 		v.log.Debug("returning active validators")
@@ -79,10 +62,13 @@ func (v *ValidatorsManager) ActiveValidators(epoch uint64) (map[ids.ShortID]uint
 	if !errors.Is(err, database.ErrNotFound) {
 		return nil, fmt.Errorf("could not retrieve active validators: %w", err)
 	}
+
 	validators, err = v.transitionValidators.ByEpoch(epoch)
 	if err != nil {
 		return nil, fmt.Errorf("could not transition active validators: %w", err)
 	}
+
 	v.log.Debug("returning transitioned validators")
+
 	return validators, nil
 }

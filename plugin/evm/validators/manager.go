@@ -1,8 +1,10 @@
 package validators
 
 import (
+	"bytes"
 	"fmt"
 	"math"
+	"sort"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -15,26 +17,47 @@ const (
 	RatioMultiplier = 100.0
 )
 
+type Entry struct {
+	Provider  common.Address
+	NodeID    ids.ShortID
+	Votepower float64
+}
+
 type ValidatorRepository interface {
+	SetEntries(entries []Entry) error
+	GetEntries() ([]Entry, error)
+
+	SetPending(provider common.Address, nodeID ids.ShortID) error
+	GetPending(provider common.Address) (ids.ShortID, error)
+
+	SetActive(provider common.Address, nodeID ids.ShortID) error
+	GetActive(provider common.Address) (ids.ShortID, error)
+
 	Epoch() (uint64, error)
 	Pending() (map[common.Address]ids.ShortID, error)
 	Active() (map[common.Address]ids.ShortID, error)
 	Weights(epoch uint64) (map[ids.ShortID]uint64, error)
 	Lookup(provider common.Address) (ids.ShortID, error)
 
-	SetPending(provider common.Address, nodeID ids.ShortID) error
 	SetEpoch(epoch uint64) error
-	SetActive(provider common.Address, nodeID ids.ShortID) error
 	SetWeight(epoch uint64, nodeID ids.ShortID, weight uint64) error
 
 	UnsetPending() error
 	UnsetActive(address common.Address) error
 }
 
+type FTSOSystem interface {
+	Current() (uint64, error)
+	Cap() (float64, error)
+	Whitelist() ([]common.Address, error)
+	Votepower(provider common.Address) (float64, error)
+	Rewards(provider common.Address) (float64, error)
+}
+
 type Manager struct {
 	log  logging.Logger
 	repo ValidatorRepository
-	ftso *FTSO
+	ftso FTSOSystem
 }
 
 func (m *Manager) GetActiveNodeID(provider common.Address) (ids.ShortID, error) {
@@ -82,34 +105,88 @@ func (m *Manager) SetValidatorNodeID(provider common.Address, nodeID ids.ShortID
 
 func (m *Manager) UpdateActiveValidators() error {
 
-	// TODO: do proper error handling on missing repository entries or undeployed
-	// FTSO contracts
-
+	// Get the reward epoch for which validators are currently active.
 	active, err := m.repo.Epoch()
 	if err != nil {
 		return fmt.Errorf("could not get last epoch: %w", err)
 	}
 
+	// Get the current reward epoch of the FTSO system.
 	current, err := m.ftso.Current()
 	if err != nil {
 		return fmt.Errorf("could not get current epoch: %w", err)
 	}
 
+	// The current FTSO reward epoch should never be smaller than the active epoch
+	// of validators, otherwise a fatal error happened.
 	if current < active {
 		m.log.Warn("skipping active validators update (current epoch below active epoch, active: %d, current: %d", current, active)
 		return nil
 	}
 
+	// If the current FTSO reward epoch is the same as the active epoch, we do not
+	// need to do anything to update the validators.
 	if current == active {
 		m.log.Debug("skipping active validators update (active epoch unchanged, active: %d)", active)
 		return nil
 	}
 
+	// Get the list of whitelisted FTSO data providers with their votepower, as it
+	// was stored in the previous reward epoch switchover.
+	// TODO: check if this was not stored before, in which case we don't update the
+	// validators, but we should still store this info for the next epoch in the
+	// subsequent code.
+	entries, err := m.repo.GetEntries()
+	if err != nil {
+		return fmt.Errorf("could not get providers: %w", err)
+	}
+
+	// For each of these providers, we now get the rewards that they accumulated over
+	// the previous epoch.
+	for _, entry := range entries {
+
+		rewards, err := m.ftso.Rewards(entry.Provider)
+		if err != nil {
+			return fmt.Errorf("could not get rewards (provider: %s): %w", entry.Provider, err)
+		}
+
+		if rewards == 0 {
+			continue
+		}
+
+		weight := uint64(math.Pow(entry.Votepower, 1.0/float64(RootDegree)) * (RatioMultiplier * rewards / entry.Votepower))
+
+		err = m.repo.SetWeight(current, entry.NodeID, weight)
+		if err != nil {
+			return fmt.Errorf("could not set validator weight (node: %s): %w", entry.NodeID, err)
+		}
+	}
+
+	// TODO: add the default validators with the average weight of the FTSO validators.
+
+	// Retrieve the whitelist of FTSO data providers as they are now, at the first
+	// block of a new reward epoch. We will store this to be used on the next epoch
+	// switchover, as we can only ever retrieve the whitelist at the current block.
+	whitelist, err := m.ftso.Whitelist()
+	if err != nil {
+		return fmt.Errorf("could not get whitelist: %w", err)
+	}
+
+	// Get the votepower cap for FTSO data providers. If they have more votepower
+	// than the cap, they won't accumulate rewards for the excess votepower, which
+	// means their performance would be deflated. So we use the cap in those cases.
+	cap, err := m.ftso.Cap()
+	if err != nil {
+		return fmt.Errorf("could not get votepower cap: %w", err)
+	}
+
+	// Get the pending node IDs for data providers.
 	pending, err := m.repo.Pending()
 	if err != nil {
 		return fmt.Errorf("could not get pending validators: %w", err)
 	}
 
+	// Update the active node IDs for the data providers with the pending ones.
 	for provider, nodeID := range pending {
 
 		if nodeID == ids.ShortEmpty {
@@ -126,34 +203,30 @@ func (m *Manager) UpdateActiveValidators() error {
 		}
 	}
 
+	// Unset the pending node IDs for FTSO data providers, as they have all been used now.
 	err = m.repo.UnsetPending()
 	if err != nil {
 		return fmt.Errorf("could not unset pending: %w", err)
 	}
 
-	validators, err := m.repo.Active()
-	if err != nil {
-		return fmt.Errorf("could not get active validators: %w", err)
-	}
+	// For each provider, retrieve the votepower as it is now, at the first block
+	// of the new reward epoch. Votepower can go down as the reward epoch goes on,
+	// which could lead to an inflated performance rating if we would use the votepower
+	// at a later block.
+	entries = make([]Entry, 0, len(whitelist))
+	for _, provider := range whitelist {
 
-	supply, err := m.ftso.Supply()
-	if err != nil {
-		return fmt.Errorf("could not get FTSO supply: %w", err)
-	}
-
-	fraction, err := m.ftso.Fraction()
-	if err != nil {
-		return fmt.Errorf("could not get votepower cap fraction: %w", err)
-	}
-
-	cap := supply / float64(fraction)
-
-	for provider, nodeID := range validators {
+		nodeID, err := m.repo.GetActive(provider)
+		// TODO: check if it doesn't exist and simply continue in that case
+		if err != nil {
+			return fmt.Errorf("could not get node (provider: %s): %w", provider, err)
+		}
 
 		votepower, err := m.ftso.Votepower(provider)
 		if err != nil {
 			return fmt.Errorf("could not get votepower (provider: %s): %w", provider, err)
 		}
+
 		if votepower == 0 {
 			continue
 		}
@@ -162,22 +235,29 @@ func (m *Manager) UpdateActiveValidators() error {
 			votepower = cap
 		}
 
-		rewards, err := m.ftso.Rewards(provider, current)
-		if err != nil {
-			return fmt.Errorf("could not get rewards (provider: %s): %w", provider, err)
-		}
-		if rewards == 0 {
-			continue
+		entry := Entry{
+			Provider:  provider,
+			NodeID:    nodeID,
+			Votepower: votepower,
 		}
 
-		weight := uint64(math.Pow(votepower, 1.0/float64(RootDegree)) * (RatioMultiplier * rewards / votepower))
-
-		err = m.repo.SetWeight(current, nodeID, weight)
-		if err != nil {
-			return fmt.Errorf("could not set validator weight (node: %s): %w", nodeID, err)
-		}
+		entries = append(entries, entry)
 	}
 
+	// Sort the entries by node ID to always have the same order and avoid mismatches.
+	sort.Slice(entries, func(i int, j int) bool {
+		return bytes.Compare(entries[i].NodeID[:], entries[j].NodeID[:]) < 0
+	})
+
+	// Store the mapping of FTSO data providers to votepower; this will be used when
+	// we calculate the validator weighting for the new reward epoch on the switchover
+	// to the next reward epoch
+	err = m.repo.SetEntries(entries)
+	if err != nil {
+		return fmt.Errorf("could not set providers: %w", err)
+	}
+
+	// Set the active epoch for validators to the new current epoch
 	err = m.repo.SetEpoch(current)
 	if err != nil {
 		return fmt.Errorf("could not set epoch: %w", err)

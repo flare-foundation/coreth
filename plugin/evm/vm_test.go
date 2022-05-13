@@ -506,7 +506,7 @@ func TestToSet(t *testing.T) {
 	}
 
 	t.Run("nominal case", func(t *testing.T) {
-		set, err := toSet(validators, nil)
+		set, err := toSet(validators)
 		require.NoError(t, err)
 
 		assert.True(t, set.Contains(idsList[0]))
@@ -526,12 +526,5 @@ func TestToSet(t *testing.T) {
 		assert.Equal(t, ok, true)
 
 		assert.Len(t, set.List(), len(validators))
-	})
-
-	t.Run("handles given error", func(t *testing.T) {
-		testError := errors.New("test error")
-		_, err := toSet(validators, testError)
-
-		assert.Equal(t, err, testError)
 	})
 }

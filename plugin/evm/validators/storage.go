@@ -6,9 +6,9 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/fxamacker/cbor/v2"
 
-	"github.com/flare-foundation/coreth/core/vm"
-	"github.com/flare-foundation/flare/database"
+	"github.com/flare-foundation/coreth/ethdb"
 	"github.com/flare-foundation/flare/ids"
 )
 
@@ -21,43 +21,41 @@ var (
 )
 
 type Storage struct {
-	db database.Database
+	read  ethdb.Reader
+	write ethdb.Writer
+	enc   cbor.EncMode
+	dec   cbor.DecMode
 }
 
-func NewStorage(db database.Database) *Storage {
+func NewStorage(read ethdb.Reader, write ethdb.Writer) *Storage {
+
+	enc, err := cbor.EncOptions{
+		Sort:        cbor.SortCoreDeterministic,
+		IndefLength: cbor.IndefLengthForbidden,
+		TagsMd:      cbor.TagsForbidden,
+	}.EncMode()
+	if err != nil {
+		panic(fmt.Sprintf("invalid encoding options (%s)", err))
+	}
+
+	dec, err := cbor.DecOptions{
+		DupMapKey:         cbor.DupMapKeyEnforcedAPF,
+		IndefLength:       cbor.IndefLengthAllowed,
+		TagsMd:            cbor.TagsForbidden,
+		ExtraReturnErrors: cbor.ExtraDecErrorUnknownField,
+	}.DecMode()
+	if err != nil {
+		panic(fmt.Sprintf("invalid decoding option (%s)", err))
+	}
 
 	s := Storage{
-		db: db,
+		read:  read,
+		write: write,
+		enc:   enc,
+		dec:   dec,
 	}
 
 	return &s
-}
-
-func (s *Storage) WithEVM(evm *vm.EVM) (vm.ValidatorManager, error) {
-
-	ftso, err := NewFTSO(evm)
-	if err != nil {
-		return nil, fmt.Errorf("could not create FTSO: %w", err)
-	}
-
-	m := Manager{
-		log:  nil,
-		repo: s,
-		ftso: ftso,
-	}
-
-	return &m, nil
-}
-
-func (s *Storage) Epoch() (uint64, error) {
-	e, err := s.db.Get(epochKey)
-	if err != nil {
-		return 0, fmt.Errorf("could not get epoch: %w", err)
-	}
-
-	epochInt := big.NewInt(0).SetBytes(e)
-
-	return epochInt.Uint64(), nil
 }
 
 func (s *Storage) Pending() (map[common.Address]ids.ShortID, error) {
@@ -86,9 +84,10 @@ func (s *Storage) SetPending(provider common.Address, nodeID ids.ShortID) error 
 }
 
 func (s *Storage) SetEpoch(epoch uint64) error {
+
 	epochData := big.NewInt(0).SetUint64(epoch).Bytes()
 
-	err := s.db.Put(epochKey, epochData)
+	err := s.write.Put(epochKey, epochData)
 	if err != nil {
 		return fmt.Errorf("could not set epoch: %w", err)
 	}

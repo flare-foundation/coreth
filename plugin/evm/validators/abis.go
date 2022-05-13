@@ -43,7 +43,7 @@ func mustABI(json string) abi.ABI {
 
 	abi, err := abi.JSON(strings.NewReader(json))
 	if err != nil {
-		panic(fmt.Sprintf("invalid ABI JSON: %w", err))
+		panic(fmt.Sprintf("invalid ABI JSON: %s", err))
 	}
 
 	return abi
