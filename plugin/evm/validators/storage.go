@@ -207,15 +207,10 @@ func (s *Storage) Weights(epoch uint64) (map[ids.ShortID]uint64, error) {
 		m[nodeID] = weight.Uint64()
 	}
 	if err := it.Error(); err != nil {
-		return nil, fmt.Errorf("could not get list of pending providers: %w", err)
+		return nil, fmt.Errorf("could not get list of weights for epoch %d: %w", epoch, err)
 	}
 
 	return m, nil
-}
-
-func (s *Storage) Lookup(provider common.Address) (ids.ShortID, error) {
-	// TODO implement me
-	panic("implement me")
 }
 
 func (s *Storage) SetWeight(epoch uint64, nodeID ids.ShortID, weight uint64) error {
@@ -228,6 +223,11 @@ func (s *Storage) SetWeight(epoch uint64, nodeID ids.ShortID, weight uint64) err
 	}
 
 	return nil
+}
+
+func (s *Storage) Lookup(provider common.Address) (ids.ShortID, error) {
+	// TODO implement me
+	panic("implement me")
 }
 
 func (s *Storage) UnsetPending() error {
