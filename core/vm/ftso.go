@@ -281,3 +281,7 @@ func (s *FTSO) Providers() ([]common.Address, error) {
 
 	return providers, nil
 }
+
+func (s *FTSO) StateDB() StateDB {
+	return s.evm.StateDB
+}

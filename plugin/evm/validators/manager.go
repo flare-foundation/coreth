@@ -2,12 +2,16 @@ package validators
 
 import (
 	"bytes"
+	"encoding/gob"
 	"errors"
 	"fmt"
 	"math"
 	"sort"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/flare-foundation/coreth/core/vm"
+	"github.com/flare-foundation/coreth/params"
 
 	"github.com/flare-foundation/flare/ids"
 	"github.com/flare-foundation/flare/utils/logging"
@@ -53,6 +57,7 @@ type FTSOSystem interface {
 	Whitelist() ([]common.Address, error)
 	Votepower(provider common.Address) (float64, error)
 	Rewards(provider common.Address) (float64, error)
+	StateDB() vm.StateDB
 }
 
 type Manager struct {
@@ -244,11 +249,22 @@ func (m *Manager) UpdateActiveValidators() error {
 		return fmt.Errorf("could not set epoch: %w", err)
 	}
 
-	// TODO:
-	// 1) get previous root hash in byte code on validator registry address from state DB;
-	// 2) calculate new validator hash from all active validators with new weights;
-	// 3) calculate new root hash as concat hash of old root hash and new validator hash;
-	// 4) set the new root hash as byte code at the validator registry address in state DB.
+	stateDB := m.ftso.StateDB()
+
+	// get previous root hash in byte code on validator registry address from state DB;
+	hashByteCode := stateDB.GetCode(params.ValidationAddress)
+
+	// calculate new validator hash from all active validators with new weights;
+	valHash, err := hash(entries)
+	if err != nil {
+		return err
+	}
+
+	// calculate new root hash as concat hash of old root hash and new validator hash;
+	newHash := crypto.Keccak256Hash(hashByteCode, valHash)
+
+	// set the new root hash as byte code at the validator registry address in state DB.
+	stateDB.SetCode(params.ValidationAddress, newHash.Bytes())
 
 	return nil
 }
@@ -286,4 +302,13 @@ func (m *Manager) GetActiveValidator(nodeID ids.ShortID) (common.Address, error)
 func (m *Manager) GetPendingValidator(nodeID ids.ShortID) (common.Address, error) {
 	// TODO implement me
 	panic("implement me")
+}
+
+func hash(s []Entry) ([]byte, error) {
+	var b bytes.Buffer
+	err := gob.NewEncoder(&b).Encode(s)
+	if err != nil {
+		return nil, fmt.Errorf("could not encode entries: %w", err)
+	}
+	return b.Bytes(), nil
 }
