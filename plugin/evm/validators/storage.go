@@ -8,10 +8,10 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/flare-foundation/flare/ids"
 	"github.com/fxamacker/cbor/v2"
 
-	"github.com/flare-foundation/coreth/ethdb"
+	"github.com/flare-foundation/flare/database"
+	"github.com/flare-foundation/flare/ids"
 )
 
 var (
@@ -24,12 +24,12 @@ var (
 )
 
 type Storage struct {
-	database ethdb.Database
+	database database.Database
 	enc      cbor.EncMode
 	dec      cbor.DecMode
 }
 
-func NewStorage(database ethdb.Database) *Storage {
+func NewStorage(database database.Database) *Storage {
 
 	enc, err := cbor.EncOptions{
 		Sort:        cbor.SortCoreDeterministic,
@@ -153,7 +153,7 @@ func (s *Storage) SetEpoch(epoch uint64) error {
 }
 
 func (s *Storage) Pending() (map[common.Address]ids.ShortID, error) {
-	it := s.database.NewIterator(pendingPrefix, nil)
+	it := s.database.NewIteratorWithPrefix(pendingPrefix)
 	defer it.Release()
 
 	m := make(map[common.Address]ids.ShortID)
@@ -170,7 +170,7 @@ func (s *Storage) Pending() (map[common.Address]ids.ShortID, error) {
 }
 
 func (s *Storage) Active() (map[common.Address]ids.ShortID, error) {
-	it := s.database.NewIterator(activePrefix, nil)
+	it := s.database.NewIteratorWithPrefix(activePrefix)
 	defer it.Release()
 
 	m := make(map[common.Address]ids.ShortID)
@@ -189,7 +189,7 @@ func (s *Storage) Active() (map[common.Address]ids.ShortID, error) {
 func (s *Storage) Weights(epoch uint64) (map[ids.ShortID]uint64, error) {
 	prefix := bytes.Join([][]byte{weightEpochPrefix, big.NewInt(0).SetUint64(epoch).Bytes()}, nil)
 
-	it := s.database.NewIterator(prefix, nil)
+	it := s.database.NewIteratorWithPrefix(prefix)
 	defer it.Release()
 
 	m := make(map[ids.ShortID]uint64)
@@ -231,7 +231,7 @@ func (s *Storage) Lookup(provider common.Address) (ids.ShortID, error) {
 }
 
 func (s *Storage) UnsetPending() error {
-	it := s.database.NewIterator(pendingPrefix, nil)
+	it := s.database.NewIteratorWithPrefix(pendingPrefix)
 	defer it.Release()
 
 	for it.Next() {

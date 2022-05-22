@@ -11,7 +11,6 @@ import (
 
 	"github.com/flare-foundation/coreth/accounts/abi"
 	"github.com/flare-foundation/coreth/core"
-	"github.com/flare-foundation/coreth/core/vm"
 	"github.com/flare-foundation/coreth/internal/ethapi"
 )
 
@@ -19,7 +18,7 @@ var errNoReturnData = errors.New("no return data")
 
 type contractCall struct {
 	contract evmContract
-	evm      *vm.EVM
+	evm      *EVM
 }
 
 type evmContract struct {
@@ -27,7 +26,7 @@ type evmContract struct {
 	abi     abi.ABI
 }
 
-func newContractCall(evm *vm.EVM, contract evmContract) *contractCall {
+func newContractCall(evm *EVM, contract evmContract) *contractCall {
 	ec := &contractCall{
 		contract: contract,
 		evm:      evm,

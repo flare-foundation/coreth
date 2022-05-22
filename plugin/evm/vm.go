@@ -15,6 +15,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/flare-foundation/coreth/plugin/evm/validators"
 	"github.com/prometheus/client_golang/prometheus"
 
 	avalancheRPC "github.com/gorilla/rpc/v2"
@@ -430,7 +431,7 @@ func (vm *VM) Initialize(
 
 	// Set the validator storage on the Core VM package, which will inject it into
 	// the precompiled contract for validator interfacing from blockchain transactions.
-	corevm.LinkValidatorDB(vm.validatorDB)
+	// corevm.LinkValidatorDB(vm.validatorDB)
 
 	// start goroutines to update the tx pool gas minimum gas price when upgrades go into effect
 	vm.handleGasPriceUpdates()
@@ -1493,10 +1494,12 @@ func (vm *VM) GetValidators(blockID ids.ID) (validation.Set, error) {
 	chainConfig := blockchain.Config()
 	evm := corevm.NewEVM(blkContext, corevm.TxContext{}, stateDB, chainConfig, corevm.Config{NoBaseFee: true})
 
-	valManager, err := vm.validators.NewManager(evm)
+	ftso, err := corevm.NewFTSO(evm)
 	if err != nil {
-		return nil, fmt.Errorf("could not create validador manager: %w", err)
+		return nil, fmt.Errorf("could not create new ftso: %w", err)
 	}
+
+	valManager := validators.NewManager(vm.Logger(), validators.NewStorage(vm.validatorDB), ftso)
 
 	validators, err := valManager.GetActiveValidators()
 	if err != nil {

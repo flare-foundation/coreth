@@ -2,20 +2,34 @@ package vm
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
-
+	"github.com/flare-foundation/coreth/accounts/abi"
 	"github.com/flare-foundation/flare/ids"
 	"github.com/flare-foundation/flare/utils/logging"
 
 	"github.com/flare-foundation/coreth/plugin/evm/validators"
 )
 
-var (
-	registry *validatorRegistry
+const (
+	// TODO add abi for packing/unpacking
+	jsonValidator = ``
 )
 
+func init() {
+	var err error
+	validatorABI, err = abi.JSON(strings.NewReader(jsonValidator))
+	if err != nil {
+		panic(fmt.Sprintf("invalid ABI JSON: %s", err))
+	}
+}
+
 var (
+	registry *validatorRegistry
+
+	validatorABI abi.ABI
+
 	sigSetValidatorNodeID     = [4]byte{0x00, 0x00, 0x00, 0x00}
 	sigUpdateActiveValidators = [4]byte{0x00, 0x00, 0x00, 0x00}
 	sigGetPendingNodeID       = [4]byte{0x00, 0x00, 0x00, 0x00}
@@ -39,17 +53,35 @@ type ValidatorStorage interface {
 
 type validatorRegistry struct {
 	log     logging.Logger
-	storage ValidatorStorage
+	storage validators.ValidatorRepository
 }
 
-func InjectDependencies(log logging.Logger, storage ValidatorStorage) {
+func InjectDependencies(log logging.Logger, storage validators.ValidatorRepository) {
 	registry.log = log
 	registry.storage = storage
 }
 
-func (v *validatorRegistry) Run(evm *EVM, caller ContractRef, address common.Address, input []byte, gas uint64, read bool) ([]byte, uint64, error) {
+func (v *validatorRegistry) Run(evm *EVM, caller ContractRef, address common.Address, input []byte, suppliedGas uint64, read bool) ([]byte, uint64, error) {
+	var sig [4]byte
+	copy(sig[:], input[:4])
 
-	// TODO: define gas cost per function and check there is sufficient
+	gasCost := v.requiredGas(input)
+	if suppliedGas < gasCost {
+		return nil, 0, ErrOutOfGas
+	}
+	suppliedGas -= gasCost
+
+	method, err := validatorABI.MethodById(input[:4])
+	if err != nil {
+		return nil, 0, fmt.Errorf("could not get validator's method: %w", err)
+	}
+
+	// TODO might use unpack into map or UnpackIntoInterface
+	args, err := method.Inputs.Unpack(input[4:])
+	if err != nil {
+		return nil, 0, fmt.Errorf("could not get validator's method: %w", err)
+	}
+
 	ftso, err := NewFTSO(evm)
 	if err != nil {
 		return nil, 0, fmt.Errorf("could not initialize FTSO system: %w", err)
@@ -57,86 +89,95 @@ func (v *validatorRegistry) Run(evm *EVM, caller ContractRef, address common.Add
 
 	manager := validators.NewManager(v.log, v.storage, ftso)
 
-	var sig [4]byte
-	copy(sig[:], input[:4])
 	switch sig {
 
 	case sigSetValidatorNodeID:
 
 		provider := caller.Address()
 
-		// TODO: unpack node ID
-		var nodeID ids.ShortID
+		nodeID := args[0].(ids.ShortID)
 
 		err := manager.SetValidatorNodeID(provider, nodeID)
 		if err != nil {
-			return nil, 0, fmt.Errorf("could not set provider node: %w", err)
+			return nil, suppliedGas, fmt.Errorf("could not set provider node: %w", err)
 		}
 
 	case sigUpdateActiveValidators:
 
 		err = manager.UpdateActiveValidators()
 		if err != nil {
-			return nil, 0, fmt.Errorf("could not update active validators: %w", err)
+			return nil, suppliedGas, fmt.Errorf("could not update active validators: %w", err)
 		}
 
 	case sigGetPendingNodeID:
 
-		// TODO: unpack provider address
-		var provider common.Address
+		provider := args[0].(common.Address)
 
 		nodeID, err := manager.GetPendingNodeID(provider)
 		if err != nil {
-			return nil, 0, fmt.Errorf("could not get pending node: %w", err)
+			return nil, suppliedGas, fmt.Errorf("could not get pending node: %w", err)
 		}
 
-		// TODO: pack node ID
-		return nodeID[:], 0, nil
+		ret, err := validatorABI.Pack(method.Name, nodeID[:])
+		if err != nil {
+			return nil, suppliedGas, fmt.Errorf("could not pack return values for method %s: %w", method.Name, err)
+		}
+
+		return ret, suppliedGas, nil
 
 	case sigGetActiveNodeID:
 
-		// TODO: unpack provider address
-		var provider common.Address
+		provider := args[0].(common.Address)
 
 		nodeID, err := manager.GetActiveNodeID(provider)
 		if err != nil {
-			return nil, 0, fmt.Errorf("could not get active node: %w", err)
+			return nil, suppliedGas, fmt.Errorf("could not get active node: %w", err)
 		}
 
-		// TODO: pack node ID
-		return nodeID[:], 0, nil
+		ret, err := validatorABI.Pack(method.Name, nodeID[:])
+		if err != nil {
+			return nil, suppliedGas, fmt.Errorf("could not pack return values for method %s: %w", method.Name, err)
+		}
+
+		return ret, suppliedGas, nil
 
 	case sigGetPendingValidator:
 
-		// TODO: unpack node ID
-		var nodeID ids.ShortID
+		nodeID := args[0].(ids.ShortID)
 
 		provider, err := manager.GetPendingValidator(nodeID)
 		if err != nil {
-			return nil, 0, fmt.Errorf("could not get pending validator: %w", err)
+			return nil, suppliedGas, fmt.Errorf("could not get pending validator: %w", err)
 		}
 
-		// TODO: pack provider address
-		return provider[:], 0, nil
+		ret, err := validatorABI.Pack(method.Name, provider)
+		if err != nil {
+			return nil, suppliedGas, fmt.Errorf("could not pack return values for method %s: %w", method.Name, err)
+		}
+
+		return ret, suppliedGas, nil
 
 	case sigGetActiveValidator:
 
-		// TODO: unpack node ID
-		var nodeID ids.ShortID
+		nodeID := args[0].(ids.ShortID)
 
 		provider, err := manager.GetActiveValidator(nodeID)
 		if err != nil {
-			return nil, 0, fmt.Errorf("could not get active validator: %w", err)
+			return nil, suppliedGas, fmt.Errorf("could not get active validator: %w", err)
 		}
 
-		// TODO: pack provider address
-		return provider[:], 0, nil
+		ret, err := validatorABI.Pack(method.Name, provider)
+		if err != nil {
+			return nil, suppliedGas, fmt.Errorf("could not pack return values for method %s: %w", method.Name, err)
+		}
 
-	default:
-
-		return nil, 0, fmt.Errorf("invalid function signature for validator registry (sig: %x)", sig)
-
+		return ret, suppliedGas, nil
 	}
 
-	return nil, gas, nil
+	return nil, suppliedGas, nil
+}
+
+// TODO: define gas cost per function and check there is sufficient
+func (v *validatorRegistry) requiredGas(method []byte) uint64 {
+	return 0
 }

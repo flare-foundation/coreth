@@ -6,8 +6,6 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/vm"
-
 	"github.com/flare-foundation/coreth/params"
 )
 
@@ -65,7 +63,7 @@ func NewFTSO(evm *EVM) (*FTSO, error) {
 
 	height := big.NewInt(0)
 	err = newContractCall(evm, manager).execute(getEpochInfo, big.NewInt(0)).decode(nil, &height, nil)
-	if errors.Is(err, vm.ErrExecutionReverted) || height.Uint64() == 0 {
+	if errors.Is(err, ErrExecutionReverted) || height.Uint64() == 0 {
 		return nil, errFTSONotActive
 	}
 	if err != nil {
