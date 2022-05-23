@@ -42,7 +42,8 @@ type ValidatorRepository interface {
 	Pending() (map[common.Address]ids.ShortID, error)
 	Active() (map[common.Address]ids.ShortID, error)
 	Weights(epoch uint64) (map[ids.ShortID]uint64, error)
-	Lookup(provider common.Address) (ids.ShortID, error)
+
+	Lookup(nodeID ids.ShortID, prefix []byte) (common.Address, error)
 
 	SetEpoch(epoch uint64) error
 	SetWeight(epoch uint64, nodeID ids.ShortID, weight uint64) error
@@ -285,23 +286,19 @@ func (m *Manager) GetActiveValidators() (map[ids.ShortID]uint64, error) {
 }
 
 func (m *Manager) GetActiveNodeID(provider common.Address) (ids.ShortID, error) {
-	// TODO implement me
-	panic("implement me")
+	return m.repo.GetActive(provider)
 }
 
 func (m *Manager) GetPendingNodeID(provider common.Address) (ids.ShortID, error) {
-	// TODO implement me
-	panic("implement me")
+	return m.repo.GetPending(provider)
 }
 
 func (m *Manager) GetActiveValidator(nodeID ids.ShortID) (common.Address, error) {
-	// TODO implement me
-	panic("implement me")
+	return m.repo.Lookup(nodeID, activePrefix)
 }
 
 func (m *Manager) GetPendingValidator(nodeID ids.ShortID) (common.Address, error) {
-	// TODO implement me
-	panic("implement me")
+	return m.repo.Lookup(nodeID, pendingPrefix)
 }
 
 func hash(s []Entry) ([]byte, error) {

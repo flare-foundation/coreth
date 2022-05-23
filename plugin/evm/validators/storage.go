@@ -20,7 +20,8 @@ var (
 	pendingPrefix     = []byte("pending")
 	weightEpochPrefix = []byte("weightepoch")
 
-	errNoEntries = errors.New("no entries")
+	errNoEntries         = errors.New("no entries")
+	errValidatorNotFound = errors.New("validator not found")
 )
 
 type Storage struct {
@@ -225,9 +226,22 @@ func (s *Storage) SetWeight(epoch uint64, nodeID ids.ShortID, weight uint64) err
 	return nil
 }
 
-func (s *Storage) Lookup(provider common.Address) (ids.ShortID, error) {
-	// TODO implement me
-	panic("implement me")
+func (s *Storage) Lookup(nodeID ids.ShortID, prefix []byte) (common.Address, error) {
+
+	it := s.database.NewIteratorWithPrefix(prefix)
+	defer it.Release()
+
+	for it.Next() {
+		id, _ := ids.ToShortID(it.Value())
+		if id == nodeID {
+			return common.BytesToAddress(bytes.TrimPrefix(it.Key(), pendingPrefix)), nil
+		}
+	}
+	if err := it.Error(); err != nil {
+		return common.Address{}, fmt.Errorf("could not get validator for node %v: %w", nodeID, err)
+	}
+
+	return common.Address{}, errValidatorNotFound
 }
 
 func (s *Storage) UnsetPending() error {
