@@ -30,6 +30,7 @@ var (
 
 	validatorABI abi.ABI
 
+	// TODO we might use actual method names (method.Name) provided in the ABI
 	sigSetValidatorNodeID     = [4]byte{0x00, 0x00, 0x00, 0x00}
 	sigUpdateActiveValidators = [4]byte{0x00, 0x00, 0x00, 0x00}
 	sigGetPendingNodeID       = [4]byte{0x00, 0x00, 0x00, 0x00}
@@ -48,9 +49,6 @@ type ValidatorManager interface {
 	GetPendingValidator(nodeID ids.ShortID) (common.Address, error)
 }
 
-type ValidatorStorage interface {
-}
-
 type validatorRegistry struct {
 	log     logging.Logger
 	storage validators.ValidatorRepository
@@ -65,7 +63,7 @@ func (v *validatorRegistry) Run(evm *EVM, caller ContractRef, address common.Add
 	var sig [4]byte
 	copy(sig[:], input[:4])
 
-	gasCost := v.requiredGas(input)
+	gasCost := v.requiredGas(sig)
 	if suppliedGas < gasCost {
 		return nil, 0, ErrOutOfGas
 	}
@@ -76,7 +74,6 @@ func (v *validatorRegistry) Run(evm *EVM, caller ContractRef, address common.Add
 		return nil, 0, fmt.Errorf("could not get validator's method: %w", err)
 	}
 
-	// TODO might use unpack into map or UnpackIntoInterface
 	args, err := method.Inputs.Unpack(input[4:])
 	if err != nil {
 		return nil, 0, fmt.Errorf("could not get validator's method: %w", err)
@@ -178,6 +175,22 @@ func (v *validatorRegistry) Run(evm *EVM, caller ContractRef, address common.Add
 }
 
 // TODO: define gas cost per function and check there is sufficient
-func (v *validatorRegistry) requiredGas(method []byte) uint64 {
+func (v *validatorRegistry) requiredGas(method [4]byte) uint64 {
+	switch method {
+
+	case sigSetValidatorNodeID:
+
+	case sigUpdateActiveValidators:
+
+	case sigGetPendingNodeID:
+
+	case sigGetActiveNodeID:
+
+	case sigGetPendingValidator:
+
+	case sigGetActiveValidator:
+
+	}
+
 	return 0
 }

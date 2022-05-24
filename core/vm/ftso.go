@@ -29,12 +29,6 @@ type Contracts struct {
 	Votepower evmContract
 }
 
-// 	Current() (uint64, error)
-//	Cap() (float64, error)
-//	Whitelist() ([]common.Address, error)
-//	Votepower(provider common.Address) (float64, error)
-//	Rewards(provider common.Address) (float64, error)
-
 func NewFTSO(evm *EVM) (*FTSO, error) {
 
 	submitter := evmContract{
@@ -156,41 +150,60 @@ func (s *FTSO) Current() (uint64, error) {
 }
 
 func (s *FTSO) Cap() (float64, error) {
-	panic("implement me")
-}
 
-func (s *FTSO) Whitelist() ([]common.Address, error) {
-	panic("implement me")
-}
-
-func (s *FTSO) Supply() (float64, error) {
-
-	supplyInt := big.NewInt(0)
+	supply := big.NewInt(0)
 	err := newContractCall(s.evm, s.contracts.WNAT).
 		execute(getFTSOSupply).
-		decode(&supplyInt)
+		decode(&supply)
 	if err != nil {
 		return 0, fmt.Errorf("could not get total supply: %w", err)
 	}
 
-	supplyFloat := big.NewFloat(0).SetInt(supplyInt)
-	supply, _ := supplyFloat.Float64()
-
-	return supply, nil
-
-}
-
-func (s *FTSO) Fraction() (uint64, error) {
-
 	fraction := big.NewInt(0)
-	err := newContractCall(s.evm, s.contracts.Manager).
+	err = newContractCall(s.evm, s.contracts.Manager).
 		execute(getFTSOSettings).
 		decode(&fraction, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
 		return 0, fmt.Errorf("could not get votepower threshold fraction: %w", err)
 	}
 
-	return fraction.Uint64(), nil
+	capInt := big.NewInt(0).Div(supply, fraction)
+	capFloat := big.NewFloat(0).SetInt(capInt)
+	cap, _ := capFloat.Float64()
+
+	return cap, nil
+}
+
+func (s *FTSO) Whitelist() ([]common.Address, error) {
+
+	var indices []*big.Int
+	err := newContractCall(s.evm, s.contracts.Registry).
+		execute(getFTSOIndices).
+		decode(&indices)
+	if err != nil {
+		return nil, fmt.Errorf("could not get series indices: %w", err)
+	}
+
+	providerMap := make(map[common.Address]struct{})
+	for _, index := range indices {
+		var addresses []common.Address
+		err := newContractCall(s.evm, s.contracts.Whitelist).
+			execute(getFTSOProviders, index).
+			decode(&addresses)
+		if err != nil {
+			return nil, fmt.Errorf("could not get provider addresses (index: %d): %w", index, err)
+		}
+		for _, address := range addresses {
+			providerMap[address] = struct{}{}
+		}
+	}
+
+	providers := make([]common.Address, 0, len(providerMap))
+	for provider := range providerMap {
+		providers = append(providers, provider)
+	}
+
+	return providers, nil
 }
 
 func (s *FTSO) Votepower(provider common.Address) (float64, error) {
@@ -243,41 +256,6 @@ func (s *FTSO) Rewards(provider common.Address) (float64, error) {
 	rewards, _ := rewardsFloat.Float64()
 
 	return rewards, nil
-}
-
-func (s *FTSO) Providers() ([]common.Address, error) {
-
-	// TODO: we need to get the list of providers from the previous rewards epoch,
-	// not the list of providers from the current one.
-
-	var indices []*big.Int
-	err := newContractCall(s.evm, s.contracts.Registry).
-		execute(getFTSOIndices).
-		decode(&indices)
-	if err != nil {
-		return nil, fmt.Errorf("could not get series indices: %w", err)
-	}
-
-	providerMap := make(map[common.Address]struct{})
-	for _, index := range indices {
-		var addresses []common.Address
-		err := newContractCall(s.evm, s.contracts.Whitelist).
-			execute(getFTSOProviders, index).
-			decode(&addresses)
-		if err != nil {
-			return nil, fmt.Errorf("could not get provider addresses (index: %d): %w", index, err)
-		}
-		for _, address := range addresses {
-			providerMap[address] = struct{}{}
-		}
-	}
-
-	providers := make([]common.Address, 0, len(providerMap))
-	for provider := range providerMap {
-		providers = append(providers, provider)
-	}
-
-	return providers, nil
 }
 
 func (s *FTSO) StateDB() StateDB {

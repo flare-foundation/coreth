@@ -118,15 +118,27 @@ func (m *Manager) UpdateActiveValidators() error {
 		return nil
 	}
 
+	// Retrieve the whitelist of FTSO data providers as they are now, at the first
+	// block of a new reward epoch. We will store this to be used on the next epoch
+	// switchover, as we can only ever retrieve the whitelist at the current block.
+	whitelist, err := m.ftso.Whitelist()
+	if err != nil {
+		return fmt.Errorf("could not get whitelist: %w", err)
+	}
+
 	// Get the list of whitelisted FTSO data providers with their votepower, as it
 	// was stored in the previous reward epoch switchover.
 	entries, err := m.repo.GetEntries(active)
 	if errors.Is(err, errNoEntries) {
-		// TODO: check if this doesn't exist in the DB yet; if so, we should bootstrap the system
+
+		// TODO check if this doesn't exist in the DB yet; if so, we should bootstrap the system
+
 	}
 	if err != nil {
 		return fmt.Errorf("could not get providers: %w", err)
 	}
+
+	var averageWeight uint64
 
 	// For each of these providers, we now get the rewards that they accumulated over
 	// the previous epoch and calculate its validator weight.
@@ -143,21 +155,21 @@ func (m *Manager) UpdateActiveValidators() error {
 
 		weight := uint64(math.Pow(entry.Votepower, 1.0/float64(RootDegree)) * (RatioMultiplier * rewards / entry.Votepower))
 
+		if averageWeight == 0 {
+			averageWeight += weight
+		} else {
+			averageWeight += (averageWeight + weight) / 2
+		}
+
 		err = m.repo.SetWeight(current, entry.NodeID, weight)
 		if err != nil {
 			return fmt.Errorf("could not set validator weight (node: %s): %w", entry.NodeID, err)
 		}
 	}
 
-	// TODO: add the default validators with the average weight of the FTSO validators.
+	// TODO add the default validators with the average weight of the FTSO validators.
 
-	// Retrieve the whitelist of FTSO data providers as they are now, at the first
-	// block of a new reward epoch. We will store this to be used on the next epoch
-	// switchover, as we can only ever retrieve the whitelist at the current block.
-	whitelist, err := m.ftso.Whitelist()
-	if err != nil {
-		return fmt.Errorf("could not get whitelist: %w", err)
-	}
+	_ = averageWeight
 
 	// Get the votepower cap for FTSO data providers. If they have more votepower
 	// than the cap, they won't accumulate rewards for the excess votepower, which
@@ -256,7 +268,7 @@ func (m *Manager) UpdateActiveValidators() error {
 	hashByteCode := stateDB.GetCode(params.ValidationAddress)
 
 	// calculate new validator hash from all active validators with new weights;
-	valHash, err := hash(entries)
+	valHash, err := entriesHash(entries)
 	if err != nil {
 		return err
 	}
@@ -301,7 +313,7 @@ func (m *Manager) GetPendingValidator(nodeID ids.ShortID) (common.Address, error
 	return m.repo.Lookup(nodeID, pendingPrefix)
 }
 
-func hash(s []Entry) ([]byte, error) {
+func entriesHash(s []Entry) ([]byte, error) {
 	var b bytes.Buffer
 	err := gob.NewEncoder(&b).Encode(s)
 	if err != nil {

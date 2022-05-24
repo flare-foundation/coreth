@@ -193,7 +193,7 @@ type VM struct {
 	// [acceptedBlockDB] is the database to store the last accepted block.
 	acceptedBlockDB database.Database
 	// [validatorDB] is the database to store validator-related data.
-	validatorDB database.Database
+	validatorDB validators.ValidatorRepository
 
 	// [atomicTxRepository] maintains two indexes on accepted atomic txs.
 	// - txID to accepted atomic tx
@@ -427,11 +427,11 @@ func (vm *VM) Initialize(
 	}
 
 	// Initialize a database to hold data related to validators.
-	vm.validatorDB = prefixdb.New(validatorDBPrefix, vm.db)
+	vm.validatorDB = validators.NewStorage(prefixdb.New(validatorDBPrefix, vm.db))
 
 	// Set the validator storage on the Core VM package, which will inject it into
 	// the precompiled contract for validator interfacing from blockchain transactions.
-	// corevm.LinkValidatorDB(vm.validatorDB)
+	corevm.InjectDependencies(vm.Logger(), vm.validatorDB)
 
 	// start goroutines to update the tx pool gas minimum gas price when upgrades go into effect
 	vm.handleGasPriceUpdates()
@@ -1499,14 +1499,14 @@ func (vm *VM) GetValidators(blockID ids.ID) (validation.Set, error) {
 		return nil, fmt.Errorf("could not create new ftso: %w", err)
 	}
 
-	valManager := validators.NewManager(vm.Logger(), validators.NewStorage(vm.validatorDB), ftso)
+	valManager := validators.NewManager(vm.Logger(), vm.validatorDB, ftso)
 
-	validators, err := valManager.GetActiveValidators()
+	active, err := valManager.GetActiveValidators()
 	if err != nil {
 		return nil, fmt.Errorf("could not get active validators: %w", err)
 	}
 
-	return toSet(validators)
+	return toSet(active)
 }
 
 func toSet(validatorMap map[ids.ShortID]uint64) (validation.Set, error) {
