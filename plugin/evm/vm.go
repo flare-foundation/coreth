@@ -15,7 +15,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/flare-foundation/coreth/plugin/evm/validators"
 	"github.com/prometheus/client_golang/prometheus"
 
 	avalancheRPC "github.com/gorilla/rpc/v2"
@@ -57,6 +56,7 @@ import (
 	"github.com/flare-foundation/coreth/consensus/dummy"
 	"github.com/flare-foundation/coreth/core"
 	"github.com/flare-foundation/coreth/core/state"
+	"github.com/flare-foundation/coreth/core/state/valstate"
 	"github.com/flare-foundation/coreth/core/types"
 	corevm "github.com/flare-foundation/coreth/core/vm"
 	"github.com/flare-foundation/coreth/eth/ethconfig"
@@ -192,8 +192,6 @@ type VM struct {
 	chaindb Database
 	// [acceptedBlockDB] is the database to store the last accepted block.
 	acceptedBlockDB database.Database
-	// [validatorDB] is the database to store validator-related data.
-	validatorDB validators.ValidatorRepository
 
 	// [atomicTxRepository] maintains two indexes on accepted atomic txs.
 	// - txID to accepted atomic tx
@@ -229,6 +227,9 @@ type VM struct {
 	multiGatherer avalanchegoMetrics.MultiGatherer
 
 	bootstrapped bool
+
+	// validators is the manager responsible for validator state
+	validators *ValidatorManager
 }
 
 // Codec implements the secp256k1fx interface
@@ -427,11 +428,13 @@ func (vm *VM) Initialize(
 	}
 
 	// Initialize a database to hold data related to validators.
-	vm.validatorDB = validators.NewStorage(prefixdb.New(validatorDBPrefix, vm.db))
+	validatorDB := valstate.NewValidatorDB(prefixdb.New(validatorDBPrefix, vm.db))
+	valMgr := NewValidatorManager(vm.ctx.Log, validatorDB)
 
 	// Set the validator storage on the Core VM package, which will inject it into
 	// the precompiled contract for validator interfacing from blockchain transactions.
-	corevm.InjectDependencies(vm.Logger(), vm.validatorDB)
+	corevm.InjectDependencies(vm.ctx.Log, valMgr)
+	vm.validators = valMgr
 
 	// start goroutines to update the tx pool gas minimum gas price when upgrades go into effect
 	vm.handleGasPriceUpdates()
@@ -1493,15 +1496,12 @@ func (vm *VM) GetValidators(blockID ids.ID) (validation.Set, error) {
 	blkContext := core.NewEVMBlockContext(header, blockchain, nil)
 	chainConfig := blockchain.Config()
 	evm := corevm.NewEVM(blkContext, corevm.TxContext{}, stateDB, chainConfig, corevm.Config{NoBaseFee: true})
-
-	ftso, err := corevm.NewFTSO(evm)
+	snapshot, err := vm.validators.WithEVM(evm)
 	if err != nil {
-		return nil, fmt.Errorf("could not create new ftso: %w", err)
+		return nil, fmt.Errorf("could not initialize validator state snapshot: %w", err)
 	}
 
-	valManager := validators.NewManager(vm.Logger(), vm.validatorDB, ftso)
-
-	active, err := valManager.GetActiveValidators()
+	active, err := snapshot.GetActiveValidators()
 	if err != nil {
 		return nil, fmt.Errorf("could not get active validators: %w", err)
 	}

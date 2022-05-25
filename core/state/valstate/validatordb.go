@@ -1,14 +1,14 @@
-package validators
+package valstate
 
 import (
 	"bytes"
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/fxamacker/cbor/v2"
+
+	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/flare-foundation/flare/database"
 	"github.com/flare-foundation/flare/ids"
@@ -19,18 +19,15 @@ var (
 	activePrefix      = []byte("active")
 	pendingPrefix     = []byte("pending")
 	weightEpochPrefix = []byte("weightepoch")
-
-	errNoEntries         = errors.New("no entries")
-	errValidatorNotFound = errors.New("validator not found")
 )
 
-type Storage struct {
+type ValidatorDB struct {
 	database database.Database
 	enc      cbor.EncMode
 	dec      cbor.DecMode
 }
 
-func NewStorage(database database.Database) *Storage {
+func NewValidatorDB(database database.Database) *ValidatorDB {
 
 	enc, err := cbor.EncOptions{
 		Sort:        cbor.SortCoreDeterministic,
@@ -51,27 +48,27 @@ func NewStorage(database database.Database) *Storage {
 		panic(fmt.Sprintf("invalid decoding option (%s)", err))
 	}
 
-	s := Storage{
+	v := ValidatorDB{
 		database: database,
 		enc:      enc,
 		dec:      dec,
 	}
 
-	return &s
+	return &v
 }
 
 // SetEntries sets list of entries for the epoch
-func (s *Storage) SetEntries(epoch uint64, entries []Entry) error {
+func (v *ValidatorDB) SetEntries(epoch uint64, entries []Entry) error {
 
 	key := make([]byte, 8)
 	binary.BigEndian.PutUint64(key, epoch)
 
-	data, err := s.enc.Marshal(entries)
+	data, err := v.enc.Marshal(entries)
 	if err != nil {
 		return fmt.Errorf("could not encode entries: %w", err)
 	}
 
-	err = s.database.Put(key, data)
+	err = v.database.Put(key, data)
 	if err != nil {
 		return fmt.Errorf("could not put etries data: %w", err)
 	}
@@ -79,64 +76,64 @@ func (s *Storage) SetEntries(epoch uint64, entries []Entry) error {
 	return nil
 }
 
-func (s *Storage) GetEntries(epoch uint64) ([]Entry, error) {
+func (v *ValidatorDB) GetEntries(epoch uint64) ([]Entry, error) {
 
 	key := make([]byte, 8)
 	binary.BigEndian.PutUint64(key, epoch)
 
-	data, err := s.database.Get(key)
+	data, err := v.database.Get(key)
 	if err != nil {
 		return nil, fmt.Errorf("could not get entries: %w", err)
 	}
 
 	var entries []Entry
-	err = s.dec.Unmarshal(data, &entries)
+	err = v.dec.Unmarshal(data, &entries)
 	if err != nil {
 		return nil, fmt.Errorf("could not decode entries: %w", err)
 	}
 
 	if len(entries) == 0 {
-		return nil, errNoEntries
+		return nil, ErrNoEntries
 	}
 
 	return entries, nil
 }
 
-func (s *Storage) SetPending(provider common.Address, nodeID ids.ShortID) error {
-	err := s.database.Put(bytes.Join([][]byte{pendingPrefix, provider.Bytes()}, nil), nodeID.Bytes())
+func (v *ValidatorDB) SetPending(provider common.Address, nodeID ids.ShortID) error {
+	err := v.database.Put(bytes.Join([][]byte{pendingPrefix, provider.Bytes()}, nil), nodeID.Bytes())
 	if err != nil {
 		return fmt.Errorf("could not set pending provider %s: %w", provider, err)
 	}
 	return nil
 }
 
-func (s *Storage) GetPending(provider common.Address) (ids.ShortID, error) {
-	data, err := s.database.Get(bytes.Join([][]byte{pendingPrefix, provider.Bytes()}, nil))
+func (v *ValidatorDB) GetPending(provider common.Address) (ids.ShortID, error) {
+	data, err := v.database.Get(bytes.Join([][]byte{pendingPrefix, provider.Bytes()}, nil))
 	if err != nil {
 		return ids.ShortID{}, fmt.Errorf("could not get pending provider %s: %w", provider, err)
 	}
 	return ids.ToShortID(data)
 }
 
-func (s *Storage) SetActive(provider common.Address, nodeID ids.ShortID) error {
-	err := s.database.Put(bytes.Join([][]byte{activePrefix, provider.Bytes()}, nil), nodeID.Bytes())
+func (v *ValidatorDB) SetActive(provider common.Address, nodeID ids.ShortID) error {
+	err := v.database.Put(bytes.Join([][]byte{activePrefix, provider.Bytes()}, nil), nodeID.Bytes())
 	if err != nil {
 		return fmt.Errorf("could not set active provider %s: %w", provider, err)
 	}
 	return nil
 }
 
-func (s *Storage) GetActive(provider common.Address) (ids.ShortID, error) {
-	data, err := s.database.Get(bytes.Join([][]byte{activePrefix, provider.Bytes()}, nil))
+func (v *ValidatorDB) GetActive(provider common.Address) (ids.ShortID, error) {
+	data, err := v.database.Get(bytes.Join([][]byte{activePrefix, provider.Bytes()}, nil))
 	if err != nil {
 		return ids.ShortID{}, fmt.Errorf("could not get active provider %s: %w", provider, err)
 	}
 	return ids.ToShortID(data)
 }
 
-func (s *Storage) Epoch() (uint64, error) {
+func (v *ValidatorDB) Epoch() (uint64, error) {
 
-	data, err := s.database.Get(epochKey)
+	data, err := v.database.Get(epochKey)
 	if err != nil {
 		return 0, fmt.Errorf("could not get epoch: %w", err)
 	}
@@ -144,8 +141,8 @@ func (s *Storage) Epoch() (uint64, error) {
 	return big.NewInt(0).SetBytes(data).Uint64(), nil
 }
 
-func (s *Storage) SetEpoch(epoch uint64) error {
-	err := s.database.Put(epochKey, big.NewInt(0).SetUint64(epoch).Bytes())
+func (v *ValidatorDB) SetEpoch(epoch uint64) error {
+	err := v.database.Put(epochKey, big.NewInt(0).SetUint64(epoch).Bytes())
 	if err != nil {
 		return fmt.Errorf("could not set epoch: %w", err)
 	}
@@ -153,8 +150,8 @@ func (s *Storage) SetEpoch(epoch uint64) error {
 	return nil
 }
 
-func (s *Storage) Pending() (map[common.Address]ids.ShortID, error) {
-	it := s.database.NewIteratorWithPrefix(pendingPrefix)
+func (v *ValidatorDB) Pending() (map[common.Address]ids.ShortID, error) {
+	it := v.database.NewIteratorWithPrefix(pendingPrefix)
 	defer it.Release()
 
 	m := make(map[common.Address]ids.ShortID)
@@ -170,8 +167,8 @@ func (s *Storage) Pending() (map[common.Address]ids.ShortID, error) {
 	return m, nil
 }
 
-func (s *Storage) Active() (map[common.Address]ids.ShortID, error) {
-	it := s.database.NewIteratorWithPrefix(activePrefix)
+func (v *ValidatorDB) Active() (map[common.Address]ids.ShortID, error) {
+	it := v.database.NewIteratorWithPrefix(activePrefix)
 	defer it.Release()
 
 	m := make(map[common.Address]ids.ShortID)
@@ -187,10 +184,10 @@ func (s *Storage) Active() (map[common.Address]ids.ShortID, error) {
 	return m, nil
 }
 
-func (s *Storage) Weights(epoch uint64) (map[ids.ShortID]uint64, error) {
+func (v *ValidatorDB) Weights(epoch uint64) (map[ids.ShortID]uint64, error) {
 	prefix := bytes.Join([][]byte{weightEpochPrefix, big.NewInt(0).SetUint64(epoch).Bytes()}, nil)
 
-	it := s.database.NewIteratorWithPrefix(prefix)
+	it := v.database.NewIteratorWithPrefix(prefix)
 	defer it.Release()
 
 	m := make(map[ids.ShortID]uint64)
@@ -214,11 +211,11 @@ func (s *Storage) Weights(epoch uint64) (map[ids.ShortID]uint64, error) {
 	return m, nil
 }
 
-func (s *Storage) SetWeight(epoch uint64, nodeID ids.ShortID, weight uint64) error {
+func (v *ValidatorDB) SetWeight(epoch uint64, nodeID ids.ShortID, weight uint64) error {
 
 	key := bytes.Join([][]byte{weightEpochPrefix, big.NewInt(0).SetUint64(epoch).Bytes(), nodeID.Bytes()}, nil)
 
-	err := s.database.Put(key, big.NewInt(0).SetUint64(weight).Bytes())
+	err := v.database.Put(key, big.NewInt(0).SetUint64(weight).Bytes())
 	if err != nil {
 		return fmt.Errorf("could not set weight: %w", err)
 	}
@@ -226,9 +223,17 @@ func (s *Storage) SetWeight(epoch uint64, nodeID ids.ShortID, weight uint64) err
 	return nil
 }
 
-func (s *Storage) Lookup(nodeID ids.ShortID, prefix []byte) (common.Address, error) {
+func (v *ValidatorDB) LookupPending(nodeID ids.ShortID) (common.Address, error) {
+	return v.lookup(nodeID, pendingPrefix)
+}
 
-	it := s.database.NewIteratorWithPrefix(prefix)
+func (v *ValidatorDB) LookupActive(nodeID ids.ShortID) (common.Address, error) {
+	return v.lookup(nodeID, activePrefix)
+}
+
+func (v *ValidatorDB) lookup(nodeID ids.ShortID, prefix []byte) (common.Address, error) {
+
+	it := v.database.NewIteratorWithPrefix(prefix)
 	defer it.Release()
 
 	for it.Next() {
@@ -241,15 +246,15 @@ func (s *Storage) Lookup(nodeID ids.ShortID, prefix []byte) (common.Address, err
 		return common.Address{}, fmt.Errorf("could not get validator for node %v: %w", nodeID, err)
 	}
 
-	return common.Address{}, errValidatorNotFound
+	return common.Address{}, ErrNotFound
 }
 
-func (s *Storage) UnsetPending() error {
-	it := s.database.NewIteratorWithPrefix(pendingPrefix)
+func (v *ValidatorDB) UnsetPending() error {
+	it := v.database.NewIteratorWithPrefix(pendingPrefix)
 	defer it.Release()
 
 	for it.Next() {
-		err := s.database.Delete(it.Key())
+		err := v.database.Delete(it.Key())
 		if err != nil {
 			return fmt.Errorf("could not delete pending provider %s: %w",
 				common.BytesToAddress(bytes.TrimPrefix(it.Key(), pendingPrefix)), err)
@@ -262,10 +267,14 @@ func (s *Storage) UnsetPending() error {
 	return nil
 }
 
-func (s *Storage) UnsetActive(provider common.Address) error {
-	err := s.database.Delete(bytes.Join([][]byte{activePrefix, provider.Bytes()}, nil))
+func (v *ValidatorDB) UnsetActive(provider common.Address) error {
+	err := v.database.Delete(bytes.Join([][]byte{activePrefix, provider.Bytes()}, nil))
 	if err != nil {
 		return fmt.Errorf("could not unset active provider %s: %w", provider, err)
 	}
 	return nil
+}
+
+func (v *ValidatorDB) RootHash() (common.Hash, error) {
+	return common.Hash{}, fmt.Errorf("not implemented")
 }

@@ -8,8 +8,6 @@ import (
 	"github.com/flare-foundation/coreth/accounts/abi"
 	"github.com/flare-foundation/flare/ids"
 	"github.com/flare-foundation/flare/utils/logging"
-
-	"github.com/flare-foundation/coreth/plugin/evm/validators"
 )
 
 const (
@@ -40,26 +38,37 @@ var (
 )
 
 type ValidatorManager interface {
+	WithEVM(evm *EVM) (ValidatorSnapshot, error)
+}
+
+type ValidatorSnapshot interface {
 	SetValidatorNodeID(provider common.Address, nodeID ids.ShortID) error
 	UpdateActiveValidators() error
 
-	GetActiveNodeID(provider common.Address) (ids.ShortID, error)
 	GetPendingNodeID(provider common.Address) (ids.ShortID, error)
-	GetActiveValidator(nodeID ids.ShortID) (common.Address, error)
+	GetActiveNodeID(provider common.Address) (ids.ShortID, error)
+
 	GetPendingValidator(nodeID ids.ShortID) (common.Address, error)
+	GetActiveValidator(nodeID ids.ShortID) (common.Address, error)
 }
 
 type validatorRegistry struct {
-	log     logging.Logger
-	storage validators.ValidatorRepository
+	log logging.Logger
+	mgr ValidatorManager
 }
 
-func InjectDependencies(log logging.Logger, storage validators.ValidatorRepository) {
+func InjectDependencies(log logging.Logger, mgr ValidatorManager) {
 	registry.log = log
-	registry.storage = storage
+	registry.mgr = mgr
 }
 
 func (v *validatorRegistry) Run(evm *EVM, caller ContractRef, address common.Address, input []byte, suppliedGas uint64, read bool) ([]byte, uint64, error) {
+
+	snapshot, err := v.mgr.WithEVM(evm)
+	if err != nil {
+		return nil, 0, fmt.Errorf("could not initialize validator snapshot: %w", err)
+	}
+
 	var sig [4]byte
 	copy(sig[:], input[:4])
 
@@ -79,13 +88,6 @@ func (v *validatorRegistry) Run(evm *EVM, caller ContractRef, address common.Add
 		return nil, 0, fmt.Errorf("could not get validator's method: %w", err)
 	}
 
-	ftso, err := NewFTSO(evm)
-	if err != nil {
-		return nil, 0, fmt.Errorf("could not initialize FTSO system: %w", err)
-	}
-
-	manager := validators.NewManager(v.log, v.storage, ftso)
-
 	switch sig {
 
 	case sigSetValidatorNodeID:
@@ -94,14 +96,14 @@ func (v *validatorRegistry) Run(evm *EVM, caller ContractRef, address common.Add
 
 		nodeID := args[0].(ids.ShortID)
 
-		err := manager.SetValidatorNodeID(provider, nodeID)
+		err := snapshot.SetValidatorNodeID(provider, nodeID)
 		if err != nil {
 			return nil, suppliedGas, fmt.Errorf("could not set provider node: %w", err)
 		}
 
 	case sigUpdateActiveValidators:
 
-		err = manager.UpdateActiveValidators()
+		err = snapshot.UpdateActiveValidators()
 		if err != nil {
 			return nil, suppliedGas, fmt.Errorf("could not update active validators: %w", err)
 		}
@@ -110,7 +112,7 @@ func (v *validatorRegistry) Run(evm *EVM, caller ContractRef, address common.Add
 
 		provider := args[0].(common.Address)
 
-		nodeID, err := manager.GetPendingNodeID(provider)
+		nodeID, err := snapshot.GetPendingNodeID(provider)
 		if err != nil {
 			return nil, suppliedGas, fmt.Errorf("could not get pending node: %w", err)
 		}
@@ -126,7 +128,7 @@ func (v *validatorRegistry) Run(evm *EVM, caller ContractRef, address common.Add
 
 		provider := args[0].(common.Address)
 
-		nodeID, err := manager.GetActiveNodeID(provider)
+		nodeID, err := snapshot.GetActiveNodeID(provider)
 		if err != nil {
 			return nil, suppliedGas, fmt.Errorf("could not get active node: %w", err)
 		}
@@ -142,7 +144,7 @@ func (v *validatorRegistry) Run(evm *EVM, caller ContractRef, address common.Add
 
 		nodeID := args[0].(ids.ShortID)
 
-		provider, err := manager.GetPendingValidator(nodeID)
+		provider, err := snapshot.GetPendingValidator(nodeID)
 		if err != nil {
 			return nil, suppliedGas, fmt.Errorf("could not get pending validator: %w", err)
 		}
@@ -158,7 +160,7 @@ func (v *validatorRegistry) Run(evm *EVM, caller ContractRef, address common.Add
 
 		nodeID := args[0].(ids.ShortID)
 
-		provider, err := manager.GetActiveValidator(nodeID)
+		provider, err := snapshot.GetActiveValidator(nodeID)
 		if err != nil {
 			return nil, suppliedGas, fmt.Errorf("could not get active validator: %w", err)
 		}

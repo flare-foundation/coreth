@@ -1,4 +1,4 @@
-package validators
+package evm
 
 var testingNodeIDs = []string{
 	"NodeID-MEHBQFqQnSz7KzS8u4t8nWy7fSaqN2Pdp",

@@ -1,4 +1,4 @@
-package vm
+package ftso
 
 const (
 	getAddressManager   = "getFtsoManager"

@@ -1,4 +1,4 @@
-package vm
+package ftso
 
 import (
 	"errors"
@@ -6,17 +6,18 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/flare-foundation/coreth/core/vm"
 	"github.com/flare-foundation/coreth/params"
 )
 
 var (
 	errNoPriceSubmitter = errors.New("no price submitter")
-	errFTSONotDeployed  = errors.New("FTSO not deployed")
-	errFTSONotActive    = errors.New("FTSO not active")
+	errFTSONotDeployed  = errors.New("System not deployed")
+	errFTSONotActive    = errors.New("System not active")
 )
 
-type FTSO struct {
-	evm       *EVM
+type System struct {
+	evm       *vm.EVM
 	contracts Contracts
 }
 
@@ -29,7 +30,7 @@ type Contracts struct {
 	Votepower evmContract
 }
 
-func NewFTSO(evm *EVM) (*FTSO, error) {
+func NewSystem(evm *vm.EVM) (*System, error) {
 
 	submitter := evmContract{
 		address: params.SubmitterAddress,
@@ -57,7 +58,7 @@ func NewFTSO(evm *EVM) (*FTSO, error) {
 
 	height := big.NewInt(0)
 	err = newContractCall(evm, manager).execute(getEpochInfo, big.NewInt(0)).decode(nil, &height, nil)
-	if errors.Is(err, ErrExecutionReverted) || height.Uint64() == 0 {
+	if errors.Is(err, vm.ErrExecutionReverted) || height.Uint64() == 0 {
 		return nil, errFTSONotActive
 	}
 	if err != nil {
@@ -128,15 +129,15 @@ func NewFTSO(evm *EVM) (*FTSO, error) {
 		Votepower: votepower,
 	}
 
-	f := FTSO{
+	s := System{
 		evm:       evm,
 		contracts: contracts,
 	}
 
-	return &f, nil
+	return &s, nil
 }
 
-func (s *FTSO) Current() (uint64, error) {
+func (s *System) Current() (uint64, error) {
 
 	epoch := big.NewInt(0)
 	err := newContractCall(s.evm, s.contracts.Rewards).
@@ -149,7 +150,7 @@ func (s *FTSO) Current() (uint64, error) {
 	return epoch.Uint64(), nil
 }
 
-func (s *FTSO) Cap() (float64, error) {
+func (s *System) Cap() (float64, error) {
 
 	supply := big.NewInt(0)
 	err := newContractCall(s.evm, s.contracts.WNAT).
@@ -174,7 +175,7 @@ func (s *FTSO) Cap() (float64, error) {
 	return cap, nil
 }
 
-func (s *FTSO) Whitelist() ([]common.Address, error) {
+func (s *System) Whitelist() ([]common.Address, error) {
 
 	var indices []*big.Int
 	err := newContractCall(s.evm, s.contracts.Registry).
@@ -206,7 +207,7 @@ func (s *FTSO) Whitelist() ([]common.Address, error) {
 	return providers, nil
 }
 
-func (s *FTSO) Votepower(provider common.Address) (float64, error) {
+func (s *System) Votepower(provider common.Address) (float64, error) {
 
 	current, err := s.Current()
 	if err != nil {
@@ -236,7 +237,7 @@ func (s *FTSO) Votepower(provider common.Address) (float64, error) {
 	return votepower, nil
 }
 
-func (s *FTSO) Rewards(provider common.Address) (float64, error) {
+func (s *System) Rewards(provider common.Address) (float64, error) {
 
 	current, err := s.Current()
 	if err != nil {
@@ -256,8 +257,4 @@ func (s *FTSO) Rewards(provider common.Address) (float64, error) {
 	rewards, _ := rewardsFloat.Float64()
 
 	return rewards, nil
-}
-
-func (s *FTSO) StateDB() StateDB {
-	return s.evm.StateDB
 }
