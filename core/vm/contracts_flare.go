@@ -11,8 +11,16 @@ import (
 )
 
 const (
-	// TODO add abi for packing/unpacking
-	jsonValidator = ``
+	jsonValidator = `[{"inputs":[{"internalType":"address","name":"_dataProvider","type":"address"}],"name":"getActiveNodeID","outputs":[{"internalType":"bytes20","name":"_nodeId","type":"bytes20"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes20","name":"_nodeId","type":"bytes20"}],"name":"getActiveValidator","outputs":[{"internalType":"address","name":"_dataProvider","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"_dataProvider","type":"address"}],"name":"getPendingNodeID","outputs":[{"internalType":"bytes20","name":"_nodeId","type":"bytes20"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes20","name":"_nodeId","type":"bytes20"}],"name":"getPendingValidator","outputs":[{"internalType":"address","name":"_dataProvider","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes20","name":"_nodeId","type":"bytes20"}],"name":"setValidatorNodeID","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"updateActiveValidators","outputs":[],"stateMutability":"nonpayable","type":"function"}]`
+)
+
+const (
+	setValidator       = "setValidatorNodeID"
+	updateValidators   = "updateActiveValidators"
+	getActiveNodeID    = "getActiveNodeID"
+	getActiveProvider  = "getActiveValidator"
+	getPendingNodeID   = "getPendingNodeID"
+	getPendingProvider = "getPendingValidator"
 )
 
 func init() {
@@ -24,17 +32,8 @@ func init() {
 }
 
 var (
-	registry *validatorRegistry
-
+	registry     *validatorRegistry
 	validatorABI abi.ABI
-
-	// TODO we might use actual method names (method.Name) provided in the ABI
-	sigSetValidatorNodeID     = [4]byte{0x00, 0x00, 0x00, 0x00}
-	sigUpdateActiveValidators = [4]byte{0x00, 0x00, 0x00, 0x00}
-	sigGetPendingNodeID       = [4]byte{0x00, 0x00, 0x00, 0x00}
-	sigGetActiveNodeID        = [4]byte{0x00, 0x00, 0x00, 0x00}
-	sigGetActiveValidator     = [4]byte{0x00, 0x00, 0x00, 0x00}
-	sigGetPendingValidator    = [4]byte{0x00, 0x00, 0x00, 0x00}
 )
 
 type ValidatorManager interface {
@@ -42,14 +41,15 @@ type ValidatorManager interface {
 }
 
 type ValidatorSnapshot interface {
-	SetValidatorNodeID(provider common.Address, nodeID ids.ShortID) error
-	UpdateActiveValidators() error
+	SetValidator(provider common.Address, nodeID ids.ShortID) error
+
+	UpdateValidators() error
 
 	GetPendingNodeID(provider common.Address) (ids.ShortID, error)
-	GetActiveNodeID(provider common.Address) (ids.ShortID, error)
+	GetPendingProvider(nodeID ids.ShortID) (common.Address, error)
 
-	GetPendingValidator(nodeID ids.ShortID) (common.Address, error)
-	GetActiveValidator(nodeID ids.ShortID) (common.Address, error)
+	GetActiveNodeID(provider common.Address) (ids.ShortID, error)
+	GetActiveProvider(nodeID ids.ShortID) (common.Address, error)
 }
 
 type validatorRegistry struct {
@@ -62,137 +62,121 @@ func InjectDependencies(log logging.Logger, mgr ValidatorManager) {
 	registry.mgr = mgr
 }
 
-func (v *validatorRegistry) Run(evm *EVM, caller ContractRef, address common.Address, input []byte, suppliedGas uint64, read bool) ([]byte, uint64, error) {
+func (v *validatorRegistry) Run(evm *EVM, caller ContractRef, address common.Address, input []byte, gas uint64, read bool) ([]byte, uint64, error) {
 
 	snapshot, err := v.mgr.WithEVM(evm)
 	if err != nil {
 		return nil, 0, fmt.Errorf("could not initialize validator snapshot: %w", err)
 	}
 
-	var sig [4]byte
-	copy(sig[:], input[:4])
-
-	gasCost := v.requiredGas(sig)
-	if suppliedGas < gasCost {
-		return nil, 0, ErrOutOfGas
-	}
-	suppliedGas -= gasCost
-
 	method, err := validatorABI.MethodById(input[:4])
 	if err != nil {
 		return nil, 0, fmt.Errorf("could not get validator's method: %w", err)
 	}
+
+	var cost uint64
+	switch method.Name {
+	case setValidator:
+		cost = 1_000_000
+	case updateValidators:
+		cost = 4_000_000
+	default:
+		cost = 200_000
+	}
+	if cost > gas {
+		return nil, 0, ErrOutOfGas
+	}
+	gas = gas - cost
 
 	args, err := method.Inputs.Unpack(input[4:])
 	if err != nil {
 		return nil, 0, fmt.Errorf("could not get validator's method: %w", err)
 	}
 
-	switch sig {
+	switch method.Name {
 
-	case sigSetValidatorNodeID:
+	case setValidator:
 
 		provider := caller.Address()
 
 		nodeID := args[0].(ids.ShortID)
 
-		err := snapshot.SetValidatorNodeID(provider, nodeID)
+		err := snapshot.SetValidator(provider, nodeID)
 		if err != nil {
-			return nil, suppliedGas, fmt.Errorf("could not set provider node: %w", err)
+			return nil, gas, fmt.Errorf("could not set provider node: %w", err)
 		}
 
-	case sigUpdateActiveValidators:
+	case updateValidators:
 
-		err = snapshot.UpdateActiveValidators()
+		err = snapshot.UpdateValidators()
 		if err != nil {
-			return nil, suppliedGas, fmt.Errorf("could not update active validators: %w", err)
+			return nil, gas, fmt.Errorf("could not update active validators: %w", err)
 		}
 
-	case sigGetPendingNodeID:
+	case getPendingNodeID:
 
 		provider := args[0].(common.Address)
 
 		nodeID, err := snapshot.GetPendingNodeID(provider)
 		if err != nil {
-			return nil, suppliedGas, fmt.Errorf("could not get pending node: %w", err)
+			return nil, gas, fmt.Errorf("could not get pending node: %w", err)
 		}
 
 		ret, err := validatorABI.Pack(method.Name, nodeID[:])
 		if err != nil {
-			return nil, suppliedGas, fmt.Errorf("could not pack return values for method %s: %w", method.Name, err)
+			return nil, gas, fmt.Errorf("could not pack return values for method %s: %w", method.Name, err)
 		}
 
-		return ret, suppliedGas, nil
+		return ret, gas, nil
 
-	case sigGetActiveNodeID:
+	case getActiveNodeID:
 
 		provider := args[0].(common.Address)
 
 		nodeID, err := snapshot.GetActiveNodeID(provider)
 		if err != nil {
-			return nil, suppliedGas, fmt.Errorf("could not get active node: %w", err)
+			return nil, gas, fmt.Errorf("could not get active node: %w", err)
 		}
 
 		ret, err := validatorABI.Pack(method.Name, nodeID[:])
 		if err != nil {
-			return nil, suppliedGas, fmt.Errorf("could not pack return values for method %s: %w", method.Name, err)
+			return nil, gas, fmt.Errorf("could not pack return values for method %s: %w", method.Name, err)
 		}
 
-		return ret, suppliedGas, nil
+		return ret, gas, nil
 
-	case sigGetPendingValidator:
+	case getPendingProvider:
 
 		nodeID := args[0].(ids.ShortID)
 
-		provider, err := snapshot.GetPendingValidator(nodeID)
+		provider, err := snapshot.GetPendingProvider(nodeID)
 		if err != nil {
-			return nil, suppliedGas, fmt.Errorf("could not get pending validator: %w", err)
+			return nil, gas, fmt.Errorf("could not get pending validator: %w", err)
 		}
 
 		ret, err := validatorABI.Pack(method.Name, provider)
 		if err != nil {
-			return nil, suppliedGas, fmt.Errorf("could not pack return values for method %s: %w", method.Name, err)
+			return nil, gas, fmt.Errorf("could not pack return values for method %s: %w", method.Name, err)
 		}
 
-		return ret, suppliedGas, nil
+		return ret, gas, nil
 
-	case sigGetActiveValidator:
+	case getActiveProvider:
 
 		nodeID := args[0].(ids.ShortID)
 
-		provider, err := snapshot.GetActiveValidator(nodeID)
+		provider, err := snapshot.GetActiveProvider(nodeID)
 		if err != nil {
-			return nil, suppliedGas, fmt.Errorf("could not get active validator: %w", err)
+			return nil, gas, fmt.Errorf("could not get active validator: %w", err)
 		}
 
 		ret, err := validatorABI.Pack(method.Name, provider)
 		if err != nil {
-			return nil, suppliedGas, fmt.Errorf("could not pack return values for method %s: %w", method.Name, err)
+			return nil, gas, fmt.Errorf("could not pack return values for method %s: %w", method.Name, err)
 		}
 
-		return ret, suppliedGas, nil
+		return ret, gas, nil
 	}
 
-	return nil, suppliedGas, nil
-}
-
-// TODO: define gas cost per function and check there is sufficient
-func (v *validatorRegistry) requiredGas(method [4]byte) uint64 {
-	switch method {
-
-	case sigSetValidatorNodeID:
-
-	case sigUpdateActiveValidators:
-
-	case sigGetPendingNodeID:
-
-	case sigGetActiveNodeID:
-
-	case sigGetPendingValidator:
-
-	case sigGetActiveValidator:
-
-	}
-
-	return 0
+	return nil, gas, nil
 }

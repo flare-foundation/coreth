@@ -513,9 +513,11 @@ type FlareAPI struct {
 	vm *VM
 }
 
-func (api *FlareAPI) ActiveValidators(_ context.Context, epoch uint64) (map[string]uint64, error) {
+func (api *FlareAPI) ActiveValidators(_ context.Context, blockID ids.ID) (map[string]uint64, error) {
 
-	validators, err := api.vm.validators.ActiveValidators(epoch)
+
+
+	validators, err := api.vm.validators.
 	if err != nil {
 		return nil, fmt.Errorf("could not get active validators (epoch: %d): %w", epoch, err)
 	}
