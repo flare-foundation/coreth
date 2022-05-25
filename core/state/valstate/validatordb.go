@@ -1,10 +1,8 @@
 package valstate
 
 import (
-	"bytes"
 	"encoding/binary"
 	"fmt"
-	"math/big"
 
 	"github.com/fxamacker/cbor/v2"
 
@@ -14,11 +12,12 @@ import (
 	"github.com/flare-foundation/flare/ids"
 )
 
-var (
-	epochKey          = []byte("epoch")
-	activePrefix      = []byte("active")
-	pendingPrefix     = []byte("pending")
-	weightEpochPrefix = []byte("weightepoch")
+const (
+	codeEpoch   = 0
+	codeEntries = 1
+	codePending = 2
+	codeActive  = 3
+	codeWeight  = 4
 )
 
 type ValidatorDB struct {
@@ -57,222 +56,322 @@ func NewValidatorDB(database database.Database) *ValidatorDB {
 	return &v
 }
 
-// SetEntries sets list of entries for the epoch
-func (v *ValidatorDB) SetEntries(epoch uint64, entries []Entry) error {
+func (v *ValidatorDB) SetEpoch(epoch uint64) error {
 
-	key := make([]byte, 8)
-	binary.BigEndian.PutUint64(key, epoch)
+	key := make([]byte, 1)
+	key[0] = codeEpoch
 
-	data, err := v.enc.Marshal(entries)
+	val := make([]byte, 8)
+	binary.BigEndian.PutUint64(val, epoch)
+
+	err := v.database.Put(key, val)
 	if err != nil {
-		return fmt.Errorf("could not encode entries: %w", err)
-	}
-
-	err = v.database.Put(key, data)
-	if err != nil {
-		return fmt.Errorf("could not put etries data: %w", err)
+		return fmt.Errorf("could not put epoch: %w", err)
 	}
 
 	return nil
 }
 
-func (v *ValidatorDB) GetEntries(epoch uint64) ([]Entry, error) {
+func (v *ValidatorDB) GetEpoch() (uint64, error) {
 
-	key := make([]byte, 8)
-	binary.BigEndian.PutUint64(key, epoch)
+	key := make([]byte, 1)
+	key[0] = codeEpoch
 
-	data, err := v.database.Get(key)
+	val, err := v.database.Get(key)
+	if err != nil {
+		return 0, fmt.Errorf("could not get epoch: %w", err)
+	}
+
+	return binary.BigEndian.Uint64(val), nil
+}
+
+func (v *ValidatorDB) SetEntries(entries []Entry) error {
+
+	key := make([]byte, 1)
+	key[0] = codeEntries
+
+	val, err := v.enc.Marshal(entries)
+	if err != nil {
+		return fmt.Errorf("could not encode entries: %w", err)
+	}
+
+	err = v.database.Put(key, val)
+	if err != nil {
+		return fmt.Errorf("could not put entries: %w", err)
+	}
+
+	return nil
+}
+
+func (v *ValidatorDB) GetEntries() ([]Entry, error) {
+
+	key := make([]byte, 1)
+	key[0] = codeEntries
+
+	val, err := v.database.Get(key)
 	if err != nil {
 		return nil, fmt.Errorf("could not get entries: %w", err)
 	}
 
 	var entries []Entry
-	err = v.dec.Unmarshal(data, &entries)
+	err = v.dec.Unmarshal(val, &entries)
 	if err != nil {
 		return nil, fmt.Errorf("could not decode entries: %w", err)
-	}
-
-	if len(entries) == 0 {
-		return nil, ErrNoEntries
 	}
 
 	return entries, nil
 }
 
 func (v *ValidatorDB) SetPending(provider common.Address, nodeID ids.ShortID) error {
-	err := v.database.Put(bytes.Join([][]byte{pendingPrefix, provider.Bytes()}, nil), nodeID.Bytes())
-	if err != nil {
-		return fmt.Errorf("could not set pending provider %s: %w", provider, err)
-	}
-	return nil
+	return v.setValidator(codePending, provider, nodeID)
 }
 
-func (v *ValidatorDB) GetPending(provider common.Address) (ids.ShortID, error) {
-	data, err := v.database.Get(bytes.Join([][]byte{pendingPrefix, provider.Bytes()}, nil))
-	if err != nil {
-		return ids.ShortID{}, fmt.Errorf("could not get pending provider %s: %w", provider, err)
-	}
-	return ids.ToShortID(data)
+func (v *ValidatorDB) OnePending(provider common.Address) (ids.ShortID, error) {
+	return v.oneValidator(codePending, provider)
 }
 
-func (v *ValidatorDB) SetActive(provider common.Address, nodeID ids.ShortID) error {
-	err := v.database.Put(bytes.Join([][]byte{activePrefix, provider.Bytes()}, nil), nodeID.Bytes())
-	if err != nil {
-		return fmt.Errorf("could not set active provider %s: %w", provider, err)
-	}
-	return nil
-}
-
-func (v *ValidatorDB) GetActive(provider common.Address) (ids.ShortID, error) {
-	data, err := v.database.Get(bytes.Join([][]byte{activePrefix, provider.Bytes()}, nil))
-	if err != nil {
-		return ids.ShortID{}, fmt.Errorf("could not get active provider %s: %w", provider, err)
-	}
-	return ids.ToShortID(data)
-}
-
-func (v *ValidatorDB) Epoch() (uint64, error) {
-
-	data, err := v.database.Get(epochKey)
-	if err != nil {
-		return 0, fmt.Errorf("could not get epoch: %w", err)
-	}
-
-	return big.NewInt(0).SetBytes(data).Uint64(), nil
-}
-
-func (v *ValidatorDB) SetEpoch(epoch uint64) error {
-	err := v.database.Put(epochKey, big.NewInt(0).SetUint64(epoch).Bytes())
-	if err != nil {
-		return fmt.Errorf("could not set epoch: %w", err)
-	}
-
-	return nil
-}
-
-func (v *ValidatorDB) Pending() (map[common.Address]ids.ShortID, error) {
-	it := v.database.NewIteratorWithPrefix(pendingPrefix)
-	defer it.Release()
-
-	m := make(map[common.Address]ids.ShortID)
-
-	for it.Next() {
-		id, _ := ids.ToShortID(it.Value())
-		m[common.BytesToAddress(bytes.TrimPrefix(it.Key(), pendingPrefix))] = id
-	}
-	if err := it.Error(); err != nil {
-		return nil, fmt.Errorf("could not get list of pending providers: %w", err)
-	}
-
-	return m, nil
-}
-
-func (v *ValidatorDB) Active() (map[common.Address]ids.ShortID, error) {
-	it := v.database.NewIteratorWithPrefix(activePrefix)
-	defer it.Release()
-
-	m := make(map[common.Address]ids.ShortID)
-
-	for it.Next() {
-		id, _ := ids.ToShortID(it.Value())
-		m[common.BytesToAddress(bytes.TrimPrefix(it.Key(), activePrefix))] = id
-	}
-	if err := it.Error(); err != nil {
-		return nil, fmt.Errorf("could not get list of active providers: %w", err)
-	}
-
-	return m, nil
-}
-
-func (v *ValidatorDB) Weights(epoch uint64) (map[ids.ShortID]uint64, error) {
-	prefix := bytes.Join([][]byte{weightEpochPrefix, big.NewInt(0).SetUint64(epoch).Bytes()}, nil)
-
-	it := v.database.NewIteratorWithPrefix(prefix)
-	defer it.Release()
-
-	m := make(map[ids.ShortID]uint64)
-
-	for it.Next() {
-		weight := big.NewInt(0).SetBytes(it.Value())
-		key := it.Key()
-		id := key[len(key)-len(ids.ShortID{}):]
-
-		nodeID, err := ids.ToShortID(id)
-		if err != nil {
-			return nil, fmt.Errorf("could not parse short id %v: %w", id, err)
-		}
-
-		m[nodeID] = weight.Uint64()
-	}
-	if err := it.Error(); err != nil {
-		return nil, fmt.Errorf("could not get list of weights for epoch %d: %w", epoch, err)
-	}
-
-	return m, nil
-}
-
-func (v *ValidatorDB) SetWeight(epoch uint64, nodeID ids.ShortID, weight uint64) error {
-
-	key := bytes.Join([][]byte{weightEpochPrefix, big.NewInt(0).SetUint64(epoch).Bytes(), nodeID.Bytes()}, nil)
-
-	err := v.database.Put(key, big.NewInt(0).SetUint64(weight).Bytes())
-	if err != nil {
-		return fmt.Errorf("could not set weight: %w", err)
-	}
-
-	return nil
+func (v *ValidatorDB) AllPending() (map[common.Address]ids.ShortID, error) {
+	return v.allValidators(codePending)
 }
 
 func (v *ValidatorDB) LookupPending(nodeID ids.ShortID) (common.Address, error) {
-	return v.lookup(nodeID, pendingPrefix)
+	return v.lookupValidator(codePending, nodeID)
+}
+
+func (v *ValidatorDB) UnsetPending(provider common.Address) error {
+	return v.unsetValidator(codePending, provider)
+}
+
+func (v *ValidatorDB) DropPending() error {
+	return v.dropValidators(codePending)
+}
+
+func (v *ValidatorDB) SetActive(provider common.Address, nodeID ids.ShortID) error {
+	return v.setValidator(codeActive, provider, nodeID)
+}
+
+func (v *ValidatorDB) GetActive(provider common.Address) (ids.ShortID, error) {
+	return v.oneValidator(codeActive, provider)
+}
+
+func (v *ValidatorDB) AllActive() (map[common.Address]ids.ShortID, error) {
+	return v.allValidators(codeActive)
 }
 
 func (v *ValidatorDB) LookupActive(nodeID ids.ShortID) (common.Address, error) {
-	return v.lookup(nodeID, activePrefix)
+	return v.lookupValidator(codeActive, nodeID)
 }
 
-func (v *ValidatorDB) lookup(nodeID ids.ShortID, prefix []byte) (common.Address, error) {
+func (v *ValidatorDB) UnsetActive(provider common.Address) error {
+	return v.unsetValidator(codeActive, provider)
+}
+
+func (v *ValidatorDB) DropActive() error {
+	return v.dropValidators(codeActive)
+}
+
+func (v *ValidatorDB) setValidator(code byte, provider common.Address, nodeID ids.ShortID) error {
+
+	key := make([]byte, 21)
+	key[0] = code
+	copy(key[1:], provider[:])
+
+	val := nodeID[:]
+
+	err := v.database.Put(key, val)
+	if err != nil {
+		return fmt.Errorf("could not put validator: %w", err)
+	}
+
+	return nil
+}
+
+func (v *ValidatorDB) oneValidator(code byte, provider common.Address) (ids.ShortID, error) {
+
+	key := make([]byte, 21)
+	key[0] = code
+	copy(key[1:], provider[:])
+
+	val, err := v.database.Get(key)
+	if err != nil {
+		return ids.ShortID{}, fmt.Errorf("could not get validator: %w", err)
+	}
+
+	validatorID, err := ids.ToShortID(val)
+	if err != nil {
+		return ids.ShortID{}, fmt.Errorf("could not parse validator: %w", err)
+	}
+
+	return validatorID, nil
+
+}
+
+func (v *ValidatorDB) allValidators(code byte) (map[common.Address]ids.ShortID, error) {
+
+	prefix := []byte{code}
+
+	it := v.database.NewIteratorWithPrefix(prefix)
+	defer it.Release()
+
+	validators := make(map[common.Address]ids.ShortID)
+	for it.Next() {
+
+		val := it.Value()
+		validatorID, err := ids.ToShortID(val)
+		if err != nil {
+			return nil, fmt.Errorf("could not parse validator (val: %x): %w", val, err)
+		}
+
+		key := it.Key()
+		provider := common.BytesToAddress(key[1:])
+
+		validators[provider] = validatorID
+	}
+
+	err := it.Error()
+	if err != nil {
+		return nil, fmt.Errorf("could not iterate validators: %w", err)
+	}
+
+	return validators, nil
+}
+
+func (v *ValidatorDB) lookupValidator(code byte, nodeID ids.ShortID) (common.Address, error) {
+
+	prefix := make([]byte, 1)
+	prefix[0] = code
 
 	it := v.database.NewIteratorWithPrefix(prefix)
 	defer it.Release()
 
 	for it.Next() {
-		id, _ := ids.ToShortID(it.Value())
-		if id == nodeID {
-			return common.BytesToAddress(bytes.TrimPrefix(it.Key(), pendingPrefix)), nil
+
+		val := it.Value()
+		validatorID, err := ids.ToShortID(it.Value())
+		if err != nil {
+			return common.Address{}, fmt.Errorf("could not parse validator (val: %x): %w", val, err)
 		}
+
+		if validatorID != nodeID {
+			continue
+		}
+
+		key := it.Key()
+		provider := common.BytesToAddress(key[1:])
+
+		return provider, nil
+
 	}
-	if err := it.Error(); err != nil {
-		return common.Address{}, fmt.Errorf("could not get validator for node %v: %w", nodeID, err)
+
+	err := it.Error()
+	if err != nil {
+		return common.Address{}, fmt.Errorf("could not iterate validators: %w", err)
 	}
 
 	return common.Address{}, ErrNotFound
 }
 
-func (v *ValidatorDB) UnsetPending() error {
-	it := v.database.NewIteratorWithPrefix(pendingPrefix)
-	defer it.Release()
+func (v *ValidatorDB) unsetValidator(code byte, provider common.Address) error {
 
-	for it.Next() {
-		err := v.database.Delete(it.Key())
-		if err != nil {
-			return fmt.Errorf("could not delete pending provider %s: %w",
-				common.BytesToAddress(bytes.TrimPrefix(it.Key(), pendingPrefix)), err)
-		}
-	}
-	if err := it.Error(); err != nil {
-		return fmt.Errorf("could not unset pending providers: %w", err)
+	key := make([]byte, 21)
+	key[0] = code
+	copy(key[1:], provider[:])
+
+	err := v.database.Delete(key)
+	if err != nil {
+		return fmt.Errorf("could not delete validator: %w", err)
 	}
 
 	return nil
 }
 
-func (v *ValidatorDB) UnsetActive(provider common.Address) error {
-	err := v.database.Delete(bytes.Join([][]byte{activePrefix, provider.Bytes()}, nil))
-	if err != nil {
-		return fmt.Errorf("could not unset active provider %s: %w", provider, err)
+func (v *ValidatorDB) dropValidators(code byte) error {
+
+	prefix := make([]byte, 1)
+	prefix[0] = code
+
+	it := v.database.NewIteratorWithPrefix(prefix)
+	defer it.Release()
+
+	for it.Next() {
+		key := it.Key()
+		err := v.database.Delete(key)
+		if err != nil {
+			return fmt.Errorf("could not delete validator (key: %x): %w", key, err)
+		}
 	}
+
+	err := it.Error()
+	if err != nil {
+		return fmt.Errorf("could not iterate validators: %w", err)
+	}
+
 	return nil
+}
+
+func (v *ValidatorDB) SetWeight(epoch uint64, nodeID ids.ShortID, weight uint64) error {
+
+	key := make([]byte, 29)
+	key[0] = codeWeight
+	binary.BigEndian.PutUint64(key[1:9], epoch)
+	copy(key[9:29], nodeID[:])
+
+	val := make([]byte, 8)
+	binary.BigEndian.PutUint64(val[:], weight)
+
+	err := v.database.Put(key, val)
+	if err != nil {
+		return fmt.Errorf("could not put weight: %w", err)
+	}
+
+	return nil
+}
+
+func (v *ValidatorDB) OneWeight(epoch uint64, nodeID ids.ShortID) (uint64, error) {
+
+	key := make([]byte, 29)
+	key[0] = codeWeight
+	binary.BigEndian.PutUint64(key[1:9], epoch)
+	copy(key[9:29], nodeID[:])
+
+	val, err := v.database.Get(key)
+	if err != nil {
+		return 0, fmt.Errorf("could not get weight: %w", err)
+	}
+
+	return binary.BigEndian.Uint64(val), nil
+}
+
+func (v *ValidatorDB) AllWeights(epoch uint64) (map[ids.ShortID]uint64, error) {
+
+	prefix := make([]byte, 9)
+	prefix[0] = codeWeight
+	binary.BigEndian.PutUint64(prefix[1:], epoch)
+
+	it := v.database.NewIteratorWithPrefix(prefix)
+	defer it.Release()
+
+	weights := make(map[ids.ShortID]uint64)
+	for it.Next() {
+
+		val := it.Value()
+		weight := binary.BigEndian.Uint64(val)
+
+		key := it.Key()
+		validatorID, err := ids.ToShortID(key[9:])
+		if err != nil {
+			return nil, fmt.Errorf("could not parse validator (key: %x): %w", key, err)
+		}
+
+		weights[validatorID] = weight
+	}
+
+	err := it.Error()
+	if err != nil {
+		return nil, fmt.Errorf("could not iterate weights: %w", err)
+	}
+
+	return weights, nil
 }
 
 func (v *ValidatorDB) RootHash() (common.Hash, error) {
