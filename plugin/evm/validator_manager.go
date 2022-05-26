@@ -88,6 +88,7 @@ func (m *ValidatorManager) WithEVM(evm *vm.EVM) (vm.ValidatorSet, error) {
 	}
 
 	s := ValidatorSet{
+		log:      m.log,
 		state:    evm.StateDB,
 		ftso:     ftso,
 		root:     root,

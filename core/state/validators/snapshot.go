@@ -3,6 +3,7 @@ package validators
 import (
 	"bytes"
 	"encoding/binary"
+	"errors"
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -10,6 +11,7 @@ import (
 	"github.com/flare-foundation/flare/ids"
 
 	"github.com/flare-foundation/coreth/core/state"
+	"github.com/flare-foundation/coreth/trie"
 )
 
 type Snapshot struct {
@@ -69,7 +71,11 @@ func (s *Snapshot) GetEntries() ([]Entry, error) {
 	key := make([]byte, 1)
 	key[0] = codeEntries
 
+	var missErr *trie.MissingNodeError
 	val, err := s.trie.TryGet(key)
+	if errors.As(err, &missErr) {
+		return nil, nil
+	}
 	if err != nil {
 		return nil, fmt.Errorf("could not get entries: %w", err)
 	}
@@ -252,6 +258,10 @@ func (s *Snapshot) unsetValidator(code byte, provider common.Address) error {
 	copy(key[1:], provider[:])
 
 	err := s.trie.TryDelete(key)
+	var missErr *trie.MissingNodeError
+	if errors.As(err, &missErr) {
+		return nil
+	}
 	if err != nil {
 		return fmt.Errorf("could not delete validator: %w", err)
 	}
@@ -261,22 +271,25 @@ func (s *Snapshot) unsetValidator(code byte, provider common.Address) error {
 
 func (s *Snapshot) dropValidators(code byte) error {
 
-	key := make([]byte, 1)
-	key[0] = code
+	prefix := []byte{code}
 
-	err := s.trie.TryDelete(key)
+	err := s.trie.TryDelete(prefix)
+	var missErr *trie.MissingNodeError
+	if errors.As(err, &missErr) {
+		return nil
+	}
 	if err != nil {
 		return fmt.Errorf("could not drop validators: %w", err)
 	}
+
 	return nil
 }
 
-func (s *Snapshot) SetWeight(epoch uint64, nodeID ids.ShortID, weight uint64) error {
+func (s *Snapshot) SetWeight(nodeID ids.ShortID, weight uint64) error {
 
-	key := make([]byte, 29)
+	key := make([]byte, 21)
 	key[0] = codeWeight
-	binary.BigEndian.PutUint64(key[1:9], epoch)
-	copy(key[9:29], nodeID[:])
+	copy(key[1:], nodeID[:])
 
 	val := make([]byte, 8)
 	binary.BigEndian.PutUint64(val[:], weight)
@@ -289,12 +302,11 @@ func (s *Snapshot) SetWeight(epoch uint64, nodeID ids.ShortID, weight uint64) er
 	return nil
 }
 
-func (s *Snapshot) OneWeight(epoch uint64, nodeID ids.ShortID) (uint64, error) {
+func (s *Snapshot) OneWeight(nodeID ids.ShortID) (uint64, error) {
 
-	key := make([]byte, 29)
+	key := make([]byte, 21)
 	key[0] = codeWeight
-	binary.BigEndian.PutUint64(key[1:9], epoch)
-	copy(key[9:29], nodeID[:])
+	copy(key[1:], nodeID[:])
 
 	val, err := s.trie.TryGet(key)
 	if err != nil {
@@ -304,15 +316,10 @@ func (s *Snapshot) OneWeight(epoch uint64, nodeID ids.ShortID) (uint64, error) {
 	return binary.BigEndian.Uint64(val), nil
 }
 
-func (s *Snapshot) AllWeights(epoch uint64) (map[ids.ShortID]uint64, error) {
+func (s *Snapshot) AllWeights() (map[ids.ShortID]uint64, error) {
 
-	start := make([]byte, 9)
-	start[0] = codeWeight
-	binary.BigEndian.PutUint64(start[1:], epoch)
-
-	end := make([]byte, 9)
-	end[0] = codeWeight
-	binary.BigEndian.PutUint64(end[1:], epoch+1)
+	start := []byte{codeWeight}
+	end := []byte{codeWeight + 1}
 
 	it := s.trie.NodeIterator(start)
 	weights := make(map[ids.ShortID]uint64)
@@ -344,6 +351,22 @@ func (s *Snapshot) AllWeights(epoch uint64) (map[ids.ShortID]uint64, error) {
 	}
 
 	return weights, nil
+}
+
+func (s *Snapshot) DropWeights() error {
+
+	prefix := []byte{codeWeight}
+
+	err := s.trie.TryDelete(prefix)
+	var missErr *trie.MissingNodeError
+	if errors.As(err, &missErr) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("could not drop weights: %w", err)
+	}
+
+	return nil
 }
 
 func (s *Snapshot) RootHash() (common.Hash, error) {

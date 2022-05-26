@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	stdmath "math"
 	"math/big"
 	"os"
 	"path/filepath"
@@ -127,7 +128,6 @@ var (
 	acceptedPrefix    = []byte("snowman_accepted")
 	ethDBPrefix       = []byte("ethdb")
 	validatorDBPrefix = []byte("validator")
-	lastEpochPrefix   = []byte("last_epoch")
 
 	// Prefixes for atomic trie
 	atomicTrieDBPrefix     = []byte("atomicTrieDB")
@@ -1473,6 +1473,11 @@ func repairAtomicRepositoryForBonusBlockTxs(
 
 func (vm *VM) GetValidators(blockID ids.ID) (validation.Set, error) {
 
+	// As of now, we always add the default validators to the validator set. If the
+	// hard fork didn't activate, this set is returned as is; otherwise it is normalized
+	// as part of the full set.
+	defaultValidators := params.DefaultValidators(vm.chainConfig.ChainID)
+
 	// First, we get the header for the given block ID, so that we can determine
 	// activation of the hard fork by the header's timestamp.
 	hash := common.Hash(blockID)
@@ -1483,33 +1488,56 @@ func (vm *VM) GetValidators(blockID ids.ID) (validation.Set, error) {
 	}
 
 	// If the hard fork is not active at the given block yet, we simply return the
-	// default validator set as of epoch zero, which corresponds to the hard-coded
-	// default validators from the older code base.
-	if !blockchain.Config().IsFlareHardFork1(big.NewInt(0).SetUint64(header.Time)) {
+	// default validator set, which corresponds to the hard-coded set from the older
+	// code base.
+	if !vm.chainConfig.IsFlareHardFork1(big.NewInt(0).SetUint64(header.Time)) {
 		vm.ctx.Log.Debug("hard fork not activated, using default validators")
-		// TODO: new easier approach to handle default validators
+		return defaultValidators, nil
 	}
 
+	// Otherwise, we initialize an instance of the EVM on top of the state as it was
+	// at the given block and retrieve the snapshot of the validator state as of that
+	// EVM state.
 	stateDB, err := blockchain.StateAt(header.Root)
 	if err != nil {
 		return nil, fmt.Errorf("could not get blockchain state (root: %x): %w", header.Root, err)
 	}
 	blkContext := core.NewEVMBlockContext(header, blockchain, nil)
-	chainConfig := blockchain.Config()
-	evm := corevm.NewEVM(blkContext, corevm.TxContext{}, stateDB, chainConfig, corevm.Config{NoBaseFee: true})
+	evm := corevm.NewEVM(blkContext, corevm.TxContext{}, stateDB, vm.chainConfig, corevm.Config{NoBaseFee: true})
 	snapshot, err := vm.validators.WithEVM(evm)
 	if err != nil {
 		return nil, fmt.Errorf("could not initialize validator state snapshot: %w", err)
 	}
 
+	// We simply get the (active) validators from that snapshot.
 	validators, err := snapshot.GetValidators()
 	if err != nil {
 		return nil, fmt.Errorf("could not get active validators: %w", err)
 	}
 
+	// We calculate the total weight of the FTSO validators, as well as the average
+	// weight for FTSO validators.
+	totalWeight := uint64(0)
+	for _, weight := range validators {
+		totalWeight += weight
+	}
+	averageWeight := totalWeight / uint64(len(validators))
+
+	// We then add all default validators to the validator list with the average weight,
+	// while keeping the total weight up-to-date.
+	for _, validator := range defaultValidators.List() {
+		validators[validator.ID()] = averageWeight
+		totalWeight += averageWeight
+	}
+
+	// Finally, we add the resulting list of validators to the validator set, while
+	// normalizing the total weight to approach the maximum value for a 64-bit integer.
+	// This is the highest resolution supported by the sampling of the consensus algorithm
+	// and leads to the best random distribution of leader selection.
+	ratio := uint64(stdmath.MaxInt64) / totalWeight
 	set := validation.NewSet()
 	for validator, weight := range validators {
-		err := set.AddWeight(validator, weight)
+		err := set.AddWeight(validator, weight*ratio)
 		if err != nil {
 			return nil, fmt.Errorf("could not add weight: %w", err)
 		}
