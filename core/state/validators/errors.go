@@ -1,4 +1,4 @@
-package valstate
+package validators
 
 import (
 	"errors"

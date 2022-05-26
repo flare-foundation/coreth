@@ -1,4 +1,4 @@
-package valstate
+package validators
 
 import (
 	"github.com/ethereum/go-ethereum/common"
