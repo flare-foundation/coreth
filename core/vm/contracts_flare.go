@@ -51,6 +51,8 @@ type ValidatorSet interface {
 
 	GetActiveNodeID(provider common.Address) (ids.ShortID, error)
 	GetActiveProvider(nodeID ids.ShortID) (common.Address, error)
+
+	Close() error
 }
 
 type validatorRegistry struct {
@@ -107,11 +109,21 @@ func (v *validatorRegistry) Run(evm *EVM, caller ContractRef, address common.Add
 			return nil, gas, fmt.Errorf("could not set provider node: %w", err)
 		}
 
+		err = snapshot.Close()
+		if err != nil {
+			return nil, gas, fmt.Errorf("could not close validator snapshot: %w", err)
+		}
+
 	case updateValidators:
 
 		err = snapshot.UpdateValidators()
 		if err != nil {
 			return nil, gas, fmt.Errorf("could not update active validators: %w", err)
+		}
+
+		err = snapshot.Close()
+		if err != nil {
+			return nil, gas, fmt.Errorf("could not close validator snapshot: %w", err)
 		}
 
 	case getPendingNodeID:

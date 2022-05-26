@@ -12,12 +12,16 @@ import (
 	"github.com/flare-foundation/flare/ids"
 
 	"github.com/flare-foundation/coreth/core/state/validators"
+	"github.com/flare-foundation/coreth/core/vm"
+	"github.com/flare-foundation/coreth/params"
 	"github.com/flare-foundation/coreth/plugin/evm/ftso"
 	"github.com/flare-foundation/coreth/trie"
 )
 
 type ValidatorSet struct {
+	state    vm.StateDB
 	ftso     *ftso.System
+	root     common.Hash
 	snapshot *validators.Snapshot
 }
 
@@ -238,4 +242,20 @@ func (v *ValidatorSet) GetActiveProvider(nodeID ids.ShortID) (common.Address, er
 
 func (v *ValidatorSet) GetPendingProvider(nodeID ids.ShortID) (common.Address, error) {
 	return v.snapshot.LookupPending(nodeID)
+}
+
+func (v *ValidatorSet) Close() error {
+
+	root, err := v.snapshot.RootHash()
+	if err != nil {
+		return fmt.Errorf("could not get validator state root: %w", err)
+	}
+
+	if root == v.root {
+		return nil
+	}
+
+	v.state.SetCode(params.ValidationAddress, root[:])
+
+	return nil
 }

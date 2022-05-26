@@ -80,14 +80,17 @@ func (m *ValidatorManager) WithEVM(evm *vm.EVM) (vm.ValidatorSet, error) {
 		return nil, fmt.Errorf("could not initialize FTSO system: %w", err)
 	}
 
-	root := evm.StateDB.GetCode(params.ValidationAddress)
-	snapshot, err := m.state.WithRoot(common.BytesToHash(root))
+	code := evm.StateDB.GetCode(params.ValidationAddress)
+	root := common.BytesToHash(code)
+	snapshot, err := m.state.WithRoot(root)
 	if err != nil {
 		return nil, fmt.Errorf("could not initialize validators state snapshot: %w", err)
 	}
 
 	s := ValidatorSet{
+		state:    evm.StateDB,
 		ftso:     ftso,
+		root:     root,
 		snapshot: snapshot,
 	}
 
