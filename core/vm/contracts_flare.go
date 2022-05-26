@@ -114,6 +114,8 @@ func (v *validatorRegistry) Run(evm *EVM, caller ContractRef, address common.Add
 			return nil, gas, fmt.Errorf("could not close validator snapshot: %w", err)
 		}
 
+		return nil, gas, nil
+
 	case updateValidators:
 
 		err = snapshot.UpdateValidators()
@@ -125,6 +127,8 @@ func (v *validatorRegistry) Run(evm *EVM, caller ContractRef, address common.Add
 		if err != nil {
 			return nil, gas, fmt.Errorf("could not close validator snapshot: %w", err)
 		}
+
+		return nil, gas, nil
 
 	case getPendingNodeID:
 
@@ -189,7 +193,10 @@ func (v *validatorRegistry) Run(evm *EVM, caller ContractRef, address common.Add
 		}
 
 		return ret, gas, nil
+
+	default:
+
+		return nil, gas, ErrExecutionReverted
 	}
 
-	return nil, gas, nil
 }
