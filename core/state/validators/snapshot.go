@@ -111,7 +111,7 @@ func (s *Snapshot) SetActive(provider common.Address, nodeID ids.ShortID) error 
 	return s.setValidator(codeActive, provider, nodeID)
 }
 
-func (s *Snapshot) GetActive(provider common.Address) (ids.ShortID, error) {
+func (s *Snapshot) OneActive(provider common.Address) (ids.ShortID, error) {
 	return s.oneValidator(codeActive, provider)
 }
 

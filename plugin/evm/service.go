@@ -515,22 +515,15 @@ type FlareAPI struct {
 
 func (api *FlareAPI) ActiveValidators(_ context.Context, blockID ids.ID) (map[string]uint64, error) {
 
-
-
-	validators, err := api.vm.validators.
+	set, err := api.vm.GetValidators(blockID)
 	if err != nil {
-		return nil, fmt.Errorf("could not get active validators (epoch: %d): %w", epoch, err)
+		return nil, fmt.Errorf("could not get active validators (block: %x): %w", blockID, err)
 	}
 
-	return toJSON(validators), nil
-}
-
-func toJSON(validators map[ids.ShortID]uint64) map[string]uint64 {
-
-	json := make(map[string]uint64, len(validators))
-	for validator, weight := range validators {
-		json[validator.PrefixedString(constants.NodeIDPrefix)] = weight
+	validators := make(map[string]uint64)
+	for _, validator := range set.List() {
+		validators[validator.ID().String()] = validator.Weight()
 	}
 
-	return json
+	return validators, nil
 }

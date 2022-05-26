@@ -37,13 +37,14 @@ var (
 )
 
 type ValidatorManager interface {
-	WithEVM(evm *EVM) (ValidatorSnapshot, error)
+	WithEVM(evm *EVM) (ValidatorSet, error)
 }
 
-type ValidatorSnapshot interface {
+type ValidatorSet interface {
 	SetValidator(provider common.Address, nodeID ids.ShortID) error
 
 	UpdateValidators() error
+	GetValidators() (map[ids.ShortID]uint64, error)
 
 	GetPendingNodeID(provider common.Address) (ids.ShortID, error)
 	GetPendingProvider(nodeID ids.ShortID) (common.Address, error)

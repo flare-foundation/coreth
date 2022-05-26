@@ -56,7 +56,7 @@ import (
 	"github.com/flare-foundation/coreth/consensus/dummy"
 	"github.com/flare-foundation/coreth/core"
 	"github.com/flare-foundation/coreth/core/state"
-	"github.com/flare-foundation/coreth/core/state/valstate"
+	"github.com/flare-foundation/coreth/core/state/validators"
 	"github.com/flare-foundation/coreth/core/types"
 	corevm "github.com/flare-foundation/coreth/core/vm"
 	"github.com/flare-foundation/coreth/eth/ethconfig"
@@ -428,13 +428,14 @@ func (vm *VM) Initialize(
 	}
 
 	// Initialize a database to hold data related to validators.
-	validatorDB := valstate.NewValidatorDB(prefixdb.New(validatorDBPrefix, vm.db))
-	valMgr := NewValidatorManager(vm.ctx.Log, validatorDB)
+	validatorDB := Database{prefixdb.NewNested(validatorDBPrefix, baseDB)}
+	valstate := validators.NewState(validatorDB)
+	valmgr := NewValidatorManager(vm.ctx.Log, valstate)
 
 	// Set the validator storage on the Core VM package, which will inject it into
 	// the precompiled contract for validator interfacing from blockchain transactions.
-	corevm.InjectDependencies(vm.ctx.Log, valMgr)
-	vm.validators = valMgr
+	corevm.InjectDependencies(vm.ctx.Log, valmgr)
+	vm.validators = valmgr
 
 	// start goroutines to update the tx pool gas minimum gas price when upgrades go into effect
 	vm.handleGasPriceUpdates()
@@ -1501,21 +1502,18 @@ func (vm *VM) GetValidators(blockID ids.ID) (validation.Set, error) {
 		return nil, fmt.Errorf("could not initialize validator state snapshot: %w", err)
 	}
 
-	active, err := snapshot.GetActiveValidators()
+	validators, err := snapshot.GetValidators()
 	if err != nil {
 		return nil, fmt.Errorf("could not get active validators: %w", err)
 	}
 
-	return toSet(active)
-}
-
-func toSet(validatorMap map[ids.ShortID]uint64) (validation.Set, error) {
 	set := validation.NewSet()
-	for validator, weight := range validatorMap {
+	for validator, weight := range validators {
 		err := set.AddWeight(validator, weight)
 		if err != nil {
 			return nil, fmt.Errorf("could not add weight: %w", err)
 		}
 	}
+
 	return set, nil
 }

@@ -8,8 +8,9 @@ import (
 	"github.com/flare-foundation/flare/ids"
 	"github.com/flare-foundation/flare/utils/logging"
 
-	"github.com/flare-foundation/coreth/core/state/valstate"
+	"github.com/flare-foundation/coreth/core/state/validators"
 	"github.com/flare-foundation/coreth/core/vm"
+	"github.com/flare-foundation/coreth/params"
 	"github.com/flare-foundation/coreth/plugin/evm/ftso"
 )
 
@@ -18,9 +19,9 @@ const (
 	RatioMultiplier = 100.0
 )
 
-type ValidatorDB interface {
-	SetEntries(epoch uint64, entries []valstate.Entry) error
-	GetEntries(epoch uint64) ([]valstate.Entry, error)
+type ValidatorSnapshot interface {
+	SetEntries(epoch uint64, entries []validators.Entry) error
+	GetEntries(epoch uint64) ([]validators.Entry, error)
 
 	SetPending(provider common.Address, nodeID ids.ShortID) error
 	GetPending(provider common.Address) (ids.ShortID, error)
@@ -58,31 +59,36 @@ type Consensus interface {
 }
 
 type ValidatorManager struct {
-	log logging.Logger
-	db  ValidatorDB
+	log   logging.Logger
+	state *validators.State
 }
 
-func NewValidatorManager(log logging.Logger, db ValidatorDB) *ValidatorManager {
+func NewValidatorManager(log logging.Logger, state *validators.State) *ValidatorManager {
 
 	m := ValidatorManager{
-		log: log,
-		db:  db,
+		log:   log,
+		state: state,
 	}
 
 	return &m
 }
 
-func (m *ValidatorManager) WithEVM(evm *vm.EVM) (vm.ValidatorSnapshot, error) {
+func (m *ValidatorManager) WithEVM(evm *vm.EVM) (vm.ValidatorSet, error) {
 
 	ftso, err := ftso.NewSystem(evm)
 	if err != nil {
 		return nil, fmt.Errorf("could not initialize FTSO system: %w", err)
 	}
 
-	s := ValidatorSnapshot{
-		mgr:   m,
-		ftso:  ftso,
-		state: evm.StateDB,
+	root := evm.StateDB.GetCode(params.ValidationAddress)
+	snapshot, err := m.state.WithRoot(common.BytesToHash(root))
+	if err != nil {
+		return nil, fmt.Errorf("could not initialize validators state snapshot: %w", err)
+	}
+
+	s := ValidatorSet{
+		ftso:     ftso,
+		snapshot: snapshot,
 	}
 
 	return &s, nil
