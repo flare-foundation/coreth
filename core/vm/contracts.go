@@ -118,7 +118,7 @@ var PrecompiledContractsFlareHardFork1 = map[common.Address]StatefulPrecompiledC
 	common.BytesToAddress([]byte{7}): newWrappedPrecompiledContract(&bn256ScalarMulIstanbul{}),
 	common.BytesToAddress([]byte{8}): newWrappedPrecompiledContract(&bn256PairingIstanbul{}),
 	common.BytesToAddress([]byte{9}): newWrappedPrecompiledContract(&blake2F{}),
-	params.ValidationAddress:         &validatorRegistry{},
+	// params.ValidationAddress:         &validatorRegistry{}, // done as part of `init()` below
 }
 
 var (
