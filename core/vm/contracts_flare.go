@@ -5,10 +5,12 @@ import (
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/flare-foundation/coreth/accounts/abi"
+
 	"github.com/flare-foundation/flare/ids"
 	"github.com/flare-foundation/flare/snow/validation"
 	"github.com/flare-foundation/flare/utils/logging"
+
+	"github.com/flare-foundation/coreth/accounts/abi"
 )
 
 // The lines below represents a Solidity contract interface that is representative

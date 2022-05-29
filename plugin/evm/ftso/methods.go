@@ -1,5 +1,7 @@
 package ftso
 
+// The constants below define the various function names for calls against the
+// FTSO smart contracts, based on the respective ABIs.
 const (
 	getAddressManager   = "getFtsoManager"
 	getAddressRegistry  = "getFtsoRegistry"

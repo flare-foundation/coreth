@@ -18,23 +18,36 @@ import (
 	"github.com/flare-foundation/coreth/plugin/evm/ftso"
 )
 
-type ValidatorSet struct {
+type ValidatorSnapshot struct {
 	log       logging.Logger
-	state     vm.StateDB
+	evm       vm.StateDB
 	ftso      *ftso.System
 	root      common.Hash
 	transform ValidatorTransformer
-	snapshot  *validatordb.Snapshot
+	state     *validatordb.State
 }
 
-func (v *ValidatorSet) SetValidator(provider common.Address, nodeID ids.ShortID) error {
-	return v.snapshot.SetMapping(provider, nodeID)
+func (v *ValidatorSnapshot) SetValidator(provider common.Address, nodeID ids.ShortID) error {
+	return v.state.SetMapping(provider, nodeID)
 }
 
-func (v *ValidatorSet) UpdateValidators() error {
+// UpdateValidators executes the logic for a validator epoch switchover. It will only
+// execute if the current epoch in the FTSO system has increased and is higher than
+// the epoch of the active validator set.
+//
+// If this is the case, it will execute the following steps:
+//
+// 1) get the validator candidates from the previous switchover, calculate their
+// respective validator weights and store them as the new active validators.
+//
+// 2) get the whitelist of FTSO data providers and retrieve all the data to create
+// the new list of validator candidates, and store them as the new candidates.
+//
+// 3) set the active epoch for the validator state to the current FTSO epoch.
+func (v *ValidatorSnapshot) UpdateValidators() error {
 
 	// Get the active epoch from the validator snapshot.
-	active, err := v.snapshot.GetEpoch()
+	active, err := v.state.GetEpoch()
 	if err != nil {
 		return fmt.Errorf("could not get active epoch: %w", err)
 	}
@@ -63,7 +76,7 @@ func (v *ValidatorSet) UpdateValidators() error {
 	// As a first step, we should get the prepared validator entries. They contain the
 	// information from the last epoch switchover that allows us to infer the  validator
 	// weighting for the epoch switchover we are executing now.
-	candidates, err := v.snapshot.GetCandidates()
+	candidates, err := v.state.GetCandidates()
 	if err != nil {
 		return fmt.Errorf("could not get candidates: %w", err)
 	}
@@ -115,7 +128,7 @@ func (v *ValidatorSet) UpdateValidators() error {
 	validators = v.transform.Transform(validators)
 
 	// At this point, we are ready to set the new active validators to the computed set.
-	err = v.snapshot.SetValidators(validators)
+	err = v.state.SetValidators(validators)
 	if err != nil {
 		return fmt.Errorf("could not set validators: %w", err)
 	}
@@ -123,7 +136,7 @@ func (v *ValidatorSet) UpdateValidators() error {
 	// Next, we update the current entries by adding and removing pending node IDs as
 	// set by the data providers during the previous epoch. As a first step, we simply
 	// retrieve all the pending node IDs, as set by the data providers.
-	mappings, err := v.snapshot.AllMappings()
+	mappings, err := v.state.AllMappings()
 	if err != nil {
 		return fmt.Errorf("could not get mapings: %w", err)
 	}
@@ -206,13 +219,13 @@ func (v *ValidatorSet) UpdateValidators() error {
 	// Store the mapping of FTSO data providers to votepower; this will be used when
 	// we calculate the validator weighting for the new reward epoch on the switchover
 	// to the next reward epoch.
-	err = v.snapshot.SetCandidates(candidates)
+	err = v.state.SetCandidates(candidates)
 	if err != nil {
 		return fmt.Errorf("could not set providers: %w", err)
 	}
 
 	// Set the active epoch for the validator snapshot to the current FTSO system epoch.
-	err = v.snapshot.SetEpoch(ftso)
+	err = v.state.SetEpoch(ftso)
 	if err != nil {
 		return fmt.Errorf("could not set active epoch: %w", err)
 	}
@@ -220,9 +233,11 @@ func (v *ValidatorSet) UpdateValidators() error {
 	return nil
 }
 
-func (v *ValidatorSet) GetValidators() (validation.Set, error) {
+// GetValidators retrieves the active validators from the validator state and converts
+// them to a default validation set as used by the consensus logic.
+func (v *ValidatorSnapshot) GetValidators() (validation.Set, error) {
 
-	validators, err := v.snapshot.GetValidators()
+	validators, err := v.state.GetValidators()
 	if err != nil {
 		return nil, fmt.Errorf("could not get validators: %w", err)
 	}
@@ -239,26 +254,40 @@ func (v *ValidatorSet) GetValidators() (validation.Set, error) {
 	return set, nil
 }
 
-func (v *ValidatorSet) SetMapping(provider common.Address, nodeID ids.ShortID) error {
-	return v.snapshot.SetMapping(provider, nodeID)
+// SetMapping will set the mapping between an FTSO data provider's address and the
+// node ID of the validator that will receive the validator weight attributed to it.
+func (v *ValidatorSnapshot) SetMapping(provider common.Address, nodeID ids.ShortID) error {
+	return v.state.SetMapping(provider, nodeID)
 }
 
-func (v *ValidatorSet) GetMapping(provider common.Address) (ids.ShortID, error) {
-	return v.snapshot.GetMapping(provider)
+// GetMapping will return the node ID of the validator which receives the validator
+// weight for the FTSO data provider with the given address.
+func (v *ValidatorSnapshot) GetMapping(provider common.Address) (ids.ShortID, error) {
+	return v.state.GetMapping(provider)
 }
 
-func (v *ValidatorSet) Close() error {
+// Close will close the validator snapshot and make sure its current state is properly
+// rooted into the EVM state by setting the code at the precompiled contract address
+// to the root hash of the validator state.
+func (v *ValidatorSnapshot) Close() error {
 
-	root, err := v.snapshot.RootHash()
+	// Get the root hash of the validator state. This will commit all changes to the
+	// validator database and calculate the root hash on top of the corresponding
+	// trie.
+	root, err := v.state.RootHash()
 	if err != nil {
 		return fmt.Errorf("could not get validator state root: %w", err)
 	}
 
+	// We do not need to change the EVM state if the validator state root has not
+	// changed.
 	if root == v.root {
 		return nil
 	}
 
-	v.state.SetCode(params.ValidationAddress, root[:])
+	// Otherwise, we set the code at the validator registry address to the validator
+	// state root so that the validator state is part of the consensus state.
+	v.evm.SetCode(params.ValidationAddress, root[:])
 
 	return nil
 }

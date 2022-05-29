@@ -124,10 +124,10 @@ const (
 
 var (
 	// Set last accepted key to be longer than the keys used to store accepted block IDs.
-	lastAcceptedKey   = []byte("last_accepted_key")
-	acceptedPrefix    = []byte("snowman_accepted")
-	ethDBPrefix       = []byte("ethdb")
-	validatorDBPrefix = []byte("validator")
+	lastAcceptedKey = []byte("last_accepted_key")
+	acceptedPrefix  = []byte("snowman_accepted")
+	ethDBPrefix     = []byte("ethdb")
+	valDBPrefix     = []byte("validator")
 
 	// Prefixes for atomic trie
 	atomicTrieDBPrefix     = []byte("atomicTrieDB")
@@ -228,8 +228,9 @@ type VM struct {
 
 	bootstrapped bool
 
-	// validators is the manager responsible for validator state
-	validators *ValidatorManager
+	// Validator set related fields
+	validatorManager  *ValidatorManager
+	defaultValidators validation.Set
 }
 
 // Codec implements the secp256k1fx interface
@@ -427,21 +428,45 @@ func (vm *VM) Initialize(
 		return fmt.Errorf("failed to create atomic trie: %w", err)
 	}
 
-	// Initialize the validator transformers to normalize weights and add
-	// the default validators.
-	add := NewValidatorAdditioner(nil, AggregateAverage)
+	// Get the default validators as configured for the current chain ID. This logic
+	// can be changed later if we want to phase default validators out over time, but
+	// it will do for now. We only need the IDs of the default validators at this
+	// point.
+	defaultValidators := params.DefaultValidators(vm.chainConfig.ChainID)
+	defaultIDs := make([]ids.ShortID, 0, defaultValidators.Len())
+	for _, defaultValidator := range defaultValidators.List() {
+		defaultIDs = append(defaultIDs, defaultValidator.ID())
+	}
+
+	// We also keep a reference for later use.
+	vm.defaultValidators = defaultValidators
+
+	// Initialize the validator transformers:
+	// 1) to add default validators to the validator set; and
+	// 2) to normalize the validator weights proportionally with a bigger total weight.
+	add := NewValidatorAdditioner(defaultIDs, AggregateAverage)
 	normalize := NewValidatorNormalizer(uint64(stdmath.MaxInt64))
 	combine := NewValidatorCombinator(add, normalize)
 
-	// Initialize a database to hold data related to validators.
-	validatorDB := Database{prefixdb.NewNested(validatorDBPrefix, baseDB)}
-	valstate := validatordb.NewState(validatorDB)
-	valmgr := NewValidatorManager(vm.ctx.Log, valstate, combine)
+	// Initialize the validator database, which holds the state for active validators,
+	// validator candidates and FTSO data provider to validator node ID mappings.
+	// Both the validator repository and the validator manager are logic wrapped around
+	// the validator database to abstract different layers of the interactions.
+	valDB := Database{prefixdb.NewNested(valDBPrefix, baseDB)}
+	valRepo := validatordb.NewRepository(valDB)
+	valMgr := NewValidatorManager(vm.ctx.Log, valRepo, combine)
 
-	// Set the validator storage on the Core VM package, which will inject it into
-	// the precompiled contract for validator interfacing from blockchain transactions.
-	corevm.InjectDependencies(vm.ctx.Log, valmgr)
-	vm.validators = valmgr
+	// Inject the validator storage on the Core VM package, which will inject it into
+	// the validator registry precompiled contract. This contract is used by the
+	// FTSO manager to update the active validators upon epoch switchover, and can
+	// be used by FTSO data providers to set their validator node IDs.
+	corevm.InjectDependencies(vm.ctx.Log, valMgr)
+
+	// Store a reference to the validator manager on this VM as well. This will be
+	// used by both the GRPC server to provider the validator set to the GRPC client
+	// in the Flare repository, as well as by the JSON RPC API packages to provide
+	// information on active validators to any client of the node API.
+	vm.validatorManager = valMgr
 
 	// start goroutines to update the tx pool gas minimum gas price when upgrades go into effect
 	vm.handleGasPriceUpdates()
@@ -1479,13 +1504,9 @@ func repairAtomicRepositoryForBonusBlockTxs(
 
 func (vm *VM) GetValidators(blockID ids.ID) (validation.Set, error) {
 
-	// As of now, we always add the default validators to the validator set. If the
-	// hard fork didn't activate, this set is returned as is; otherwise it is normalized
-	// as part of the full set.
-	defaultValidators := params.DefaultValidators(vm.chainConfig.ChainID)
-
-	// First, we get the header for the given block ID, so that we can determine
-	// activation of the hard fork by the header's timestamp.
+	// Retrieve the header corresponding to the given block ID. This allows us to
+	// determine whether the hard fork activated, and can be used to initialize the
+	// EVM state if needed.
 	hash := common.Hash(blockID)
 	blockchain := vm.chain.BlockChain()
 	header := blockchain.GetHeaderByHash(hash)
@@ -1493,29 +1514,32 @@ func (vm *VM) GetValidators(blockID ids.ID) (validation.Set, error) {
 		return nil, fmt.Errorf("unknown block (hash: %x)", hash)
 	}
 
-	// If the hard fork is not active at the given block yet, we simply return the
-	// default validator set, which corresponds to the hard-coded set from the older
-	// code base.
+	// If the hard fork is not active at the given block yet, we fall back on the
+	// default validators as defined for this chain. This should correspond exactly
+	// to the list of default validators as hard-coded before the hard fork version.
 	if !vm.chainConfig.IsFlareHardFork1(big.NewInt(0).SetUint64(header.Time)) {
 		vm.ctx.Log.Debug("hard fork not activated, using default validators")
-		return defaultValidators, nil
+		return vm.defaultValidators, nil
 	}
 
-	// Otherwise, we initialize an instance of the EVM on top of the state as it was
-	// at the given block and retrieve the snapshot of the validator state as of that
-	// EVM state.
+	// If the hard fork is active, we initialize the EVM state as it was at the state
+	// root of the given block.
 	stateDB, err := blockchain.StateAt(header.Root)
 	if err != nil {
 		return nil, fmt.Errorf("could not get blockchain state (root: %x): %w", header.Root, err)
 	}
 	blkContext := core.NewEVMBlockContext(header, blockchain, nil)
 	evm := corevm.NewEVM(blkContext, corevm.TxContext{}, stateDB, vm.chainConfig, corevm.Config{NoBaseFee: true})
-	snapshot, err := vm.validators.WithEVM(evm)
+
+	// With the help of this EVM state, we can then initialize the validator state
+	// as it was at that EVM state. This internally uses the validator state root
+	// hash that was inserted into the EVM state for just this purpose.
+	snapshot, err := vm.validatorManager.WithEVM(evm)
 	if err != nil {
 		return nil, fmt.Errorf("could not initialize validator state snapshot: %w", err)
 	}
 
-	// We simply get the (active) validators from that snapshot.
+	// Now, we can retrieve the persisted validator set, as it was at that point in time.
 	set, err := snapshot.GetValidators()
 	if err != nil {
 		return nil, fmt.Errorf("could not get active validators: %w", err)

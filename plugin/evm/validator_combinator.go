@@ -1,6 +1,8 @@
 package evm
 
-import "github.com/flare-foundation/coreth/core/state/validatordb"
+import (
+	"github.com/flare-foundation/coreth/core/state/validatordb"
+)
 
 // ValidatorCombinator is a validator transformer that combines multiple validator
 // transformers, applying them to a validator set in sequence.

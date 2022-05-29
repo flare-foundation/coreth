@@ -13,6 +13,7 @@ import (
 // from a list of provided meights.
 type AggregateFunc func([]uint64) uint64
 
+// AggregateMax will pick the maximum weight from the input weights and return it.
 func AggregateMax(weights []uint64) uint64 {
 	max := uint64(0)
 	for _, weight := range weights {
@@ -23,6 +24,8 @@ func AggregateMax(weights []uint64) uint64 {
 	return max
 }
 
+// AggregateAverage will calculate the average weight of the given weights and return
+// it.
 func AggregateAverage(weights []uint64) uint64 {
 	total := uint64(0)
 	for _, weight := range weights {
