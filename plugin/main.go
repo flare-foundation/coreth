@@ -9,6 +9,7 @@ import (
 
 	"github.com/hashicorp/go-plugin"
 
+	"github.com/flare-foundation/flare/utils/logging"
 	"github.com/flare-foundation/flare/utils/ulimit"
 	"github.com/flare-foundation/flare/vms/rpcchainvm"
 
@@ -25,7 +26,7 @@ func main() {
 		fmt.Println(evm.Version)
 		os.Exit(0)
 	}
-	if err := ulimit.Set(ulimit.DefaultFDLimit); err != nil {
+	if err := ulimit.Set(ulimit.DefaultFDLimit, logging.NoLog{}); err != nil {
 		fmt.Printf("failed to set fd limit correctly due to: %s", err)
 		os.Exit(1)
 	}
