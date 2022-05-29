@@ -1,4 +1,4 @@
-package validators
+package validatordb
 
 import (
 	"fmt"
@@ -10,14 +10,6 @@ import (
 	"github.com/flare-foundation/coreth/core/state"
 	"github.com/flare-foundation/coreth/ethdb"
 	"github.com/flare-foundation/coreth/trie"
-)
-
-const (
-	codeEpoch   = 0
-	codeEntries = 1
-	codePending = 2
-	codeActive  = 3
-	codeWeight  = 4
 )
 
 type State struct {

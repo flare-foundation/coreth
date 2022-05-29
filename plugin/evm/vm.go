@@ -57,7 +57,7 @@ import (
 	"github.com/flare-foundation/coreth/consensus/dummy"
 	"github.com/flare-foundation/coreth/core"
 	"github.com/flare-foundation/coreth/core/state"
-	"github.com/flare-foundation/coreth/core/state/validators"
+	"github.com/flare-foundation/coreth/core/state/validatordb"
 	"github.com/flare-foundation/coreth/core/types"
 	corevm "github.com/flare-foundation/coreth/core/vm"
 	"github.com/flare-foundation/coreth/eth/ethconfig"
@@ -427,10 +427,16 @@ func (vm *VM) Initialize(
 		return fmt.Errorf("failed to create atomic trie: %w", err)
 	}
 
+	// Initialize the validator transformers to normalize weights and add
+	// the default validators.
+	add := NewValidatorAdditioner(nil, AggregateAverage)
+	normalize := NewValidatorNormalizer(uint64(stdmath.MaxInt64))
+	combine := NewValidatorCombinator(add, normalize)
+
 	// Initialize a database to hold data related to validators.
 	validatorDB := Database{prefixdb.NewNested(validatorDBPrefix, baseDB)}
-	valstate := validators.NewState(validatorDB)
-	valmgr := NewValidatorManager(vm.ctx.Log, valstate)
+	valstate := validatordb.NewState(validatorDB)
+	valmgr := NewValidatorManager(vm.ctx.Log, valstate, combine)
 
 	// Set the validator storage on the Core VM package, which will inject it into
 	// the precompiled contract for validator interfacing from blockchain transactions.
@@ -1510,37 +1516,9 @@ func (vm *VM) GetValidators(blockID ids.ID) (validation.Set, error) {
 	}
 
 	// We simply get the (active) validators from that snapshot.
-	validators, err := snapshot.GetValidators()
+	set, err := snapshot.GetValidators()
 	if err != nil {
 		return nil, fmt.Errorf("could not get active validators: %w", err)
-	}
-
-	// We calculate the total weight of the FTSO validators, as well as the average
-	// weight for FTSO validators.
-	totalWeight := uint64(0)
-	for _, weight := range validators {
-		totalWeight += weight
-	}
-	averageWeight := totalWeight / uint64(len(validators))
-
-	// We then add all default validators to the validator list with the average weight,
-	// while keeping the total weight up-to-date.
-	for _, validator := range defaultValidators.List() {
-		validators[validator.ID()] = averageWeight
-		totalWeight += averageWeight
-	}
-
-	// Finally, we add the resulting list of validators to the validator set, while
-	// normalizing the total weight to approach the maximum value for a 64-bit integer.
-	// This is the highest resolution supported by the sampling of the consensus algorithm
-	// and leads to the best random distribution of leader selection.
-	ratio := uint64(stdmath.MaxInt64) / totalWeight
-	set := validation.NewSet()
-	for validator, weight := range validators {
-		err := set.AddWeight(validator, weight*ratio)
-		if err != nil {
-			return nil, fmt.Errorf("could not add weight: %w", err)
-		}
 	}
 
 	return set, nil

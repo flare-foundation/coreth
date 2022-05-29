@@ -1,4 +1,4 @@
-package validators
+package validatordb
 
 var DefaultConfig = Config{
 	CacheSize: 10, // 10 MB

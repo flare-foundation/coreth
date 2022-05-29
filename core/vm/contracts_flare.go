@@ -7,6 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/flare-foundation/coreth/accounts/abi"
 	"github.com/flare-foundation/flare/ids"
+	"github.com/flare-foundation/flare/snow/validation"
 	"github.com/flare-foundation/flare/utils/logging"
 )
 
@@ -15,12 +16,10 @@ const (
 )
 
 const (
-	setValidator       = "setValidatorNodeID"
-	updateValidators   = "updateActiveValidators"
-	getActiveNodeID    = "getActiveNodeID"
-	getActiveProvider  = "getActiveValidator"
-	getPendingNodeID   = "getPendingNodeID"
-	getPendingProvider = "getPendingValidator"
+	setMapping   = "setValidatorNodeID"
+	getMapping   = "getValidatorNodeID"
+	updateActive = "updateActiveValidators"
+	getActive    = "getActiveValidators"
 )
 
 func init() {
@@ -41,16 +40,11 @@ type ValidatorManager interface {
 }
 
 type ValidatorSet interface {
-	SetValidator(provider common.Address, nodeID ids.ShortID) error
+	SetMapping(provider common.Address, nodeID ids.ShortID) error
+	GetMapping(provider common.Address) (ids.ShortID, error)
 
 	UpdateValidators() error
-	GetValidators() (map[ids.ShortID]uint64, error)
-
-	GetPendingNodeID(provider common.Address) (ids.ShortID, error)
-	GetPendingProvider(nodeID ids.ShortID) (common.Address, error)
-
-	GetActiveNodeID(provider common.Address) (ids.ShortID, error)
-	GetActiveProvider(nodeID ids.ShortID) (common.Address, error)
+	GetValidators() (validation.Set, error)
 
 	Close() error
 }
@@ -79,12 +73,16 @@ func (v *validatorRegistry) Run(evm *EVM, caller ContractRef, address common.Add
 
 	var cost uint64
 	switch method.Name {
-	case setValidator:
+	case setMapping:
 		cost = 1_000_000
-	case updateValidators:
-		cost = 4_000_000
-	default:
+	case getMapping:
 		cost = 200_000
+	case updateActive:
+		cost = 4_000_000
+	case getActive:
+		cost = 800_000
+	default:
+		cost = 100_000
 	}
 	if cost > gas {
 		return nil, 0, ErrOutOfGas
@@ -93,18 +91,18 @@ func (v *validatorRegistry) Run(evm *EVM, caller ContractRef, address common.Add
 
 	args, err := method.Inputs.Unpack(input[4:])
 	if err != nil {
-		return nil, 0, fmt.Errorf("could not get validator's method: %w", err)
+		return nil, 0, fmt.Errorf("could not unpack input: %w", err)
 	}
 
 	switch method.Name {
 
-	case setValidator:
+	case setMapping:
 
 		provider := caller.Address()
 
 		nodeID := args[0].(ids.ShortID)
 
-		err := snapshot.SetValidator(provider, nodeID)
+		err := snapshot.SetMapping(provider, nodeID)
 		if err != nil {
 			return nil, gas, fmt.Errorf("could not set provider node: %w", err)
 		}
@@ -116,7 +114,23 @@ func (v *validatorRegistry) Run(evm *EVM, caller ContractRef, address common.Add
 
 		return nil, gas, nil
 
-	case updateValidators:
+	case getMapping:
+
+		provider := args[0].(common.Address)
+
+		nodeID, err := snapshot.GetMapping(provider)
+		if err != nil {
+			return nil, gas, fmt.Errorf("could not get pending node: %w", err)
+		}
+
+		ret, err := validatorABI.Pack(getMapping, nodeID[:])
+		if err != nil {
+			return nil, gas, fmt.Errorf("could not pack output %s: %w", method.Name, err)
+		}
+
+		return ret, gas, nil
+
+	case updateActive:
 
 		err = snapshot.UpdateValidators()
 		if err != nil {
@@ -130,66 +144,21 @@ func (v *validatorRegistry) Run(evm *EVM, caller ContractRef, address common.Add
 
 		return nil, gas, nil
 
-	case getPendingNodeID:
+	case getActive:
 
-		provider := args[0].(common.Address)
-
-		nodeID, err := snapshot.GetPendingNodeID(provider)
+		set, err := snapshot.GetValidators()
 		if err != nil {
-			return nil, gas, fmt.Errorf("could not get pending node: %w", err)
+			return nil, gas, fmt.Errorf("could net get active validators: %w", err)
 		}
 
-		ret, err := validatorABI.Pack(method.Name, nodeID[:])
-		if err != nil {
-			return nil, gas, fmt.Errorf("could not pack return values for method %s: %w", method.Name, err)
+		validators := make(map[ids.ShortID]uint64)
+		for _, validator := range set.List() {
+			validators[validator.ID()] = validator.Weight()
 		}
 
-		return ret, gas, nil
-
-	case getActiveNodeID:
-
-		provider := args[0].(common.Address)
-
-		nodeID, err := snapshot.GetActiveNodeID(provider)
+		ret, err := validatorABI.Pack(getActive, validators)
 		if err != nil {
-			return nil, gas, fmt.Errorf("could not get active node: %w", err)
-		}
-
-		ret, err := validatorABI.Pack(method.Name, nodeID[:])
-		if err != nil {
-			return nil, gas, fmt.Errorf("could not pack return values for method %s: %w", method.Name, err)
-		}
-
-		return ret, gas, nil
-
-	case getPendingProvider:
-
-		nodeID := args[0].(ids.ShortID)
-
-		provider, err := snapshot.GetPendingProvider(nodeID)
-		if err != nil {
-			return nil, gas, fmt.Errorf("could not get pending validator: %w", err)
-		}
-
-		ret, err := validatorABI.Pack(method.Name, provider)
-		if err != nil {
-			return nil, gas, fmt.Errorf("could not pack return values for method %s: %w", method.Name, err)
-		}
-
-		return ret, gas, nil
-
-	case getActiveProvider:
-
-		nodeID := args[0].(ids.ShortID)
-
-		provider, err := snapshot.GetActiveProvider(nodeID)
-		if err != nil {
-			return nil, gas, fmt.Errorf("could not get active validator: %w", err)
-		}
-
-		ret, err := validatorABI.Pack(method.Name, provider)
-		if err != nil {
-			return nil, gas, fmt.Errorf("could not pack return values for method %s: %w", method.Name, err)
+			return nil, gas, fmt.Errorf("could not pack output: %w", err)
 		}
 
 		return ret, gas, nil

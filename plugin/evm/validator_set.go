@@ -2,7 +2,6 @@ package evm
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"math"
 	"sort"
@@ -10,225 +9,242 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/flare-foundation/flare/ids"
+	"github.com/flare-foundation/flare/snow/validation"
 	"github.com/flare-foundation/flare/utils/logging"
 
-	"github.com/flare-foundation/coreth/core/state/validators"
+	"github.com/flare-foundation/coreth/core/state/validatordb"
 	"github.com/flare-foundation/coreth/core/vm"
 	"github.com/flare-foundation/coreth/params"
 	"github.com/flare-foundation/coreth/plugin/evm/ftso"
-	"github.com/flare-foundation/coreth/trie"
 )
 
 type ValidatorSet struct {
-	log      logging.Logger
-	state    vm.StateDB
-	ftso     *ftso.System
-	root     common.Hash
-	snapshot *validators.Snapshot
+	log       logging.Logger
+	state     vm.StateDB
+	ftso      *ftso.System
+	root      common.Hash
+	transform ValidatorTransformer
+	snapshot  *validatordb.Snapshot
 }
 
 func (v *ValidatorSet) SetValidator(provider common.Address, nodeID ids.ShortID) error {
-	return v.snapshot.SetPending(provider, nodeID)
+	return v.snapshot.SetMapping(provider, nodeID)
 }
 
 func (v *ValidatorSet) UpdateValidators() error {
 
-	// Get the reward epoch for which validators are currently active.
+	// Get the active epoch from the validator snapshot.
 	active, err := v.snapshot.GetEpoch()
 	if err != nil {
-		return fmt.Errorf("could not get last epoch: %w", err)
+		return fmt.Errorf("could not get active epoch: %w", err)
 	}
 
-	// Get the current reward epoch of the FTSO system.
-	current, err := v.ftso.Current()
+	// Get the current epoch from the FTSO system.
+	ftso, err := v.ftso.Current()
 	if err != nil {
-		return fmt.Errorf("could not get current epoch: %w", err)
+		return fmt.Errorf("could not get current FTSO epoch: %w", err)
 	}
 
-	// The current FTSO reward epoch should never be smaller than the active epoch
-	// of validators, otherwise a fatal error happened.
-	if current < active {
-		v.log.Warn("skipping active validators update (current epoch below active epoch, active: %d, current: %d", current, active)
-		return nil
+	// If the epoch on the FTSO system is below the active epoch on the validator
+	// snapshot, we have a fatal error; this should _never_ happen.
+	if active > ftso {
+		return fmt.Errorf("snapshot epoch ahead of FTSO epoch (active: %d, ftso: %d)", active, ftso)
 	}
 
 	// If the current FTSO reward epoch is the same as the active epoch, we do not
-	// need to do anything to update the validators.
-	if current == active {
-		v.log.Debug("skipping active validators update (active epoch unchanged, active: %d)", active)
+	// need to update validators, as there are no changes.
+	if active == ftso {
+		v.log.Debug("skipping validator update (epoch: %d, no epoch change)", active)
 		return nil
 	}
 
-	// Drop the current validator weights.
-	err = v.snapshot.DropWeights()
+	// In all other cases, the epoch on the FTSO is ahead of the active epoch on our
+	// validator state, so we should execute an epoch switchover of the active validators.
+	// As a first step, we should get the prepared validator entries. They contain the
+	// information from the last epoch switchover that allows us to infer the  validator
+	// weighting for the epoch switchover we are executing now.
+	candidates, err := v.snapshot.GetCandidates()
 	if err != nil {
-		return fmt.Errorf("could not drop validator weights: %w", err)
+		return fmt.Errorf("could not get candidates: %w", err)
 	}
 
-	// Get the list of whitelisted FTSO data providers with their votepower, as it
-	// was stored in the previous reward epoch switchover.
-	entries, err := v.snapshot.GetEntries()
-	if err != nil {
-		return fmt.Errorf("could not get providers: %w", err)
-	}
+	v.log.Info("processing %d candidates for starting epoch %d", len(candidates), ftso)
 
-	v.log.Info("processing %d validator entries for epoch %d", len(entries), current)
+	// For each of the prepared validator entries, we get their unclaimed rewards at
+	// the current FTSO system state. As this corresponds to the block where the rewards
+	// are first released, nobody was able to claim them yet, and they serve as proxy for
+	// the performance of the data provider over the last epoch. We then use the prepared
+	// information (votepower and node ID) to calculate each data provider's validator weight.
+	validators := make([]*validatordb.Validator, 0, len(candidates))
+	for _, candidate := range candidates {
 
-	// For each of these providers, we now get the rewards that they accumulated over
-	// the previous epoch and calculate its validator weight.
-	for _, entry := range entries {
+		totalRewards := float64(0)
+		for _, provider := range candidate.Providers {
 
-		rewards, err := v.ftso.Rewards(entry.Provider)
-		if err != nil {
-			return fmt.Errorf("could not get rewards (provider: %s, node: %s): %w", entry.Provider, entry.NodeID, err)
-		}
-
-		if rewards == 0 {
-			v.log.Debug("validator entry skipped (provider: %s, node: %s): no rewards", entry.Provider, entry.NodeID)
-			continue
-		}
-
-		weight := uint64(math.Pow(entry.Votepower, 1.0/float64(RootDegree)) * (RatioMultiplier * rewards / entry.Votepower))
-		err = v.snapshot.SetWeight(entry.NodeID, weight)
-		if err != nil {
-			return fmt.Errorf("could not set validator weight (provider: %s, node: %s): %w", entry.Provider, entry.NodeID, err)
-		}
-
-		v.log.Debug("validator entry processed (provider: %s, node: %s, weight; %d)", entry.Provider, entry.NodeID, weight)
-	}
-
-	// Get the votepower cap for FTSO data providers. If they have more votepower
-	// than the cap, they won't accumulate rewards for the excess votepower, which
-	// means their performance would be deflated. So we use the cap in those cases.
-	cap, err := v.ftso.Cap()
-	if err != nil {
-		return fmt.Errorf("could not get votepower cap: %w", err)
-	}
-
-	// Get the pending node IDs for data providers.
-	pending, err := v.snapshot.AllPending()
-	if err != nil {
-		return fmt.Errorf("could not get pending validators: %w", err)
-	}
-
-	// Update the active node IDs for the data providers with the pending ones.
-	for provider, nodeID := range pending {
-
-		if nodeID == ids.ShortEmpty {
-			err = v.snapshot.UnsetActive(provider)
+			rewards, err := v.ftso.Rewards(provider)
 			if err != nil {
-				return fmt.Errorf("could not unset active validator (provider: %s, node: %s)", provider, nodeID)
+				return fmt.Errorf("could not get rewards (node: %s, provider: %s): %w", candidate.NodeID, provider, err)
 			}
+
+			totalRewards += rewards
+		}
+
+		if totalRewards == 0 {
+			v.log.Debug("candidate skipped (node: %s): no rewards", candidate.NodeID)
 			continue
 		}
 
-		err = v.snapshot.SetActive(provider, nodeID)
-		if err != nil {
-			return fmt.Errorf("could not set active validator (provider: %s, node: %s)", provider, nodeID)
+		weight := uint64(math.Pow(candidate.Votepower, 1.0/float64(RootDegree)) * (RatioMultiplier * totalRewards / candidate.Votepower))
+
+		validator := validatordb.Validator{
+			Providers: candidate.Providers,
+			NodeID:    candidate.NodeID,
+			Weight:    weight,
 		}
+		validators = append(validators, &validator)
+
+		v.log.Debug("candidate processed (node: %s, providers: %d, weight: %d)", candidate.NodeID, len(candidate.Providers), weight)
 	}
 
-	// Unset the pending node IDs for FTSO data providers, as they have all been used now.
-	err = v.snapshot.DropPending()
+	v.log.Info("obtained %d validators from %d candidates", len(validators), len(candidates))
+
+	// Next, we apply the transform for the validators. This will in general do two things:
+	// 1) add the default validators to the validator set with average FTSO validator weight; and
+	// 2) normalize the total validator weight to a higher number for better sampling.
+	// In the future, it can be used to phase out default validators and other fork-related changes.
+	validators = v.transform.Transform(validators)
+
+	// At this point, we are ready to set the new active validators to the computed set.
+	err = v.snapshot.SetValidators(validators)
 	if err != nil {
-		return fmt.Errorf("could not drop pending validators: %w", err)
+		return fmt.Errorf("could not set validators: %w", err)
 	}
 
-	// Retrieve the whitelist of FTSO data providers as they are now, at the first
-	// block of a new reward epoch. We will store this to be used on the next epoch
-	// switchover, as we can only ever retrieve the whitelist at the current block.
+	// Next, we update the current entries by adding and removing pending node IDs as
+	// set by the data providers during the previous epoch. As a first step, we simply
+	// retrieve all the pending node IDs, as set by the data providers.
+	mappings, err := v.snapshot.AllMappings()
+	if err != nil {
+		return fmt.Errorf("could not get mapings: %w", err)
+	}
+
+	// Next, we retrieve the whitelist of FTSO data providers as they are now,
+	// at the first block of the starting reward epoch. Only data providers on this
+	// list are eligible to become validators next epoch.
 	whitelist, err := v.ftso.Whitelist()
 	if err != nil {
 		return fmt.Errorf("could not get whitelist: %w", err)
 	}
 
-	v.log.Info("processing %d whitelisted providers for epoch %d", current+1)
+	v.log.Info("processing %d providers for upcoming epoch %d", ftso+1)
 
-	// For each provider, retrieve the votepower as it is now, at the first block
-	// of the new reward epoch. Votepower can go down as the reward epoch goes on,
-	// which could lead to an inflated performance rating if we would use the votepower
-	// at a later block.
-	entries = make([]validators.Entry, 0, len(whitelist))
+	// We also need to retrieve the current cap on votepower from the FTSO system;
+	// we need to apply it against each data provider's votepower to avoid a skew
+	// in validation weight for data providers which have more votepower than this,
+	// as it would mess with the performance calculation.
+	cap, err := v.ftso.Cap()
+	if err != nil {
+		return fmt.Errorf("could not get votepower cap: %w", err)
+	}
+
+	// Now, for each data provider on the list, we see if it has a valid node ID
+	// set in the mappings, and if it has any votepower. If it does, we cap the
+	// votepower and add it to the candidate for the given node ID, and create that
+	// candidate if it is the first provider mapping to that node ID.
+	lookup := make(map[ids.ShortID]*validatordb.Candidate)
 	for _, provider := range whitelist {
 
-		nodeID, err := v.snapshot.OneActive(provider)
-		var missErr *trie.MissingNodeError
-		if errors.As(err, &missErr) {
-			v.log.Debug("whitelisted provider skipped (provider: %s, no node set)", provider)
+		nodeID, ok := mappings[provider]
+		if !ok {
+			v.log.Debug("provider skipped (address: %s): no mapping")
 			continue
-		}
-		if err != nil {
-			return fmt.Errorf("could not get node (provider: %s): %w", provider, err)
 		}
 
 		votepower, err := v.ftso.Votepower(provider)
 		if err != nil {
-			return fmt.Errorf("could not get votepower (provider: %s, node: %s): %w", provider, nodeID, err)
+			return fmt.Errorf("could not get votepower (address: %s, node: %s): %w", provider, nodeID, err)
 		}
 
 		if votepower == 0 {
-			v.log.Debug("whitelisted provider skipped (provider: %s, node: %s, no vote power)", provider, nodeID)
+			v.log.Debug("provider skipped (address: %s, node: %s): no votepower", provider, nodeID)
 			continue
 		}
 
 		if votepower > cap {
-			v.log.Debug("whitelisted provider capped (provider: %s, node: %s, votepower: %d, cap: %d)", provider, nodeID, votepower, cap)
+			v.log.Debug("provider capped (address: %s, node: %s, votepower: %d, cap: %d)", provider, nodeID, votepower, cap)
 			votepower = cap
 		}
 
-		entry := validators.Entry{
-			Provider:  provider,
-			NodeID:    nodeID,
-			Votepower: votepower,
+		candidate, ok := lookup[nodeID]
+		if !ok {
+			candidate = &validatordb.Candidate{
+				Providers: []common.Address{},
+				NodeID:    nodeID,
+				Votepower: 0,
+			}
+			lookup[nodeID] = candidate
 		}
 
-		entries = append(entries, entry)
+		candidate.Providers = append(candidate.Providers, provider)
+		candidate.Votepower += votepower
 
-		v.log.Debug("whitelisted provider processed (provider: %s, node: %s, votepower: %d)", provider, nodeID, votepower)
+		v.log.Debug("provider processed (provider: %s, node: %s, votepower: %d)", provider, nodeID, votepower)
 	}
 
-	v.log.Info("prepared %d validator entries for epoch %d", current+1)
-
-	// Sort the entries by node ID to always have the same order and avoid mismatches.
-	sort.Slice(entries, func(i int, j int) bool {
-		return bytes.Compare(entries[i].NodeID[:], entries[j].NodeID[:]) < 0
+	// We need to make sure to put candidates in a list and sort them deterministically
+	// so that the storage hash remains the same across all nodes.
+	candidates = make([]*validatordb.Candidate, 0, len(lookup))
+	for _, candidate := range lookup {
+		candidates = append(candidates, candidate)
+	}
+	sort.Slice(candidates, func(i int, j int) bool {
+		return bytes.Compare(candidates[i].NodeID[:], candidates[j].NodeID[:]) < 0
 	})
+
+	v.log.Info("obtained %d candidates from %d providers", len(candidates), len(whitelist))
 
 	// Store the mapping of FTSO data providers to votepower; this will be used when
 	// we calculate the validator weighting for the new reward epoch on the switchover
-	// to the next reward epoch
-	err = v.snapshot.SetEntries(entries)
+	// to the next reward epoch.
+	err = v.snapshot.SetCandidates(candidates)
 	if err != nil {
 		return fmt.Errorf("could not set providers: %w", err)
 	}
 
-	// Set the active epoch for validators to the new current epoch
-	err = v.snapshot.SetEpoch(current)
+	// Set the active epoch for the validator snapshot to the current FTSO system epoch.
+	err = v.snapshot.SetEpoch(ftso)
 	if err != nil {
-		return fmt.Errorf("could not set epoch: %w", err)
+		return fmt.Errorf("could not set active epoch: %w", err)
 	}
 
 	return nil
 }
 
-func (v *ValidatorSet) GetValidators() (map[ids.ShortID]uint64, error) {
-	return v.snapshot.AllWeights()
+func (v *ValidatorSet) GetValidators() (validation.Set, error) {
+
+	validators, err := v.snapshot.GetValidators()
+	if err != nil {
+		return nil, fmt.Errorf("could not get validators: %w", err)
+	}
+
+	set := validation.NewSet()
+	for _, validator := range validators {
+
+		err := set.AddWeight(validator.NodeID, validator.Weight)
+		if err != nil {
+			return nil, fmt.Errorf("could not set weight: %w", err)
+		}
+	}
+
+	return set, nil
 }
 
-func (v *ValidatorSet) GetActiveNodeID(provider common.Address) (ids.ShortID, error) {
-	return v.snapshot.OneActive(provider)
+func (v *ValidatorSet) SetMapping(provider common.Address, nodeID ids.ShortID) error {
+	return v.snapshot.SetMapping(provider, nodeID)
 }
 
-func (v *ValidatorSet) GetPendingNodeID(provider common.Address) (ids.ShortID, error) {
-	return v.snapshot.OnePending(provider)
-}
-
-func (v *ValidatorSet) GetActiveProvider(nodeID ids.ShortID) (common.Address, error) {
-	return v.snapshot.LookupActive(nodeID)
-}
-
-func (v *ValidatorSet) GetPendingProvider(nodeID ids.ShortID) (common.Address, error) {
-	return v.snapshot.LookupPending(nodeID)
+func (v *ValidatorSet) GetMapping(provider common.Address) (ids.ShortID, error) {
+	return v.snapshot.GetMapping(provider)
 }
 
 func (v *ValidatorSet) Close() error {

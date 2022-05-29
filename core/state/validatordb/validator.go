@@ -1,4 +1,4 @@
-package validators
+package validatordb
 
 import (
 	"github.com/ethereum/go-ethereum/common"
@@ -6,8 +6,8 @@ import (
 	"github.com/flare-foundation/flare/ids"
 )
 
-type Entry struct {
-	Provider  common.Address
+type Validator struct {
+	Providers []common.Address
 	NodeID    ids.ShortID
-	Votepower float64
+	Weight    uint64
 }
