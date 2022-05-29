@@ -243,9 +243,6 @@ func GenerateChain(config *params.ChainConfig, parent *types.Block, engine conse
 			if !misc.PriceSubmitterUpgraded(statedb) {
 				misc.UpgradePriceSubmitter(statedb)
 			}
-			if !misc.ValidatorRegistryCreated(statedb) {
-				misc.CreateValidatorRegistry(statedb)
-			}
 		}
 		// Execute any user modifications to the block
 		if gen != nil {

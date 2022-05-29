@@ -174,9 +174,6 @@ func (w *worker) commitNewWork() (*types.Block, error) {
 		if !misc.PriceSubmitterUpgraded(env.state) {
 			misc.UpgradePriceSubmitter(env.state)
 		}
-		if !misc.ValidatorRegistryCreated(env.state) {
-			misc.CreateValidatorRegistry(env.state)
-		}
 	}
 
 	// Fill the block with all available pending transactions.
