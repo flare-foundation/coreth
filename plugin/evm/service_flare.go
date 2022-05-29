@@ -5,13 +5,14 @@ import (
 	"fmt"
 
 	"github.com/flare-foundation/flare/ids"
+	"github.com/flare-foundation/flare/utils/constants"
 )
 
 type FlareAPI struct {
 	vm *VM
 }
 
-func (api *FlareAPI) ActiveValidators(_ context.Context, blockID *ids.ID) (map[string]uint64, error) {
+func (api *FlareAPI) Validators(_ context.Context, blockID *ids.ID) (map[string]uint64, error) {
 
 	if blockID == nil {
 		latestID, err := api.vm.LastAccepted()
@@ -28,7 +29,7 @@ func (api *FlareAPI) ActiveValidators(_ context.Context, blockID *ids.ID) (map[s
 
 	validators := make(map[string]uint64)
 	for _, validator := range set.List() {
-		validators[validator.ID().String()] = validator.Weight()
+		validators[validator.ID().PrefixedString(constants.NodeIDPrefix)] = validator.Weight()
 	}
 
 	return validators, nil
