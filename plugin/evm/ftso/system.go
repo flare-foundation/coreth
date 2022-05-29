@@ -10,12 +10,6 @@ import (
 	"github.com/flare-foundation/coreth/params"
 )
 
-var (
-	errNoPriceSubmitter = errors.New("no price submitter")
-	errFTSONotDeployed  = errors.New("System not deployed")
-	errFTSONotActive    = errors.New("System not active")
-)
-
 // System represents a convenience wrapper around the EVM state that allows us to
 // easily interact with the FTSO smart contracts.
 type System struct {
@@ -52,7 +46,7 @@ func NewSystem(evm *vm.EVM) (*System, error) {
 	var managerAddress common.Address
 	err := newContractCall(evm, submitter).execute(getAddressManager).decode(&managerAddress)
 	if errors.Is(err, errNoReturnData) {
-		return nil, errNoPriceSubmitter
+		return nil, ErrNoPriceSubmitter
 	}
 	if err != nil {
 		return nil, fmt.Errorf("could not get manager address: %w", err)
@@ -62,7 +56,7 @@ func NewSystem(evm *vm.EVM) (*System, error) {
 	// not yet been deployed, and the FTSO system as a whole has thus not been deployed.
 	empty := common.Address{}
 	if managerAddress == empty {
-		return nil, errFTSONotDeployed
+		return nil, ErrFTSONotDeployed
 	}
 
 	// At this point, we have the FTSO manager and can initialize its contract wrapper.
@@ -78,7 +72,7 @@ func NewSystem(evm *vm.EVM) (*System, error) {
 	height := big.NewInt(0)
 	err = newContractCall(evm, manager).execute(getEpochInfo, big.NewInt(0)).decode(nil, &height, nil)
 	if errors.Is(err, vm.ErrExecutionReverted) || height.Uint64() == 0 {
-		return nil, errFTSONotActive
+		return nil, ErrFTSONotActive
 	}
 	if err != nil {
 		return nil, fmt.Errorf("could not get first epoch info: %w", err)

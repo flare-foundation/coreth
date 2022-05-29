@@ -64,6 +64,7 @@ import (
 	"github.com/flare-foundation/coreth/node"
 	"github.com/flare-foundation/coreth/params"
 	"github.com/flare-foundation/coreth/peer"
+	"github.com/flare-foundation/coreth/plugin/evm/ftso"
 	"github.com/flare-foundation/coreth/plugin/evm/message"
 	"github.com/flare-foundation/coreth/rpc"
 
@@ -1535,6 +1536,18 @@ func (vm *VM) GetValidators(blockID ids.ID) (validation.Set, error) {
 	// as it was at that EVM state. This internally uses the validator state root
 	// hash that was inserted into the EVM state for just this purpose.
 	snapshot, err := vm.validatorManager.WithEVM(evm)
+	if errors.Is(err, ftso.ErrNoPriceSubmitter) {
+		vm.ctx.Log.Debug("no FTSO genesis price submitter, using default validators")
+		return vm.defaultValidators, nil
+	}
+	if errors.Is(err, ftso.ErrFTSONotDeployed) {
+		vm.ctx.Log.Debug("FTSO system has not been deployed yet, using default validators")
+		return vm.defaultValidators, nil
+	}
+	if errors.Is(err, ftso.ErrFTSONotActive) {
+		vm.ctx.Log.Debug("FTSO system has not been activated yet, using default validators")
+		return vm.defaultValidators, nil
+	}
 	if err != nil {
 		return nil, fmt.Errorf("could not initialize validator state snapshot: %w", err)
 	}
