@@ -46,7 +46,8 @@ var (
 	ConnectorAddress  = common.HexToAddress("0x1000000000000000000000000000000000000001")
 	DaemonAddress     = common.HexToAddress("0x1000000000000000000000000000000000000002")
 	SubmitterAddress  = common.HexToAddress("0x1000000000000000000000000000000000000003")
-	ValidationAddress = common.HexToAddress("0x1000000000000000000000000000000000000004")
+	TreasuryAddress   = common.HexToAddress("0x1000000000000000000000000000000000000004")
+	ValidationAddress = common.HexToAddress("0x1000000000000000000000000000000000000005")
 
 	errNonGenesisForkByHeight = errors.New("coreth only supports forking by height at the genesis block")
 )
