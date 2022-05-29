@@ -6,17 +6,23 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/fxamacker/cbor/v2"
 
 	"github.com/flare-foundation/flare/ids"
 
 	"github.com/flare-foundation/coreth/core/state"
 )
 
+// Snapshot represents the validator state database at a specific point in time,
+// as determined by the root hash of the state trie it encapsulates.
 type Snapshot struct {
-	state *State
-	trie  state.Trie
+	enc  cbor.EncMode
+	dec  cbor.DecMode
+	trie state.Trie
 }
 
+// SetEpoch sets the active validator epoch. It is used to transition from a previous
+// validator epoch to a subsequent validator epoch.
 func (s *Snapshot) SetEpoch(epoch uint64) error {
 
 	key := []byte{codeEpoch}
@@ -32,6 +38,7 @@ func (s *Snapshot) SetEpoch(epoch uint64) error {
 	return nil
 }
 
+// GetEpoch gets the active validator epoch.
 func (s *Snapshot) GetEpoch() (uint64, error) {
 
 	key := []byte{codeEpoch}
@@ -44,6 +51,9 @@ func (s *Snapshot) GetEpoch() (uint64, error) {
 	return binary.BigEndian.Uint64(val), nil
 }
 
+// SetMapping sets the mapping between an FTSO data provider address and the corresponding
+// validator node ID. It is used by FTSO data providers to indicate which validator node
+// ID they would like to assign their validation weight to.
 func (s *Snapshot) SetMapping(provider common.Address, nodeID ids.ShortID) error {
 
 	key := make([]byte, 21)
@@ -60,6 +70,8 @@ func (s *Snapshot) SetMapping(provider common.Address, nodeID ids.ShortID) error
 	return nil
 }
 
+// GetMapping gets the mapping between an FTSO data provider address and the corresponding
+// validator node ID.
 func (s *Snapshot) GetMapping(provider common.Address) (ids.ShortID, error) {
 
 	key := make([]byte, 21)
@@ -79,6 +91,8 @@ func (s *Snapshot) GetMapping(provider common.Address) (ids.ShortID, error) {
 	return validatorID, nil
 }
 
+// AllMappings gets all mappings between FTSO data provider addresses and the corresponding
+// validator node IDs.
 func (s *Snapshot) AllMappings() (map[common.Address]ids.ShortID, error) {
 
 	start := []byte{codeMapping}
@@ -116,11 +130,14 @@ func (s *Snapshot) AllMappings() (map[common.Address]ids.ShortID, error) {
 	return validators, nil
 }
 
+// SetCandidates sets the validator candidates for the next validator epoch. It is
+// used in a daemon contract call upon epoch switchover to prepare the validator
+// information needed for the upcoming validator epoch.
 func (s *Snapshot) SetCandidates(candidates []*Candidate) error {
 
 	key := []byte{codeCandidates}
 
-	val, err := s.state.enc.Marshal(candidates)
+	val, err := s.enc.Marshal(candidates)
 	if err != nil {
 		return fmt.Errorf("could not encode candidates: %w", err)
 	}
@@ -133,6 +150,7 @@ func (s *Snapshot) SetCandidates(candidates []*Candidate) error {
 	return nil
 }
 
+// GetCandidates gets the validator candidates for the next validator epoch.
 func (s *Snapshot) GetCandidates() ([]*Candidate, error) {
 
 	key := []byte{codeCandidates}
@@ -143,7 +161,7 @@ func (s *Snapshot) GetCandidates() ([]*Candidate, error) {
 	}
 
 	var candidates []*Candidate
-	err = s.state.dec.Unmarshal(val, &candidates)
+	err = s.dec.Unmarshal(val, &candidates)
 	if err != nil {
 		return nil, fmt.Errorf("could not decode candidates: %w", err)
 	}
@@ -151,11 +169,14 @@ func (s *Snapshot) GetCandidates() ([]*Candidate, error) {
 	return candidates, nil
 }
 
+// SetValidators sets the active validators for the current validator epoch. It is
+// used in a daemon contract call upon epoch switchover to set the validator information
+// for the active validator epoch.
 func (s *Snapshot) SetValidators(validators []*Validator) error {
 
 	key := []byte{codeValidators}
 
-	val, err := s.state.enc.Marshal(validators)
+	val, err := s.enc.Marshal(validators)
 	if err != nil {
 		return fmt.Errorf("could not encode validators: %w", err)
 	}
@@ -168,6 +189,7 @@ func (s *Snapshot) SetValidators(validators []*Validator) error {
 	return nil
 }
 
+// GetValidators gets the active validators for the current validator epoch.
 func (s *Snapshot) GetValidators() ([]*Validator, error) {
 
 	key := []byte{codeValidators}
@@ -178,7 +200,7 @@ func (s *Snapshot) GetValidators() ([]*Validator, error) {
 	}
 
 	var validators []*Validator
-	err = s.state.dec.Unmarshal(val, &validators)
+	err = s.dec.Unmarshal(val, &validators)
 	if err != nil {
 		return nil, fmt.Errorf("could not decode validators: %w", err)
 	}
@@ -186,6 +208,9 @@ func (s *Snapshot) GetValidators() ([]*Validator, error) {
 	return validators, nil
 }
 
+// RootHash calculates the root hash of the validator state. It is used to link the
+// validator state to the EVM state and thus make it change in lock-step with potential
+// forks in the chain history.
 func (s *Snapshot) RootHash() (common.Hash, error) {
 
 	root, _, err := s.trie.Commit(nil)

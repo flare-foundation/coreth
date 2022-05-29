@@ -68,8 +68,9 @@ func (s *State) WithRoot(root common.Hash) (*Snapshot, error) {
 	}
 
 	snapshot := Snapshot{
-		state: s,
-		trie:  trie,
+		enc:  s.enc,
+		dec:  s.dec,
+		trie: trie,
 	}
 
 	return &snapshot, nil
