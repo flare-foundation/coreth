@@ -9,7 +9,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/flare-foundation/flare/ids"
-	"github.com/flare-foundation/flare/snow/validation"
 	"github.com/flare-foundation/flare/utils/logging"
 
 	"github.com/flare-foundation/coreth/core/state/validatordb"
@@ -233,25 +232,9 @@ func (v *ValidatorSnapshot) UpdateValidators() error {
 	return nil
 }
 
-// GetValidators retrieves the active validators from the validator state and converts
-// them to a default validation set as used by the consensus logic.
-func (v *ValidatorSnapshot) GetValidators() (validation.Set, error) {
-
-	validators, err := v.state.GetValidators()
-	if err != nil {
-		return nil, fmt.Errorf("could not get validators: %w", err)
-	}
-
-	set := validation.NewSet()
-	for _, validator := range validators {
-
-		err := set.AddWeight(validator.NodeID, validator.Weight)
-		if err != nil {
-			return nil, fmt.Errorf("could not set weight: %w", err)
-		}
-	}
-
-	return set, nil
+// GetValidators retrieves the active validators from the validator state.
+func (v *ValidatorSnapshot) GetValidators() ([]*validatordb.Validator, error) {
+	return v.state.GetValidators()
 }
 
 // SetMapping will set the mapping between an FTSO data provider's address and the

@@ -1539,10 +1539,20 @@ func (vm *VM) GetValidators(blockID ids.ID) (validation.Set, error) {
 		return nil, fmt.Errorf("could not initialize validator state snapshot: %w", err)
 	}
 
-	// Now, we can retrieve the persisted validator set, as it was at that point in time.
-	set, err := snapshot.GetValidators()
+	// Now, we can retrieve the active validators from the snapshot.
+	validators, err := snapshot.GetValidators()
 	if err != nil {
 		return nil, fmt.Errorf("could not get active validators: %w", err)
+	}
+
+	// Finally, we can convert to the native validator set type as needed by the
+	// rest of the consensus logic on the Flare repository type.
+	set := validation.NewSet()
+	for _, validator := range validators {
+		err = set.AddWeight(validator.NodeID, validator.Weight)
+		if err != nil {
+			return nil, fmt.Errorf("could not add weight: %w", err)
+		}
 	}
 
 	return set, nil

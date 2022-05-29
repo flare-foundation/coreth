@@ -7,10 +7,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/flare-foundation/flare/ids"
-	"github.com/flare-foundation/flare/snow/validation"
 	"github.com/flare-foundation/flare/utils/logging"
 
 	"github.com/flare-foundation/coreth/accounts/abi"
+	"github.com/flare-foundation/coreth/core/state/validatordb"
 )
 
 // The lines below represents a Solidity contract interface that is representative
@@ -41,7 +41,7 @@ const (
 	// use the Ethereum ABI library to interact with our precompiled contract, which
 	// exhibits the same behaviour as a Solidity smart contract that implements the
 	// above interface would.
-	jsonValidator = `[{"inputs":[],"name":"getActiveValidators","outputs":[{"components":[{"internalType":"address[]","name":"providers","type":"address[]"},{"internalType":"bytes20","name":"nodeId","type":"bytes20"},{"internalType":"uint64","name":"weight","type":"uint64"}],"internalType":"structIValidatorRegistry.Validator[]","name":"_validators","type":"tuple[]"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"_provider","type":"address"}],"name":"getProviderNodeId","outputs":[{"internalType":"bytes20","name":"_nodeId","type":"bytes20"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"_provider","type":"address"}],"name":"setProviderNodeId","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"updateActiveValidators","outputs":[],"stateMutability":"nonpayable","type":"function"}]`
+	jsonValidation = `[{"inputs":[],"name":"getActiveValidators","outputs":[{"components":[{"internalType":"address[]","name":"providers","type":"address[]"},{"internalType":"bytes20","name":"nodeId","type":"bytes20"},{"internalType":"uint64","name":"weight","type":"uint64"}],"internalType":"structIValidatorRegistry.Validator[]","name":"_validators","type":"tuple[]"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"_provider","type":"address"}],"name":"getProviderNodeId","outputs":[{"internalType":"bytes20","name":"_nodeId","type":"bytes20"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"_provider","type":"address"}],"name":"setProviderNodeId","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"updateActiveValidators","outputs":[],"stateMutability":"nonpayable","type":"function"}]`
 )
 
 const (
@@ -56,16 +56,24 @@ func init() {
 	// We compile the validator registry ABI as part of an init call, as it is only
 	// needed once, and should never fail because it is a static string.
 	var err error
-	validatorABI, err = abi.JSON(strings.NewReader(jsonValidator))
+	validationABI, err = abi.JSON(strings.NewReader(jsonValidation))
 	if err != nil {
 		panic(fmt.Sprintf("invalid ABI JSON: %s", err))
 	}
 }
 
 var (
-	registry     *validatorRegistry // holds the validator registry precompiled contract
-	validatorABI abi.ABI            // holds the validator registry compiled contract ABI
+	registry      *validatorRegistry // holds the validator registry precompiled contract
+	validationABI abi.ABI            // holds the validator registry compiled contract ABI
 )
+
+// abiValidator is needed to cleanly encode validators to ABI when providing return
+// data to contract calls.
+type abiValidator struct {
+	Providers []common.Address `abi:"providers"`
+	NodeID    [20]byte         `abi:"nodeId"`
+	Weight    uint64           `abi:"weight"`
+}
 
 // ValidatorManager wraps the behaviour of the validator manager into an interface
 // in order to have proper isolation between packages. It can instantiate a snapshot
@@ -82,7 +90,7 @@ type ValidatorSnapshot interface {
 	GetMapping(provider common.Address) (ids.ShortID, error)
 
 	UpdateValidators() error
-	GetValidators() (validation.Set, error)
+	GetValidators() ([]*validatordb.Validator, error)
 
 	Close() error
 }
@@ -125,7 +133,7 @@ func (v *validatorRegistry) Run(evm *EVM, caller ContractRef, address common.Add
 
 	// Retrieve the method from the contract ABI using the first 4 bytes of the
 	// input data, as done by Solidity.
-	method, err := validatorABI.MethodById(input[:4])
+	method, err := validationABI.MethodById(input[:4])
 	if err != nil {
 		return nil, 0, fmt.Errorf("could not get validator's method: %w", err)
 	}
@@ -224,7 +232,7 @@ func (v *validatorRegistry) Run(evm *EVM, caller ContractRef, address common.Add
 			return nil, gas, fmt.Errorf("could not get pending node: %w", err)
 		}
 
-		ret, err := validatorABI.Pack(getMapping, nodeID[:])
+		ret, err := method.Outputs.Pack(getMapping, [20]byte(nodeID))
 		if err != nil {
 			return nil, gas, fmt.Errorf("could not pack output %s: %w", method.Name, err)
 		}
@@ -253,17 +261,24 @@ func (v *validatorRegistry) Run(evm *EVM, caller ContractRef, address common.Add
 	// TODO: make sure we properly encode the validator structs for this return.
 	case getActive:
 
-		set, err := snapshot.GetValidators()
+		validators, err := snapshot.GetValidators()
 		if err != nil {
 			return nil, gas, fmt.Errorf("could net get active validators: %w", err)
 		}
 
-		validators := make(map[ids.ShortID]uint64)
-		for _, validator := range set.List() {
-			validators[validator.ID()] = validator.Weight()
+		outputs := make([]abiValidator, 0, len(validators))
+		for _, validator := range validators {
+
+			output := abiValidator{
+				Providers: validator.Providers,
+				NodeID:    [20]byte(validator.NodeID),
+				Weight:    validator.Weight,
+			}
+
+			outputs = append(outputs, output)
 		}
 
-		ret, err := validatorABI.Pack(getActive, validators)
+		ret, err := method.Outputs.Pack(getActive, outputs)
 		if err != nil {
 			return nil, gas, fmt.Errorf("could not pack output: %w", err)
 		}

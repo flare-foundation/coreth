@@ -508,22 +508,3 @@ func (service *AvaxAPI) GetAtomicTx(r *http.Request, args *api.GetTxArgs, reply 
 	}
 	return nil
 }
-
-type FlareAPI struct {
-	vm *VM
-}
-
-func (api *FlareAPI) ActiveValidators(_ context.Context, blockID ids.ID) (map[string]uint64, error) {
-
-	set, err := api.vm.GetValidators(blockID)
-	if err != nil {
-		return nil, fmt.Errorf("could not get active validators (block: %x): %w", blockID, err)
-	}
-
-	validators := make(map[string]uint64)
-	for _, validator := range set.List() {
-		validators[validator.ID().String()] = validator.Weight()
-	}
-
-	return validators, nil
-}
