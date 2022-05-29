@@ -53,6 +53,8 @@ var songbirdNodeIDs = []string{
 	"NodeID-QCt9AxMPt5nn445CQGoA3yktqkChnKmPY",
 }
 
+// init initializes the default validator sets, including the custom default validators
+// as defined in the environment variable, if available.
 func init() {
 
 	var err error
@@ -80,7 +82,9 @@ func init() {
 	}
 }
 
+// DefaultValidators returns the validator set for the given chain ID.
 func DefaultValidators(chainID *big.Int) validation.Set {
+
 	switch chainID {
 	case TestingChainID:
 		return testingSet
@@ -89,12 +93,16 @@ func DefaultValidators(chainID *big.Int) validation.Set {
 	case SongbirdChainID:
 		return songbirdSet
 	}
+
 	if customSet.Len() == 0 {
 		panic("missing custom default validators for non-standard network, please set CUSTOM_DEFAULT_VALIDATORS")
 	}
+
 	return customSet
 }
 
+// buildValidators builds a validator set, taking a list of node IDs and a weight
+// to assign to each validator. It skips empty node ID strings in the node ID list.
 func buildValidators(nodeIDs []string, weight uint64) (validation.Set, error) {
 
 	set := validation.NewSet()

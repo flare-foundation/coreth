@@ -234,7 +234,6 @@ func (evm *EVM) Call(caller ContractRef, addr common.Address, input []byte, gas 
 		}
 	}
 
-	// TODO
 	if isPrecompile {
 		ret, gas, err = p.Run(evm, caller, addr, input, gas, evm.interpreter.readOnly)
 	} else {

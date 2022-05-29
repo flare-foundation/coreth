@@ -37,7 +37,7 @@ import (
 // }
 
 const (
-	// jsonValidator represents the ABI of the above interface, which allows us to
+	// jsonValidation represents the ABI of the above interface, which allows us to
 	// use the Ethereum ABI library to interact with our precompiled contract, which
 	// exhibits the same behaviour as a Solidity smart contract that implements the
 	// above interface would.
