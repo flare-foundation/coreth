@@ -12,12 +12,12 @@ import (
 )
 
 const (
-	jsonValidator = `[{"inputs":[{"internalType":"address","name":"_dataProvider","type":"address"}],"name":"getActiveNodeID","outputs":[{"internalType":"bytes20","name":"_nodeId","type":"bytes20"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes20","name":"_nodeId","type":"bytes20"}],"name":"getActiveValidator","outputs":[{"internalType":"address","name":"_dataProvider","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"_dataProvider","type":"address"}],"name":"getPendingNodeID","outputs":[{"internalType":"bytes20","name":"_nodeId","type":"bytes20"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes20","name":"_nodeId","type":"bytes20"}],"name":"getPendingValidator","outputs":[{"internalType":"address","name":"_dataProvider","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes20","name":"_nodeId","type":"bytes20"}],"name":"setValidatorNodeID","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"updateActiveValidators","outputs":[],"stateMutability":"nonpayable","type":"function"}]`
+	jsonValidator = `[{"inputs":[],"name":"getActiveValidators","outputs":[{"components":[{"internalType":"address[]","name":"providers","type":"address[]"},{"internalType":"bytes20","name":"nodeId","type":"bytes20"},{"internalType":"uint64","name":"weight","type":"uint64"}],"internalType":"structIValidatorRegistry.Validator[]","name":"_validators","type":"tuple[]"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"_provider","type":"address"}],"name":"getProviderNodeId","outputs":[{"internalType":"bytes20","name":"_nodeId","type":"bytes20"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"_provider","type":"address"}],"name":"setProviderNodeId","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"updateActiveValidators","outputs":[],"stateMutability":"nonpayable","type":"function"}]`
 )
 
 const (
-	setMapping   = "setValidatorNodeID"
-	getMapping   = "getValidatorNodeID"
+	setMapping   = "setProviderNodeID"
+	getMapping   = "getProviderNodeID"
 	updateActive = "updateActiveValidators"
 	getActive    = "getActiveValidators"
 )
