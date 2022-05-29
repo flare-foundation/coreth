@@ -106,14 +106,36 @@ var PrecompiledContractsApricotPhase2 = map[common.Address]StatefulPrecompiledCo
 	NativeAssetCallAddr:              &nativeAssetCall{gasCost: params.AssetCallApricot},
 }
 
+// PrecompiledContractsFlareHardFork1 contains the default set of pre-compiled Ethereum
+// contracts used in the FlareHardFork1 release.
+var PrecompiledContractsFlareHardFork1 = map[common.Address]StatefulPrecompiledContract{
+	common.BytesToAddress([]byte{1}): newWrappedPrecompiledContract(&ecrecover{}),
+	common.BytesToAddress([]byte{2}): newWrappedPrecompiledContract(&sha256hash{}),
+	common.BytesToAddress([]byte{3}): newWrappedPrecompiledContract(&ripemd160hash{}),
+	common.BytesToAddress([]byte{4}): newWrappedPrecompiledContract(&dataCopy{}),
+	common.BytesToAddress([]byte{5}): newWrappedPrecompiledContract(&bigModExp{eip2565: true}),
+	common.BytesToAddress([]byte{6}): newWrappedPrecompiledContract(&bn256AddIstanbul{}),
+	common.BytesToAddress([]byte{7}): newWrappedPrecompiledContract(&bn256ScalarMulIstanbul{}),
+	common.BytesToAddress([]byte{8}): newWrappedPrecompiledContract(&bn256PairingIstanbul{}),
+	common.BytesToAddress([]byte{9}): newWrappedPrecompiledContract(&blake2F{}),
+	// params.ValidationAddress:         &validatorRegistry{}, // done as part of `init()` below
+}
+
 var (
-	PrecompiledAddressesApricotPhase2 []common.Address
-	PrecompiledAddressesIstanbul      []common.Address
-	PrecompiledAddressesByzantium     []common.Address
-	PrecompiledAddressesHomestead     []common.Address
+	PrecompiledAddressesFlareHardFork1 []common.Address
+	PrecompiledAddressesApricotPhase2  []common.Address
+	PrecompiledAddressesIstanbul       []common.Address
+	PrecompiledAddressesByzantium      []common.Address
+	PrecompiledAddressesHomestead      []common.Address
 )
 
 func init() {
+
+	// This needs to be initialized before we get the addresses, so we do it in
+	// the same `init` function.
+	registry = &validatorRegistry{}
+	PrecompiledContractsFlareHardFork1[params.ValidationAddress] = registry
+
 	for k := range PrecompiledContractsHomestead {
 		PrecompiledAddressesHomestead = append(PrecompiledAddressesHomestead, k)
 	}
@@ -126,13 +148,16 @@ func init() {
 	for k := range PrecompiledContractsApricotPhase2 {
 		PrecompiledAddressesApricotPhase2 = append(PrecompiledAddressesApricotPhase2, k)
 	}
+	for k := range PrecompiledContractsFlareHardFork1 {
+		PrecompiledAddressesFlareHardFork1 = append(PrecompiledAddressesFlareHardFork1, k)
+	}
 }
 
 // ActivePrecompiles returns the precompiles enabled with the current configuration.
 func ActivePrecompiles(rules params.Rules) []common.Address {
 	switch {
 	case rules.IsFlareHardFork1:
-		return PrecompiledAddressesIstanbul
+		return PrecompiledAddressesFlareHardFork1
 	case rules.IsApricotPhase2:
 		return PrecompiledAddressesApricotPhase2
 	case rules.IsIstanbul:
@@ -337,7 +362,7 @@ func (c *bigModExp) RequiredGas(input []byte) uint64 {
 		// def mult_complexity(x):
 		//    ceiling(x/8)^2
 		//
-		//where is x is max(length_of_MODULUS, length_of_BASE)
+		// where is x is max(length_of_MODULUS, length_of_BASE)
 		gas = gas.Add(gas, big7)
 		gas = gas.Div(gas, big8)
 		gas.Mul(gas, gas)

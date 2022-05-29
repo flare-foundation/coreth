@@ -39,6 +39,7 @@ import (
 
 	"github.com/flare-foundation/flare/snow/choices"
 	engCommon "github.com/flare-foundation/flare/snow/engine/common"
+	"github.com/flare-foundation/flare/snow/validation"
 
 	"github.com/flare-foundation/coreth/core"
 	"github.com/flare-foundation/coreth/params"
@@ -505,10 +506,13 @@ func TestToSet(t *testing.T) {
 		idsList[2]: weights[2],
 	}
 
-	t.Run("nominal case", func(t *testing.T) {
-		set, err := toSet(validators, nil)
+	set := validation.NewSet()
+	for validatorID, weight := range validators {
+		err := set.AddWeight(validatorID, weight)
 		require.NoError(t, err)
+	}
 
+	t.Run("nominal case", func(t *testing.T) {
 		assert.True(t, set.Contains(idsList[0]))
 		assert.True(t, set.Contains(idsList[1]))
 		assert.True(t, set.Contains(idsList[2]))
@@ -526,12 +530,5 @@ func TestToSet(t *testing.T) {
 		assert.Equal(t, ok, true)
 
 		assert.Len(t, set.List(), len(validators))
-	})
-
-	t.Run("handles given error", func(t *testing.T) {
-		testError := errors.New("test error")
-		_, err := toSet(validators, testError)
-
-		assert.Equal(t, err, testError)
 	})
 }
