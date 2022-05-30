@@ -73,7 +73,7 @@ var (
 		ApricotPhase3BlockTimestamp:  big.NewInt(time.Date(2022, time.February, 25, 14, 0, 0, 0, time.UTC).Unix()),
 		ApricotPhase4BlockTimestamp:  big.NewInt(time.Date(2022, time.February, 25, 15, 0, 0, 0, time.UTC).Unix()),
 		ApricotPhase5BlockTimestamp:  big.NewInt(time.Date(2022, time.February, 25, 16, 0, 0, 0, time.UTC).Unix()),
-		FlareHardFork1BlockTimestamp: big.NewInt(time.Date(2022, time.April, 21, 14, 0, 0, 0, time.UTC).Unix()),
+		FlareHardFork1BlockTimestamp: big.NewInt(time.Date(2022, time.June, 14, 14, 0, 0, 0, time.UTC).Unix()),
 	}
 
 	// SongbirdChainConfig is the configuration for the Songbird canary network.
@@ -96,7 +96,7 @@ var (
 		ApricotPhase3BlockTimestamp:  big.NewInt(time.Date(2022, time.March, 7, 14, 0, 0, 0, time.UTC).Unix()),
 		ApricotPhase4BlockTimestamp:  big.NewInt(time.Date(2022, time.March, 7, 15, 0, 0, 0, time.UTC).Unix()),
 		ApricotPhase5BlockTimestamp:  big.NewInt(time.Date(2022, time.March, 7, 16, 0, 0, 0, time.UTC).Unix()),
-		FlareHardFork1BlockTimestamp: big.NewInt(time.Date(2022, time.April, 28, 14, 0, 0, 0, time.UTC).Unix()),
+		FlareHardFork1BlockTimestamp: big.NewInt(time.Date(2022, time.June, 23, 14, 0, 0, 0, time.UTC).Unix()),
 	}
 
 	// FlareChainConfig is the configuration for Flare main network.
@@ -119,7 +119,7 @@ var (
 		ApricotPhase3BlockTimestamp:  big.NewInt(time.Date(2022, time.February, 9, 15, 0, 0, 0, time.UTC).Unix()),
 		ApricotPhase4BlockTimestamp:  big.NewInt(time.Date(2022, time.February, 10, 15, 0, 0, 0, time.UTC).Unix()),
 		ApricotPhase5BlockTimestamp:  big.NewInt(time.Date(2022, time.February, 11, 15, 0, 0, 0, time.UTC).Unix()),
-		FlareHardFork1BlockTimestamp: big.NewInt(time.Date(2022, time.April, 15, 14, 0, 0, 0, time.UTC).Unix()),
+		FlareHardFork1BlockTimestamp: big.NewInt(time.Date(2025, time.July, 4, 14, 0, 0, 0, time.UTC).Unix()),
 	}
 
 	TestChainConfig          = &ChainConfig{big.NewInt(1), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0)}
