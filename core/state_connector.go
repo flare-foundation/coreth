@@ -5,10 +5,10 @@ package core
 
 import (
 	"encoding/hex"
+	"fmt"
 	"math/big"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -22,41 +22,178 @@ const (
 )
 
 var (
-	costonActivationTime   = big.NewInt(time.Date(2022, time.February, 25, 17, 0, 0, 0, time.UTC).Unix())
-	songbirdActivationTime = big.NewInt(time.Date(2022, time.March, 28, 14, 0, 0, 0, time.UTC).Unix())
-	flareActivationTime    = big.NewInt(time.Date(2200, time.January, 1, 0, 0, 0, 0, time.UTC).Unix())
-
 	costonDefaultAttestors = []common.Address{
 		common.HexToAddress("0x3a6e101103ec3d9267d08f484a6b70e1440a8255"),
 	}
 	songbirdDefaultAttestors = []common.Address{
 		common.HexToAddress("0x0c19f3B4927abFc596353B0f9Ddad5D817736F70"),
 	}
-	flareDefaultAttestors = []common.Address{}
+	flareDefaultAttestors []common.Address
 )
 
-type AttestationVotes struct {
-	reachedMajority    bool
-	majorityDecision   string
-	majorityAttestors  []common.Address
-	divergentAttestors []common.Address
-	abstainedAttestors []common.Address
+// Caller is a light wrapper around Ethereum Virtual Machine
+type Caller interface {
+	Call(caller vm.ContractRef, addr common.Address, input []byte, gas uint64, value *big.Int) (ret []byte, leftOverGas uint64, err error)
+	SetBlockContext(bc vm.BlockContext)
+	BlockContext() vm.BlockContext
 }
 
-func GetStateConnectorActivated(chainID *big.Int, blockTime *big.Int) bool {
+// stateConnector is responsible for calling state connector smart contract based on votes from attestors.
+type stateConnector struct {
+	caller Caller
+	msg    Message
+}
+
+func newConnector(caller Caller, msg Message) *stateConnector {
+	s := &stateConnector{
+		caller: caller,
+		msg:    msg,
+	}
+	return s
+}
+
+func (c *stateConnector) finalizePreviousRound(chainID *big.Int, timestamp *big.Int, currentRoundNumber []byte) error {
+	instructions := append(attestationSelector(chainID, timestamp), currentRoundNumber[:]...)
+	defaultAttestors := defaultAttestors(chainID)
+
+	defaultAttestationResult := c.countAttestations(defaultAttestors, instructions)
+
+	reached := c.isFinalityReached(defaultAttestationResult, instructions)
+	if !reached {
+		return nil
+	}
+
+	// Finalize defaultAttestationResult.majorityDecision
+	finalizeRoundSelector := finalizeRoundSelector(chainID, timestamp)
+	finalizedData := append(finalizeRoundSelector[:], currentRoundNumber[:]...)
+	merkleRootHashBytes, err := hex.DecodeString(defaultAttestationResult.majorityDecision)
+	if err != nil {
+		return fmt.Errorf("could not decode majority decision into hex: %w", err)
+	}
+	finalizedData = append(finalizedData[:], merkleRootHashBytes[:]...)
+
+	bc := c.caller.BlockContext()
+
+	// switch the address to be able to call the finalized function
+	originalBC := bc
+	defer func() {
+		c.caller.SetBlockContext(originalBC)
+	}()
+	coinbaseSignal := stateConnectorCoinbaseSignalAddr(chainID, timestamp)
+	bc.Coinbase = coinbaseSignal
+	c.caller.SetBlockContext(bc)
+
+	_, _, err = c.caller.Call(vm.AccountRef(coinbaseSignal), c.to(), finalizedData, bc.GasLimit, new(big.Int).SetUint64(0))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// defaultAttestors returns list of default attestors set by environment variable or based on chainID.
+func defaultAttestors(chainID *big.Int) []common.Address {
+	defaultAttestors := envAttestors(defaultAttestorEnv)
+	if len(defaultAttestors) != 0 {
+		return defaultAttestors
+	}
 	switch {
 	case chainID.Cmp(params.CostonChainID) == 0:
-		return blockTime.Cmp(costonActivationTime) >= 0
+		return costonDefaultAttestors
 	case chainID.Cmp(params.SongbirdChainID) == 0:
-		return blockTime.Cmp(songbirdActivationTime) >= 0
+		return songbirdDefaultAttestors
 	case chainID.Cmp(params.FlareChainID) == 0:
-		return blockTime.Cmp(flareActivationTime) >= 0
+		return flareDefaultAttestors
 	default:
-		return true
+		return nil
 	}
 }
 
-func GetStateConnectorContract(chainID *big.Int, blockTime *big.Int) common.Address {
+type attestationResult struct {
+	reachedMajority  bool
+	majorityDecision string
+}
+
+// isFinalityReached checks if finality is reached based on attestation votes.
+func (c *stateConnector) isFinalityReached(defaultAttestationResult attestationResult, instructions []byte) bool {
+	var finalityReached bool
+
+	localAttestors := envAttestors(localAttestorEnv)
+	if len(localAttestors) > 0 {
+		localAttestationResult := c.countAttestations(localAttestors, instructions)
+		if defaultAttestationResult.reachedMajority && localAttestationResult.reachedMajority && defaultAttestationResult.majorityDecision == localAttestationResult.majorityDecision {
+			finalityReached = true
+		} else if defaultAttestationResult.reachedMajority && defaultAttestationResult.majorityDecision != localAttestationResult.majorityDecision {
+			// FIXME Make a back-up of the current state database, because this node is about to branch from the default set
+		}
+	} else if defaultAttestationResult.reachedMajority {
+		finalityReached = true
+	}
+
+	return finalityReached
+}
+
+// countAttestations counts the number of the votes and determines whether majority is reached
+func (c *stateConnector) countAttestations(attestors []common.Address, instructions []byte) attestationResult {
+	var av attestationResult
+
+	hashFrequencies := make(map[string][]common.Address, len(attestors))
+	for i := range attestors {
+		h, err := c.attestationResult(attestors[i], instructions)
+		if err != nil {
+			// FIXME: how to handle this error??
+			continue
+		}
+		hashFrequencies[h] = append(hashFrequencies[h], attestors[i])
+	}
+	var majorityNum int
+	var majorityKey string
+	for key, val := range hashFrequencies {
+		if len(val) > majorityNum {
+			majorityNum = len(val)
+			majorityKey = key
+		}
+	}
+	if majorityNum > len(attestors)/2 {
+		av.reachedMajority = true
+		av.majorityDecision = majorityKey
+	}
+
+	return av
+}
+
+// attestationResult returns resulting hash from the attestor.
+func (c *stateConnector) attestationResult(attestor common.Address, instructions []byte) (string, error) {
+	rootHash, _, err := c.caller.Call(vm.AccountRef(attestor), c.to(), instructions, 20000, big.NewInt(0))
+	return hex.EncodeToString(rootHash), err
+}
+
+// to returns the recipient of the message.
+func (c *stateConnector) to() common.Address {
+	// empty message or receiver means contract creation
+	if c.msg == nil || c.msg.To() == nil {
+		return common.Address{}
+	}
+	return *c.msg.To()
+}
+
+// envAttestors returns list of attestors from environment variable using provided key.
+// Returns an empty list of value if the key does not exist in the environment.
+func envAttestors(key string) []common.Address {
+	envAttestationProvidersString := os.Getenv(key)
+	if envAttestationProvidersString == "" {
+		return nil
+	}
+	envAttestationProviders := strings.Split(envAttestationProvidersString, ",")
+	attestors := make([]common.Address, len(envAttestationProviders))
+	for i := range envAttestationProviders {
+		attestors[i] = common.HexToAddress(envAttestationProviders[i])
+	}
+	return attestors
+}
+
+// unused 'blockTime' might be used for hard forks in the future.
+func stateConnectorContract(chainID *big.Int, blockTime *big.Int) common.Address {
 	switch {
 	case chainID.Cmp(params.CostonChainID) == 0:
 		return common.HexToAddress("0x947c76694491d3fD67a73688003c4d36C8780A97")
@@ -69,148 +206,47 @@ func GetStateConnectorContract(chainID *big.Int, blockTime *big.Int) common.Addr
 	}
 }
 
-func GetStateConnectorCoinbaseSignalAddr(chainID *big.Int, blockTime *big.Int) common.Address {
+func isStateConnectorActivated(chainID *big.Int, blockTime *big.Int) bool {
 	switch {
+	case chainID.Cmp(params.CostonChainID) == 0:
+		return blockTime.Cmp(costonActivationTime) >= 0
+	case chainID.Cmp(params.SongbirdChainID) == 0:
+		return blockTime.Cmp(songbirdActivationTime) >= 0
+	case chainID.Cmp(params.FlareChainID) == 0:
+		return blockTime.Cmp(flareActivationTime) >= 0
 	default:
-		return common.HexToAddress("0x000000000000000000000000000000000000dEaD")
+		return true
 	}
 }
 
-func SubmitAttestationSelector(chainID *big.Int, blockTime *big.Int) []byte {
+// unused 'chainID' and 'blockTime' might be used for hard forks in the future.
+func submitAttestationSelectorFunc(chainID *big.Int, blockTime *big.Int) []byte {
 	switch {
 	default:
 		return []byte{0xcf, 0xd1, 0xfd, 0xad}
 	}
 }
 
-func GetAttestationSelector(chainID *big.Int, blockTime *big.Int) []byte {
+// unused 'chainID' and 'blockTime' might be used for hard forks in the future.
+func stateConnectorCoinbaseSignalAddr(chainID *big.Int, blockTime *big.Int) common.Address {
+	switch {
+	default:
+		return common.HexToAddress("0x000000000000000000000000000000000000dEaD")
+	}
+}
+
+// unused 'chainID' and 'blockTime' might be used for hard forks in the future.
+func attestationSelector(chainID *big.Int, blockTime *big.Int) []byte {
 	switch {
 	default:
 		return []byte{0x29, 0xbe, 0x4d, 0xb2}
 	}
 }
 
-func FinaliseRoundSelector(chainID *big.Int, blockTime *big.Int) []byte {
+// unused 'chainID' and 'blockTime' might be used for hard forks in the future.
+func finalizeRoundSelector(chainID *big.Int, blockTime *big.Int) []byte {
 	switch {
 	default:
 		return []byte{0xea, 0xeb, 0xf6, 0xd3}
 	}
-}
-
-func GetDefaultAttestors(chainID *big.Int) []common.Address {
-
-	switch {
-	case chainID.Cmp(params.CostonChainID) == 0:
-		return costonDefaultAttestors
-	case chainID.Cmp(params.SongbirdChainID) == 0:
-		return songbirdDefaultAttestors
-	case chainID.Cmp(params.FlareChainID) == 0:
-		return flareDefaultAttestors
-	}
-
-	var defaultAttestors []common.Address
-	defaultAttestorList := os.Getenv(defaultAttestorEnv)
-	if defaultAttestorList != "" {
-		defaultAttestorEntries := strings.Split(defaultAttestorList, ",")
-		for _, defaultAttestorEntry := range defaultAttestorEntries {
-			defaultAttestors = append(defaultAttestors, common.HexToAddress(defaultAttestorEntry))
-		}
-	}
-
-	return defaultAttestors
-}
-
-func GetLocalAttestors() []common.Address {
-
-	var localAttestors []common.Address
-	localAttestorList := os.Getenv(localAttestorEnv)
-	if localAttestorList != "" {
-		localAttestorEntries := strings.Split(localAttestorList, ",")
-		for _, localAttestorEntry := range localAttestorEntries {
-			localAttestors = append(localAttestors, common.HexToAddress(localAttestorEntry))
-		}
-		return localAttestors
-	}
-
-	return localAttestors
-}
-
-func (st *StateTransition) GetAttestation(attestor common.Address, instructions []byte) (string, error) {
-	merkleRootHash, _, err := st.evm.Call(vm.AccountRef(attestor), st.to(), instructions, 20000, big.NewInt(0))
-	return hex.EncodeToString(merkleRootHash), err
-}
-
-func (st *StateTransition) CountAttestations(attestors []common.Address, instructions []byte) (AttestationVotes, error) {
-	var attestationVotes AttestationVotes
-	hashFrequencies := make(map[string][]common.Address)
-	for i, a := range attestors {
-		h, err := st.GetAttestation(a, instructions)
-		if err != nil {
-			attestationVotes.abstainedAttestors = append(attestationVotes.abstainedAttestors, a)
-		}
-		hashFrequencies[h] = append(hashFrequencies[h], attestors[i])
-	}
-	// Find the plurality
-	var pluralityNum int
-	var pluralityKey string
-	for key, val := range hashFrequencies {
-		if len(val) > pluralityNum {
-			pluralityNum = len(val)
-			pluralityKey = key
-		}
-	}
-	if pluralityNum > len(attestors)/2 {
-		attestationVotes.reachedMajority = true
-		attestationVotes.majorityDecision = pluralityKey
-		attestationVotes.majorityAttestors = hashFrequencies[pluralityKey]
-	}
-	for key, val := range hashFrequencies {
-		if key != pluralityKey {
-			attestationVotes.divergentAttestors = append(attestationVotes.divergentAttestors, val...)
-		}
-	}
-	return attestationVotes, nil
-}
-
-func (st *StateTransition) FinalisePreviousRound(chainID *big.Int, timestamp *big.Int, currentRoundNumber []byte) error {
-	getAttestationSelector := GetAttestationSelector(chainID, timestamp)
-	instructions := append(getAttestationSelector[:], currentRoundNumber[:]...)
-	defaultAttestors := GetDefaultAttestors(chainID)
-	defaultAttestationVotes, err := st.CountAttestations(defaultAttestors, instructions)
-	if err != nil {
-		return err
-	}
-	localAttestors := GetLocalAttestors()
-	var finalityReached bool
-	if len(localAttestors) > 0 {
-		localAttestationVotes, err := st.CountAttestations(localAttestors, instructions)
-		if defaultAttestationVotes.reachedMajority && localAttestationVotes.reachedMajority && defaultAttestationVotes.majorityDecision == localAttestationVotes.majorityDecision {
-			finalityReached = true
-		} else if err != nil || (defaultAttestationVotes.reachedMajority && defaultAttestationVotes.majorityDecision != localAttestationVotes.majorityDecision) {
-			// Make a back-up of the current state database, because this node is about to fork from the default set
-		}
-	} else if defaultAttestationVotes.reachedMajority {
-		finalityReached = true
-	}
-	if finalityReached {
-		// Finalise defaultAttestationVotes.majorityDecision
-		finaliseRoundSelector := FinaliseRoundSelector(chainID, timestamp)
-		finalisedData := append(finaliseRoundSelector[:], currentRoundNumber[:]...)
-		merkleRootHashBytes, err := hex.DecodeString(defaultAttestationVotes.majorityDecision)
-		if err != nil {
-			return err
-		}
-		finalisedData = append(finalisedData[:], merkleRootHashBytes[:]...)
-		coinbaseSignal := GetStateConnectorCoinbaseSignalAddr(chainID, timestamp)
-		originalCoinbase := st.evm.Context.Coinbase
-		defer func() {
-			st.evm.Context.Coinbase = originalCoinbase
-		}()
-		st.evm.Context.Coinbase = coinbaseSignal
-		_, _, err = st.evm.Call(vm.AccountRef(coinbaseSignal), st.to(), finalisedData, st.evm.Context.GasLimit, new(big.Int).SetUint64(0))
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }
