@@ -78,10 +78,18 @@ func (m *ValidatorManager) WithEVM(evm *vm.EVM) (vm.ValidatorSnapshot, error) {
 	// this address is unused and can't be reached. We can thus reclaim it for this
 	// purpose, allowing us to root the validator state in its corresponding EVM state.
 	code := evm.StateDB.GetCode(params.ValidationAddress)
+	if len(code) == 0 {
+		err = m.bootstrap(evm.StateDB)
+		code = evm.StateDB.GetCode(params.ValidationAddress)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("could not bootstrap validator state: %w", err)
+	}
+
 	root := common.BytesToHash(code)
 	state, err := m.repo.WithRoot(root)
 	if err != nil {
-		return nil, fmt.Errorf("could not initialize validators state snapshot: %w", err)
+		return nil, fmt.Errorf("could not initialize validators state (root: %s): %w", root, err)
 	}
 
 	s := ValidatorSnapshot{
@@ -94,4 +102,36 @@ func (m *ValidatorManager) WithEVM(evm *vm.EVM) (vm.ValidatorSnapshot, error) {
 	}
 
 	return &s, nil
+}
+
+func (m *ValidatorManager) bootstrap(evm vm.StateDB) error {
+
+	state, err := m.repo.WithRoot(common.Hash{})
+	if err != nil {
+		return fmt.Errorf("could not open empty validator state: %w", err)
+	}
+
+	err = state.SetEpoch(0)
+	if err != nil {
+		return fmt.Errorf("could not bootstrap epoch: %w", err)
+	}
+
+	err = state.SetCandidates([]*validatordb.Candidate{})
+	if err != nil {
+		return fmt.Errorf("could not bootstrap candidates: %w", err)
+	}
+
+	err = state.SetValidators([]*validatordb.Validator{})
+	if err != nil {
+		return fmt.Errorf("could not bootstrap validators: %w", err)
+	}
+
+	root, err := state.RootHash()
+	if err != nil {
+		return fmt.Errorf("could not compute bootstrap hash: %w", err)
+	}
+
+	evm.SetCode(params.ValidationAddress, root[:])
+
+	return nil
 }

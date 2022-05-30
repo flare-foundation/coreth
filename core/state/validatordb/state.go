@@ -83,12 +83,12 @@ func (s *State) GetMapping(provider common.Address) (ids.ShortID, error) {
 		return ids.ShortID{}, fmt.Errorf("could not get mapping: %w", err)
 	}
 
-	validatorID, err := ids.ToShortID(val)
+	nodeID, err := ids.ToShortID(val)
 	if err != nil {
 		return ids.ShortID{}, fmt.Errorf("could not parse mapping: %w", err)
 	}
 
-	return validatorID, nil
+	return nodeID, nil
 }
 
 // AllMappings gets all mappings between FTSO data provider addresses and the corresponding
@@ -98,7 +98,7 @@ func (s *State) AllMappings() (map[common.Address]ids.ShortID, error) {
 	start := []byte{codeMapping}
 	end := []byte{codeMapping + 1}
 
-	validators := make(map[common.Address]ids.ShortID)
+	mappings := make(map[common.Address]ids.ShortID)
 	it := s.trie.NodeIterator(start)
 	for it.Next(true) {
 
@@ -119,7 +119,7 @@ func (s *State) AllMappings() (map[common.Address]ids.ShortID, error) {
 
 		provider := common.BytesToAddress(key[1:])
 
-		validators[provider] = validatorID
+		mappings[provider] = validatorID
 	}
 
 	err := it.Error()
@@ -127,7 +127,7 @@ func (s *State) AllMappings() (map[common.Address]ids.ShortID, error) {
 		return nil, fmt.Errorf("could not iterate validators: %w", err)
 	}
 
-	return validators, nil
+	return mappings, nil
 }
 
 // SetCandidates sets the validator candidates for the next validator epoch. It is
