@@ -176,7 +176,7 @@ func NewSystem(evm *vm.EVM) (*System, error) {
 func (s *System) Current() (uint64, error) {
 
 	epoch := big.NewInt(0)
-	err := newContractCall(s.evm, s.contracts.Rewards).
+	err := newContractCall(s.evm, s.contracts.Manager).
 		execute(getEpochCurrent).
 		decode(&epoch)
 	if err != nil {
