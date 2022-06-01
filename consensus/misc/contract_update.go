@@ -17,11 +17,15 @@ type CoreContractUpdate struct {
 }
 
 func updateApplied(statedb *state.StateDB, update CoreContractUpdate) bool {
-	return bytes.Equal(statedb.GetCode(update.Address), update.New)
+	code := statedb.GetCode(update.Address)
+
+	return bytes.Equal(code, update.New)
 }
 
 func applyUpdate(statedb *state.StateDB, update CoreContractUpdate) {
-	if bytes.Equal(statedb.GetCode(update.Address), update.Old) {
+	code := statedb.GetCode(update.Address)
+
+	if bytes.Equal(code, update.Old) {
 		statedb.SetCode(update.Address, update.New)
 	}
 }
