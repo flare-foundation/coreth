@@ -136,6 +136,9 @@ func (c *contractReturn) decode(values ...interface{}) error {
 		if iv.Kind() != rv.Kind() {
 			return fmt.Errorf("invalid type for return value (have: %T, want: %T)", val, ret)
 		}
+		if iv.Kind() == reflect.Array && rv.Len() != iv.Len() {
+			return fmt.Errorf("invalid len for return array (have: %T, want: %T)", iv.Len(), rv.Len())
+		}
 
 		iv.Set(rv)
 	}

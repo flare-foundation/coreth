@@ -176,7 +176,7 @@ func NewSystem(evm *vm.EVM) (*System, error) {
 func (s *System) Current() (uint64, error) {
 
 	epoch := big.NewInt(0)
-	err := newContractCall(s.evm, s.contracts.Rewards).
+	err := newContractCall(s.evm, s.contracts.Manager).
 		execute(getEpochCurrent).
 		decode(&epoch)
 	if err != nil {
@@ -260,7 +260,7 @@ func (s *System) Votepower(provider common.Address) (float64, error) {
 		execute(getEpochInfo, epoch).
 		decode(&height, nil, nil)
 	if err != nil {
-		return 0, fmt.Errorf("could not get epoch info (epoch: %s)", epoch)
+		return 0, fmt.Errorf("could not get epoch info (epoch: %s): %w", epoch, err)
 	}
 
 	votepowerInt := big.NewInt(0)

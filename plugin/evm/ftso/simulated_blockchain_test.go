@@ -1,7 +1,7 @@
 //go:build integration
 // +build integration
 
-package evm
+package ftso
 
 import (
 	"math"
@@ -17,7 +17,7 @@ import (
 	"github.com/flare-foundation/coreth/params"
 )
 
-func simulatedBlockchain(t *testing.T) (*bind.TransactOpts, *backends.SimulatedBackend) {
+func simulatedBackend(t *testing.T) (*bind.TransactOpts, *backends.SimulatedBackend) {
 	t.Helper()
 
 	key, err := crypto.GenerateKey()

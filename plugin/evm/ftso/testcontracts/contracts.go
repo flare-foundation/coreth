@@ -6,7 +6,6 @@
 //go:generate solc --abi --bin reward.sol --overwrite -o reward
 //go:generate solc --abi --bin store.sol --overwrite -o store
 //go:generate solc --abi --bin submitter.sol --overwrite -o submitter
-//go:generate solc --abi --bin validator.sol --overwrite -o validator
 //go:generate solc --abi --bin votepower.sol --overwrite -o votepower
 //go:generate solc --abi --bin whitelist.sol --overwrite -o whitelist
 //go:generate solc --abi --bin wnat.sol --overwrite -o wnat
@@ -82,32 +81,16 @@ func SubmitterABI() abi.ABI {
 	return contractAbi(submitterSubmitterAbiBytes)
 }
 
-// Slice of dataProvidersAddresses should have the same length as nodes outer slice
+// Slices of providers, heights and vps should all have the same length.
 //
-// When calling ProviderNode method using 'dataProvidersAddresses[i]'
-// value 'nodes[i]' will be returned.
-//
-func DeployValidator(auth *bind.TransactOpts, be *backends.SimulatedBackend,
-	dataProvidersAddresses []common.Address, nodes [][20]byte,
-) common.Address {
-
-	return deployTestContract(auth, be, validatorValidatorAbiBytes, validatorValidatorBinBytes, dataProvidersAddresses, nodes)
-}
-
-func ValidatorABI() abi.ABI {
-	return contractAbi(validatorValidatorAbiBytes)
-}
-
-// Slices of providers and vps should all have the same length.
-//
-// When calling ProviderVotepower method using 'providers[i]'
+// When calling ProviderVotepower method using 'providers[i]' and 'heights[i]'
 // value 'vps[i]' will be returned.
 //
 func DeployVotepower(auth *bind.TransactOpts, be *backends.SimulatedBackend,
-	providers []common.Address, vps []*big.Int,
+	providers []common.Address, heights []*big.Int, vps []*big.Int,
 ) common.Address {
 
-	return deployTestContract(auth, be, votepowerVotepowerAbiBytes, votepowerVotepowerBinBytes, providers, vps)
+	return deployTestContract(auth, be, votepowerVotepowerAbiBytes, votepowerVotepowerBinBytes, providers, heights, vps)
 }
 
 func VotepowerABI() abi.ABI {
