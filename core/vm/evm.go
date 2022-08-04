@@ -139,6 +139,15 @@ type EVM struct {
 	callGasTemp uint64
 }
 
+func (evm *EVM) GetDebugConfig() (bool, bool) {
+	return evm.Config.Debug, evm.interpreter.cfg.Debug
+}
+
+func (evm *EVM) SetDebugConfig(evmSetting bool, interpreterSetting bool) {
+	evm.Config.Debug = evmSetting
+	evm.interpreter.cfg.Debug = interpreterSetting
+}
+
 // NewEVM returns a new EVM. The returned EVM is not thread safe and should
 // only ever be used *once*.
 func NewEVM(blockCtx BlockContext, txCtx TxContext, statedb StateDB, chainConfig *params.ChainConfig, config Config) *EVM {
